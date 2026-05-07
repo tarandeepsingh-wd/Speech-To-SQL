@@ -9,7 +9,7 @@ from entity_tagger import tag_entities
 duration = 5
 samplerate = 44100
 
-print("\n🎤 Speak now...")
+print("\n Speak now...")
 
 audio = sd.rec(
     int(duration * samplerate),
@@ -41,7 +41,7 @@ print("\n⏳ Transcribing...")
 
 transcript = transcribe_audio(audio_bytes)
 
-print("\n📝 TRANSCRIPT:")
+print("\n TRANSCRIPT:")
 print(transcript)
 
 
@@ -49,7 +49,7 @@ print(transcript)
 
 entities = tag_entities(transcript)
 
-print("\n🔍 ENTITIES:")
+print("\n ENTITIES:")
 print(entities)
 
 # CLEANUP
