@@ -20,7 +20,7 @@ audio = sd.rec(
 
 sd.wait()
 
-print("✅ Recording complete.")
+print(" Recording complete.")
 
 
 # SAVE AUDIO
