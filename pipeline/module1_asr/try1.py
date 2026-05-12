@@ -1,43 +1,32 @@
-import sounddevice as sd
-from scipy.io.wavfile import write
 import os
+import speech_recognition as sr
 
 from transcriber import transcribe_audio
 from entity_tagger import tag_entities
 
+# RECORD AUDIO
+def record_audio():
+    recognizer = sr.Recognizer()
+    recognizer.pause_threshold=3
+    with sr.Microphone() as source:
+        print("\nSpeak now...")
+        recognizer.adjust_for_ambient_noise(source)
 
-duration = 5
-samplerate = 44100
+        audio = recognizer.listen(source)
 
-print("\n Speak now...")
+        print("Recording complete.")
 
-audio = sd.rec(
-    int(duration * samplerate),
-    samplerate=samplerate,
-    channels=1,
-    dtype="int16"
-)
-
-sd.wait()
-
-print(" Recording complete.")
+    return audio.get_wav_data()
 
 
-# SAVE AUDIO
+# GET AUDIO BYTES
 
-audio_path = "temp_audio.wav"
-
-write(audio_path, samplerate, audio)
-
-# READ AUDIO BYTES
-
-with open(audio_path, "rb") as f:
-    audio_bytes = f.read()
+audio_bytes = record_audio()
 
 
 # TRANSCRIBE
 
-print("\n⏳ Transcribing...")
+print("\nTranscribing.")
 
 transcript = transcribe_audio(audio_bytes)
 
