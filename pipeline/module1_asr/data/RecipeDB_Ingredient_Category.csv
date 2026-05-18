@@ -1,0 +1,4671 @@
+ingredient,Dietrx_Category,IngID,frequency
+salt,Additive,0,7673
+onion,Vegetable,1,8856
+butter,Dairy,2,4337
+water,Additive,3,4128
+garlic clove,Herb,4,6529
+olive oil,Plant Derivative,5,5388
+sugar,Additive,6,1807
+egg,Meat,7,1852
+tomato,Vegetable,8,3473
+black pepper,Spice,9,3847
+garlic,Herb,10,4156
+milk,Dairy,11,1319
+pepper,Spice,12,2601
+salt pepper,Spice,13,2531
+flour,Cereal,14,1389
+cinnamon,Additive,15,1287
+parsley,Spice,16,2087
+lemon juice,Beverage,17,1800
+purpose flour,Cereal,18,1134
+vegetable oil,Additive,19,2366
+cumin,Spice,20,2658
+carrot,Vegetable,21,2509
+cream,Dairy,22,1792
+ginger,Spice,23,2629
+cilantro,Herb,24,2369
+parmesan cheese,Dairy,25,1719
+soy sauce,Condiment,26,2588
+beef,Meat,27,501
+oregano,Spice,28,1620
+potato,Vegetable Tuber,29,1298
+green onion,Herb,30,1975
+brown sugar,Additive,31,902
+oil,Additive,32,1446
+basil,Herb,33,1166
+chicken broth,Meat,34,5913
+lemon,Fruit,35,1136
+lime juice,Beverage,36,1232
+extra virgin olive oil,Plant Derivative,37,836
+chicken breast,Meat,38,5396
+white sugar,Additive,39,290
+mushroom,Fungi,41,1413
+paprika,Vegetable Fruit,42,1349
+bay leaf,Plant,43,1401
+chili powder,Spice,44,1308
+garlic powder,Herb,45,1107
+thyme,Herb,46,1344
+cornstarch,Maize,47,1469
+celery,Herb,48,1477
+red onion,Vegetable,49,833
+cheddar cheese,Dairy,50,935
+nutmeg,Spice,51,515
+vanilla extract,Additive,52,8
+cayenne pepper,Spice,53,1077
+red pepper flake,Vegetable,54,1025
+honey,Plant Derivative,55,710
+white wine,Beverage-Alcoholic,56,1485
+coriander,Herb,57,1045
+red bell pepper,Vegetable Fruit,58,1165
+tomato paste,Vegetable,59,876
+salt black pepper,Vegetable Fruit,60,908
+chicken,Meat,61,3589
+mozzarella cheese,Dairy,62,542
+tomato sauce,Condiment,63,682
+almond,Nuts and Seeds,64,536
+clove,Spice,65,578
+kosher salt,Additive,66,675
+bacon,Meat,67,645
+worcestershire sauce,Additive,68,422
+red pepper,Vegetable Fruit,69,854
+green bell pepper,Vegetable Fruit,70,828
+turmeric,Spice,71,878
+cream cheese,Dairy,72,304
+rice,Cereal,73,1073
+heavy cream,Dairy,74,622
+mayonnaise,Condiment,75,401
+egg yolk,Meat,76,176
+vanilla,Legume,77,4
+sesame oil,Essential Oil,78,879
+shallot,Seafood,79,809
+green pepper,Vegetable,81,602
+chicken stock,Meat,82,2668
+scallion,Herb,83,804
+zucchini,Vegetable,84,569
+salsa,Condiment,85,696
+spinach,Vegetable,86,517
+canola oil,Plant Derivative,87,577
+green chilies,Vegetable,88,750
+shrimp,Seafood,89,550
+sea salt,Additive-Salt,90,345
+breadcrumb,Bakery,91,425
+orange juice,Fruit,92,329
+lime,Fruit,93,572
+raisin,Fruit,94,305
+red wine,Beverage-Alcoholic,95,358
+cucumber,Gourd,96,320
+jalapeno pepper,Spice,97,470
+beef broth,Meat,98,144
+coconut milk,Fruit,99,816
+egg white,Meat,100,214
+curry powder,Herb,101,892
+yellow onion,Vegetable,102,638
+rosemary,Herb,103,544
+black bean,Legume,104,667
+avocado,Essential Oil,105,396
+feta cheese,Dairy,106,302
+flour tortilla,Bakery,107,667
+red wine vinegar,Plant Derivative,108,285
+coconut,Beverage,109,175
+dijon mustard,Condiment,110,335
+mint,Herb,111,288
+walnut,Nuts and Seeds,112,102
+mustard,Spice,113,204
+black olive,Plant,114,333
+lemon zest,Fruit,115,289
+fish sauce,Condiment,116,736
+basil leaf,Herb,117,344
+cheese,Dairy,118,398
+sesame seed,Cereal,119,419
+cumin seed,Spice,120,285
+vinegar,Plant Derivative,121,284
+corn,Maize,122,508
+pork,Meat,123,394
+white pepper,Spice,124,574
+allspice,Spice,125,311
+margarine,Additive,126,240
+pea,Legume,127,527
+balsamic vinegar,Additive-Vinegar,128,277
+chicken breast half,Meat,129,1681
+monterey jack cheese,Dairy,130,550
+gingerroot,Spice,131,567
+white vinegar,Plant Derivative,132,284
+chive,Vegetable,133,299
+onion powder,Spice,134,333
+plain yogurt,Dairy,135,394
+orange,Fruit,136,145
+white onion,Vegetable,137,412
+dill,Herb,138,220
+ketchup,Additive,139,231
+italian seasoning,Herb,140,327
+apple,Fruit,141,114
+peanut oil,Plant,142,529
+jalapeno,Spice,143,356
+flat leaf parsley,Spice,144,285
+corn tortilla,Bakery,145,569
+green bean,Cereal,146,262
+ham,Meat,147,264
+ricotta cheese,Dairy,148,116
+cabbage,Vegetable,149,274
+eggplant,Vegetable,150,119
+whipping cream,Dairy,152,166
+garam masala,Spice,153,394
+rice vinegar,Additive-Vinegar,154,345
+peanut,Nuts and Seeds,155,372
+bell pepper,Vegetable Fruit,156,324
+caster sugar,Additive,157,29
+celery rib,Herb,158,416
+pecan,Nuts and Seeds,159,55
+banana,Fruit,160,57
+mint leaf,Herb,161,188
+leek,Vegetable,162,413
+pine nut,Nuts and Seeds,163,216
+cardamom,Spice,164,196
+plain flour,Cereal,165,132
+cilantro leaf,Herb,166,348
+chocolate,Plant Derivative,167,31
+caper,Fruit,168,210
+chicken thigh,Meat,169,1174
+buttermilk,Dairy,170,82
+strawberry,Fruit,171,9
+grain rice,Cereal,172,472
+swiss cheese,Dairy,173,193
+garlic salt,Spice,174,281
+bread,Bakery,175,106
+lettuce,Vegetable,176,241
+confectioner ' sugar,Additive-Sugar,177,4
+plum tomato,Vegetable,178,211
+cold water,Additive,179,169
+rom tomato,Vegetable,180,206
+chickpea,Legume,181,190
+cocoa powder,Seed,182,34
+cooking oil,Additive,183,310
+cherry tomato,Fruit,184,172
+white rice,Cereal,185,382
+cider vinegar,Plant,187,153
+mango,Fruit,188,145
+vegetable broth,Dish,189,43
+cayenne,Vegetable,190,220
+cooking spray,Additive,191,217
+pineapple,Beverage,192,133
+black peppercorn,Spice,193,216
+italian sausage,Meat,194,181
+yogurt,Dairy,195,228
+shortening,Additive,196,42
+lamb,Meat,197,90
+sherry,Beverage-Alcoholic,198,348
+orange zest,Fruit,199,103
+maple syrup,Additive,200,58
+bean,Legume,201,123
+tomato juice,Vegetable,203,200
+sage,Herb,204,292
+beef stock,Meat,205,42
+spaghetti,Cereal,206,172
+spring onion,Herb,207,190
+coriander leaf,Herb,208,217
+wheat flour,Cereal,209,32
+steak,Fish,210,76
+hot water,Additive,211,144
+icing sugar,Additive-Sugar,212,5
+turkey,Meat,213,185
+kalamata olive,Plant,214,181
+cream mushroom soup,Dish,215,305
+tomato puree,Vegetable,216,210
+tabasco sauce,Additive,217,162
+white wine vinegar,Plant Derivative,218,149
+peanut butter,Additive,219,267
+olive,Plant,220,194
+sauce,Additive,221,203
+beer,Beverage,222,131
+turmeric powder,Spice,223,156
+oyster sauce,Seafood,224,337
+marjoram,Spice,225,163
+pasta,Cereal,226,191
+basmati rice,Cereal,227,263
+bean sprout,Legume,228,281
+brown rice,Cereal,229,221
+red chilies,Vegetable,230,184
+fennel seed,Herb,231,127
+almond extract,Nuts and Seeds,232,3
+brandy,Beverage-Alcoholic,233,81
+coriander seed,Herb,234,160
+broccoli,Flower,235,234
+vegetable stock,Vegetable,236,20
+lemongrass,Herb,237,291
+chocolate chip,Additive,238,4
+ice,Additive,239,2
+tofu,Plant Derivative,241,115
+caraway seed,Spice,242,70
+french bread,Bakery,243,61
+mustard seed,Vegetable,244,52
+red chili powder,Vegetable,245,128
+green olive,Plant,246,160
+tortilla chip,Bakery,247,214
+cottage cheese,Dairy,248,43
+rum,Beverage-Alcoholic,249,30
+ghee,Dairy,250,99
+chili sauce,Condiment,251,160
+coffee,Beverage Caffeinated,252,5
+sharp cheddar cheese,Dairy,253,130
+hoisin sauce,Condiment,254,226
+kidney bean,Legume,255,89
+artichoke heart,Flower,256,178
+cornflour,Maize,257,171
+apricot,Fruit,258,161
+garbanzo bean,Legume,259,158
+self raising flour,Cereal,260,6
+cornmeal,Maize,261,54
+heavy whipping cream,Dairy,262,122
+red potato,Vegetable Tuber,263,122
+pineapple juice,Beverage,264,67
+italian parsley,Spice,265,128
+button mushroom,Fungi,266,182
+pinto bean,Legume,267,116
+seasoning salt,Additive,268,145
+oat,Cereal,269,9
+spaghetti sauce,Condiment,270,87
+molasses,Additive,271,39
+corn kernel,Maize,272,174
+kernel corn,Maize,273,173
+tarragon,Herb,274,178
+bread flour,Cereal,275,6
+hard egg,Meat,276,104
+cashew,Nuts and Seeds,277,186
+yellow bell pepper,Vegetable Fruit,278,136
+water chestnut,Vegetable,279,264
+saffron,Spice,280,222
+date,Fruit,281,40
+dark brown sugar,Additive-Sugar,282,75
+asparagus,Vegetable,283,138
+sherry wine,Beverage-Alcoholic,284,196
+cauliflower,Flower,286,83
+confectioner sugar,Additive-Sugar,287,1
+pepper sauce,Condiment,288,147
+green pea,Legume,289,159
+mexican cheese,Dairy,290,179
+peppercorn,Spice,291,137
+cocoa,Seed,293,6
+sausage,Dish,294,116
+grain white rice,Cereal,296,252
+cream chicken soup,Meat,297,564
+white bread,Bakery,298,61
+prosciutto,Meat,299,151
+coriander powder,Herb,300,125
+puff pastry,Bakery,301,70
+parmigiano reggiano cheese,Dairy,302,124
+ice cube,Additive,303,1
+sun tomato,Vegetable,304,148
+shiitake mushroom,Fungi,305,194
+cranberry,Fruit,306,57
+curry leaf,Herb,307,64
+broccoli floret,Flower,308,178
+provolone cheese,Dairy,309,65
+red chili pepper,Vegetable,310,128
+couscous,Dish,311,227
+apple cider vinegar,Plant,312,83
+bread crumb,Bakery,313,113
+chorizo sausage,Meat,314,161
+raspberry,Fruit,315,6
+golden raisin,Fruit,316,97
+cumin powder,Spice,317,125
+mirin,Beverage-Alcoholic,318,120
+greek yogurt,Dairy,319,104
+lasagna noodle,Cereal,320,66
+corn syrup,Maize,321,19
+blueberry,Fruit,322,8
+lime wedge,Fruit,323,138
+lentil,Legume,324,110
+lime zest,Fruit,325,115
+chili pepper,Spice,326,116
+currant,Fruit,327,58
+horseradish,Vegetable,328,24
+romaine lettuce,Vegetable,329,106
+thyme leaf,Herb,330,126
+sauerkraut,Vegetable,331,55
+vodka,Beverage-Alcoholic,332,18
+salmon fillet,Fish,333,27
+rice wine vinegar,Additive-Vinegar,334,138
+russet potato,Vegetable Tuber,335,98
+tortilla,Dish,336,158
+beef bouillon cube,Meat,337,32
+baby spinach,Vegetable,338,111
+tahini,Dish,339,27
+penne pasta,Cereal,340,128
+romano cheese,Dairy,341,89
+egg noodle,Meat,342,116
+salmon,Fish,343,17
+oregano leaf,Spice,344,100
+chipotle chile adobo,Vegetable,345,130
+vegetable,Vegetable,346,97
+goat cheese,Dairy,347,49
+pork chop,Meat,348,80
+tomatillo,Vegetable,349,160
+dark soy sauce,Condiment,350,175
+cannellini bean,Legume,351,162
+beef stew meat,Meat,352,26
+green chili pepper,Vegetable,353,114
+snow pea,Legume,354,161
+hazelnut,Nuts and Seeds,355,14
+cardamom pod,Spice,356,119
+dill weed,Herb,357,68
+sake,Beverage-Alcoholic,358,120
+saffron thread,Spice,359,174
+arborio rice,Cereal,360,236
+rice wine,Beverage-Alcoholic,361,160
+pork tenderloin,Meat,362,95
+stewing beef,Meat,363,19
+gruyere cheese,Dairy,364,56
+pistachio,Nuts and Seeds,365,39
+peach,Fruit,366,24
+pita bread,Bakery,367,69
+pumpkin,Fruit,368,73
+onion soup mix,Dish,369,48
+dark chocolate,Plant,370,9
+green chili,Vegetable,371,69
+chicken bouillon cube,Meat,372,404
+nut,Nuts and Seeds,373,10
+enchilada sauce,Condiment,374,141
+cherry,Additive,375,23
+creme fraiche,Dairy,376,82
+tomato soup,Dish,377,36
+baby carrot,Vegetable,378,95
+ginger root,Spice,379,122
+lemon wedge,Fruit,380,88
+chilies,Spice,381,110
+gelatin,Additive,382,7
+barbecue sauce,Condiment,383,73
+celery seed,Spice,384,48
+granny smith apple,Fruit,385,64
+red capsicum,Vegetable,386,89
+cream tartar,Fruit,387,2
+crabmeat,Seafood,388,54
+beef steak,Meat,389,11
+linguine,Cereal,390,103
+dark rum,Beverage-Alcoholic,391,31
+italian tomato,Vegetable,392,86
+marinara sauce,Additive,393,61
+baking potato,Vegetable,394,64
+english cucumber,Gourd,395,37
+red kidney bean,Legume,396,57
+butternut squash,Fruit,397,124
+lettuce leaf,Vegetable,398,68
+parsley flake,Spice,399,85
+pear,Fruit,400,13
+vanilla essence,Additive,401,1
+elbow macaroni,Cereal,402,48
+large shrimp,Seafood,403,71
+self rising flour,Cereal,404,12
+radish,Vegetable,405,53
+cake flour,Cereal,406,3
+pepperoni,Meat,407,31
+mustard powder,Spice,408,45
+lemon peel,Fruit,409,53
+parsnip,Vegetable,410,50
+beet,Vegetable,411,33
+sunflower oil,Plant Derivative,412,55
+pesto sauce,Herb,414,78
+vanilla ice cream,Dish,415,0
+spice,Spice,416,39
+green cabbage,Vegetable,417,63
+beef brisket,Meat,418,11
+turnip,Vegetable,419,59
+corn oil,Maize,420,82
+grape tomato,Vegetable,421,69
+mussel,Seafood,422,75
+superfine sugar,Additive-Sugar,423,8
+italian breadcrumb,Bakery,424,104
+orzo pasta,Cereal,425,159
+pancetta,Meat,426,74
+tomato green chilies,Spice,427,130
+pie crust,Bakery,428,35
+parsley leaf,Spice,429,68
+apple juice,Fruit,430,42
+rose water,Additive,431,16
+anchovy fillet,Fish,432,34
+spinach leaf,Vegetable,433,76
+blue cheese,Dairy,434,43
+green chile pepper,Vegetable,435,89
+new potato,Vegetable Tuber,436,56
+star anise,Spice,437,86
+celery salt,Spice,438,59
+half cream,Dairy,439,66
+garlic paste,Herb,440,95
+red chile,Vegetable,441,67
+poppy seed,Spice,442,25
+sultana,Fruit,443,38
+pineapple chunk,Beverage,444,104
+rice flour,Cereal,445,27
+bamboo shoot,Plant,446,160
+white flour,Cereal,447,21
+ginger paste,Spice,448,91
+yellow pepper,Spice,449,71
+rice noodle,Cereal,450,129
+prune,Fruit,451,69
+red lentil,Legume,452,69
+vanilla bean,Legume,453,1
+cajun seasoning,Plant Derivative,454,98
+feta,Dairy,456,40
+jasmine rice,Cereal,457,132
+pork shoulder,Meat,458,65
+anise seed,Spice,459,26
+baby spinach leaf,Vegetable,460,75
+iceberg lettuce,Vegetable,461,74
+kaffir lime leaf,Plant,462,127
+soya sauce,Condiment,463,108
+chili flake,Spice,464,76
+spanish onion,Vegetable,465,67
+yukon gold potato,Vegetable,466,62
+chicken bouillon,Meat,467,284
+italian bread,Bakery,468,19
+pork loin,Meat,469,60
+serrano pepper,Vegetable,470,62
+onion flake,Spice,471,65
+prawn,Seafood,472,61
+kosher salt black pepper,Spice,473,75
+chili,Spice,474,46
+hamburger,Bakery,475,26
+chicken wing,Meat,476,274
+dark sesame oil,Essential Oil,477,61
+beef tenderloin,Meat,478,9
+triple sec,Beverage-Alcoholic,480,2
+clam,Seafood,481,55
+sage leaf,Herb,482,78
+asafoetida powder,Additive,483,15
+italian salad dressing,Condiment,484,71
+mascarpone cheese,Dairy,485,17
+angel hair pasta,Cereal,486,91
+ginger garlic paste,Spice,487,86
+tuna,Fish,488,10
+orange peel,Fruit,489,25
+mace,Spice,490,60
+applesauce,Fruit,491,11
+baguette,Bakery,492,36
+red cabbage,Vegetable,493,39
+coconut cream,Fruit,494,60
+broth,Vegetable,495,41
+fig,Fruit,496,18
+golden syrup,Plant Derivative,497,1
+poblano chile,Vegetable,498,91
+fennel bulb,Herb,499,48
+phyllo pastry,Bakery,500,26
+beef roast,Meat,501,7
+white bean,Legume,502,71
+phyllo dough,Bakery,503,32
+chuck,Meat,504,20
+monterey jack pepper cheese,Dairy,505,62
+yellow cornmeal,Maize,506,24
+yellow squash,Fruit,507,65
+fenugreek seed,Herb,508,37
+habanero pepper,Condiment,509,48
+lemon pepper,Spice,510,74
+maraschino cherry,Beverage-Alcoholic,511,0
+okra,Vegetable,512,49
+lard,Meat,514,34
+leg lamb,Meat,515,15
+swiss chard,Vegetable,516,58
+guacamole,Dish,517,97
+palm sugar,Additive-Sugar,518,78
+cremini mushroom,Fungi,519,67
+double cream,Dairy,520,23
+chinese five spice powder,Spice,521,78
+hungarian paprika,Vegetable,522,66
+white mushroom,Fungi,523,71
+pimiento,Condiment,525,75
+quinoa,Cereal,526,44
+hamburger bun,Bakery,527,20
+ice water,Additive,528,12
+sherry wine vinegar,Beverage-Alcoholic,529,41
+poblano pepper,Vegetable,530,87
+portabella mushroom,Fungi,531,45
+cognac,Beverage-Alcoholic,532,34
+black mustard seed,Vegetable,533,17
+pecorino romano cheese,Dairy,534,36
+grain mustard,Condiment,535,55
+kale,Vegetable,536,78
+chili paste,Plant Derivative,537,83
+head cabbage,Vegetable,538,38
+nonstick cooking spray,Additive,539,56
+sun tomato oil,Vegetable,540,48
+yellow mustard,Spice,541,20
+chuck roast,Dish,542,16
+table salt,Additive,543,45
+dill pickle,Herb,544,26
+extra beef,Meat,545,19
+salad green,Vegetable,547,56
+mexican oregano,Spice,548,62
+napa cabbage,Vegetable,549,71
+veal,Meat,550,44
+wonton wrapper,Herb,551,50
+creamy peanut butter,Additive,552,89
+fettuccine,Cereal,553,62
+chicken bouillon granule,Meat,554,218
+jalapeno chile,Spice,555,50
+garam masala powder,Spice,558,50
+pork sausage,Meat,559,34
+american cheese,Dairy,560,32
+arugula,Vegetable,561,22
+beef bouillon,Meat,562,13
+papaya,Fruit,563,30
+red chile pepper,Vegetable,564,59
+roast beef,Meat,565,5
+fine breadcrumb,Bakery,566,37
+green chile,Vegetable,567,73
+panko breadcrumb,Bakery,568,71
+teriyaki sauce,Condiment,569,72
+wine vinegar,Plant Derivative,570,22
+beef chuck,Meat,571,16
+sirloin,Meat,572,16
+vegetable shortening,Additive,573,19
+coconut oil,Fruit,574,34
+french baguette,Bakery,575,10
+sunflower seed,Plant Derivative,576,17
+bok choy,Vegetable,577,90
+pizza sauce,Additive,578,24
+queso fresco,Dairy,579,61
+roasting chicken,Meat,580,211
+beef chuck roast,Meat,581,12
+thai basil,Herb,582,79
+watercress,Plant,583,40
+serrano chilies,Vegetable,584,52
+oatmeal,Cereal,586,6
+tamarind paste,Fruit,587,51
+salad oil,Plant Derivative,588,35
+chili pepper flake,Spice,589,48
+part mozzarella cheese,Dairy,590,29
+scallop,Seafood,591,28
+wine,Beverage-Alcoholic,592,40
+yoghurt,Dairy,593,42
+asiago cheese,Dairy,594,47
+velveeta cheese,Dairy,595,42
+macaroni,Plant,596,26
+catsup,Additive,597,25
+fennel,Herb,598,39
+five spice powder,Spice,599,66
+rigatoni pasta,Cereal,600,48
+nori,Seafood,601,13
+port wine,Beverage-Alcoholic,602,33
+taco sauce,Condiment,603,35
+wild rice,Dish,604,77
+marshmallow,Bakery,605,0
+marsala wine,Beverage-Alcoholic,606,86
+orange bell pepper,Vegetable Fruit,607,43
+penne,Cereal,608,39
+apple cider,Beverage-Alcoholic,609,29
+lemon juice zest,Beverage,610,31
+sirloin steak,Meat,611,16
+harissa,Vegetable,612,43
+pearl barley,Beverage-Alcoholic,613,49
+pizza crust,Bakery,614,42
+tamari,Condiment,615,23
+tart apple,Fruit,616,19
+grand marnier,Beverage-Alcoholic,617,2
+meat,Meat,618,17
+vermouth,Beverage-Alcoholic,619,50
+chicken leg,Meat,620,189
+splenda sugar substitute,Vegetable,621,21
+wheat bread,Bakery,622,17
+cashew nut,Nuts and Seeds,623,72
+cauliflower floret,Flower,624,20
+picante sauce,Condiment,625,46
+polenta,Dish,627,32
+cardamom powder,Spice,629,20
+thyme leave,Herb,630,47
+berry,Berry,631,1
+hot sauce,Additive,632,42
+apricot jam,Fruit,633,19
+black eyed pea,Legume,634,30
+chipotle chile,Spice,635,54
+brown onion,Vegetable,636,59
+colby monterey jack cheese,Dairy,637,62
+pizza dough,Bakery,638,17
+asparagus spear,Vegetable,640,25
+barley,Cereal,641,41
+macadamia nut,Nuts and Seeds,642,23
+watermelon,Fruit,643,3
+chili oil,Plant Derivative,644,63
+nonfat milk,Dairy,645,16
+red chili,Vegetable,646,29
+fettuccine pasta,Cereal,647,48
+plantain,Fruit,648,44
+vidalia onion,Vegetable,649,40
+orange marmalade,Fruit,650,30
+tea,Plant,651,1
+olive oil cooking spray,Additive,652,46
+parsley sprig,Spice,653,41
+adobo seasoning,Additive,654,63
+jicama,Vegetable,655,21
+anchovy,Fish,656,15
+irish cream,Dairy,657,0
+kiwi fruit,Fruit,658,9
+semolina,Cereal,659,3
+soymilk,Plant Derivative,660,10
+beef sirloin steak,Meat,661,6
+raspberry jam,Fruit,662,1
+rotini pasta,Cereal,663,42
+serrano chili,Spice,664,30
+red chili pepper flake,Spice,665,56
+vegetable oil cooking spray,Additive,666,33
+gorgonzola,Dairy,667,37
+pepperoncini pepper,Vegetable,668,16
+adobo sauce,Additive,669,39
+beef rib,Meat,670,14
+noodle,Cereal,671,29
+stew meat,Meat,672,8
+egg substitute,Dish,673,15
+ladyfinger,Vegetable,674,0
+great northern bean,Legume,675,63
+kielbasa,Meat,677,45
+rhubarb,Vegetable,678,3
+ancho chile powder,Vegetable,679,45
+lamb shoulder,Meat,680,26
+pie shell,Bakery,681,4
+onion salt,Spice,682,28
+vanilla sugar,Additive-Sugar,683,1
+cilantro stem,Herb,684,61
+crouton,Bakery,685,43
+alfredo sauce,Dish,687,67
+beef sirloin,Meat,688,13
+cardamom seed,Spice,689,25
+irish whiskey,Beverage-Alcoholic,690,4
+mango chutney,Spice,691,56
+porcini mushroom,Fungi,692,55
+white chocolate,Plant Derivative,693,1
+thyme sprig,Herb,695,38
+ginger powder,Spice,696,40
+tilapia fillet,Fish,697,17
+rye flour,Cereal,698,2
+green cardamom,Spice,699,37
+pistachio nut,Nuts and Seeds,700,22
+chicken drumstick,Meat,701,151
+english muffin,Bakery,702,8
+extra tofu,Plant Derivative,703,13
+thai fish sauce,Condiment,704,56
+wide egg noodle,Meat,705,20
+green cardamom pod,Spice,706,43
+wheat tortilla,Bakery,707,37
+corn flake,Maize,708,28
+fontina cheese,Dairy,709,34
+mint sprig,Herb,710,11
+fish fillet,Fish,711,7
+chili garlic sauce,Additive,714,61
+chipotle pepper,Spice,715,34
+cooking oat,Cereal,716,2
+orange juice concentrate,Fruit,717,26
+pumpkin puree,Fruit,718,24
+scotch bonnet pepper,Spice,719,50
+tomato ketchup,Additive,720,35
+clam juice,Beverage-Alcoholic,721,21
+blackberry,Fruit,722,2
+beef bouillon granule,Meat,723,6
+fine sea salt,Additive-Salt,724,17
+bulk italian sausage,Meat,725,21
+sriracha sauce,Condiment,726,41
+hot italian sausage,Meat,727,38
+italian salad dressing mix,Additive,728,45
+malt vinegar,Plant Derivative,729,15
+sea scallop,Seafood,730,22
+ziti pasta,Cereal,731,12
+apricot preserve,Fruit,732,25
+beef consomme,Meat,734,8
+celery leaf,Herb,735,34
+cotija cheese,Dairy,736,26
+graham cracker crumb,Bakery,737,0
+shell pasta,Cereal,738,58
+chocolate syrup,Plant Derivative,739,1
+miso,Spice,740,17
+nonfat cream,Dairy,741,31
+part ricotta cheese,Dairy,742,13
+salami,Fish,743,7
+sambal oelek,Dish,744,45
+club soda,Additive,745,3
+cointreau liqueur,Beverage-Alcoholic,746,1
+plum,Fruit,747,14
+savory,Herb,748,29
+sugar snap pea,Legume,749,47
+chili bean,Dish,750,26
+potato starch,Vegetable,751,26
+wheat germ,Cereal,753,5
+white potato,Vegetable,754,25
+allspice berry,Spice,755,18
+galangal,Spice,756,48
+sea salt black pepper,Spice,758,21
+white pearl onion,Vegetable,759,33
+cooking apple,Fruit,760,7
+dark beer,Beverage,761,15
+daikon radish,Vegetable,762,23
+grenadine,Plant Derivative,763,0
+guinness stout,Beverage-Alcoholic,764,10
+navy bean,Legume,765,30
+rotel,Spice,766,48
+turkey breast,Meat,767,28
+vermicelli,Cereal,768,46
+virgin olive oil,Additive,769,22
+baby corn,Maize,770,51
+cool whip,Dairy,771,0
+cream corn,Maize,772,39
+pecan half,Nuts and Seeds,773,5
+white fish fillet,Fish,774,18
+green enchilada sauce,Condiment,775,81
+hot chili pepper,Vegetable,776,41
+artichoke,Flower,777,26
+bow tie pasta,Cereal,778,43
+chicken liver,Meat,779,130
+cranberry juice,Beverage,780,1
+brussels sprout,Vegetable,781,13
+chicken stock cube,Meat,782,129
+salt pork,Meat,783,21
+sourdough bread,Dish,784,13
+basil pesto,Herb,785,33
+creole seasoning,Spice,786,34
+green lentil,Legume,787,15
+squid,Seafood,788,13
+brown lentil,Legume,789,21
+italian plum tomato,Vegetable,790,29
+rosemary leaf,Herb,791,28
+rotel tomato,Vegetable,792,52
+farfalle pasta,Cereal,793,37
+flax seed,Nuts and Seeds,794,4
+chicken breast fillet,Meat,796,125
+corn chip,Maize,797,24
+pumpkin seed,Nuts and Seeds,798,26
+whiskey,Beverage-Alcoholic,799,9
+white breadcrumb,Bakery,800,16
+burgundy wine,Beverage-Alcoholic,801,17
+cod fish fillet,Fish,802,6
+cream celery soup,Dish,803,35
+hot red pepper flake,Spice,804,30
+ranch dressing,Condiment,806,38
+white rum,Beverage-Alcoholic,807,4
+cantaloupe,Fruit,808,3
+italian cheese,Dairy,809,30
+masa harina,Maize,810,31
+chipotle powder,Spice,811,34
+fish stock,Fish,812,7
+green capsicum,Vegetable Fruit,813,37
+ham hock,Meat,814,45
+herbes de provence,Herb,815,42
+chickpea flour,Legume,816,10
+chile,Spice,817,24
+gruyere,Dairy,818,18
+lamb shank,Meat,819,43
+pork loin chop,Meat,820,25
+brie cheese,Dairy,821,21
+canadian bacon,Meat,822,18
+gouda cheese,Dairy,823,19
+chicken stock vegetable,Meat,824,119
+mandarin orange,Plant Derivative,826,25
+rutabaga,Vegetable,827,23
+chicken meat,Meat,828,118
+cod,Fish,829,15
+flat leaf italian parsley,Spice,830,25
+bacon dripping,Meat,831,19
+clear honey,Plant Derivative,832,25
+fish,Fish,833,7
+pork rib,Meat,835,17
+tamarind pulp,Fruit,836,10
+pico de gallo,Condiment,837,41
+bulgur,Cereal,838,13
+meatball,Dish,839,26
+simple syrup,Additive,840,0
+cheese tortellini,Dish,841,33
+chinese cabbage,Vegetable,842,34
+gin,Beverage-Alcoholic,843,6
+juniper berry,Berry,844,14
+sumac,Spice,845,22
+vanilla pudding mix,Dish,846,0
+head cauliflower,Flower,847,14
+jumbo shrimp,Seafood,848,20
+milk ricotta cheese,Dairy,849,4
+red enchilada sauce,Condiment,850,60
+bailey irish cream,Beverage-Alcoholic,851,0
+corn tortilla chip,Maize,852,33
+savoy cabbage,Vegetable,853,26
+coffee granule,Beverage Caffeinated,854,2
+almond paste,Nuts and Seeds,856,2
+anaheim chilies,Spice,857,45
+fenugreek leaf,Herb,858,25
+rump roast,Meat,859,2
+hot paprika,Vegetable,860,37
+oyster,Seafood,861,8
+rosemary sprig,Herb,862,24
+tomato green chile pepper,Spice,863,37
+beef gravy,Dish,864,6
+hot pepper,Spice,865,22
+manchego cheese,Dairy,866,14
+rye bread,Bakery,868,11
+semolina flour,Cereal,869,5
+black sesame seed,Nuts and Seeds,870,14
+deli ham,Meat,871,21
+madeira wine,Beverage-Alcoholic,873,27
+ranch dressing mix,Condiment,874,27
+pepper flake,Vegetable,876,18
+shrimp paste,Seafood,877,28
+bourbon,Beverage-Alcoholic,878,10
+head garlic,Herb,879,27
+lamb chop,Meat,880,8
+lemon extract,Fruit,881,1
+ra el hanout spice mix,Spice,882,30
+bouquet garni,Spice,883,34
+chick pea,Legume,884,26
+curd cottage cheese,Dairy,885,3
+fava bean,Legume,886,12
+filet beef,Meat,887,9
+panir,Dairy,888,1
+pasta shell,Cereal,889,22
+bamboo skewer,Plant,890,38
+espresso,Beverage,891,0
+grape,Fruit,892,15
+hominy,Maize,893,42
+liquid honey,Plant Derivative,894,22
+saffron strand,Spice,895,36
+ginger ale,Beverage-Alcoholic,896,2
+lime juice zest,Beverage,897,28
+mix,Dish,898,2
+yellow pea,Legume,899,16
+ancho chile,Vegetable,900,48
+aubergine,Vegetable,901,6
+courgette,Vegetable,902,12
+duck,Meat,903,25
+pork loin roast,Meat,904,21
+beef tenderloin steak,Meat,905,10
+black cardamom pod,Legume,906,26
+sushi rice,Cereal,907,6
+pork butt,Meat,909,24
+pumpkin pie spice,Spice,910,4
+purple onion,Vegetable,911,10
+szechuan peppercorn,Spice,912,35
+taco shell,Bakery,913,18
+vanilla yogurt,Dairy,914,1
+vegetable juice,Beverage,915,16
+anchovy paste,Fish,916,13
+pimento olive,Dish,917,31
+plain nonfat yogurt,Dairy,918,17
+ramen noodle,Cereal,919,39
+white chocolate chip,Plant Derivative,920,0
+champagne,Beverage-Alcoholic,921,3
+deli roast beef,Meat,922,0
+urad dal,Legume,923,3
+hoagie,Bakery,925,9
+lima bean,Legume,926,23
+milk chocolate,Beverage,927,1
+red bean,Legume,928,30
+coffee liqueur,Beverage-Alcoholic,929,1
+hot chili sauce,Condiment,930,26
+limeade concentrate,Beverage,931,1
+pork roast,Meat,932,20
+cooking sherry,Beverage-Alcoholic,933,33
+dark corn syrup,Maize,934,6
+egg wrap,Meat,935,21
+french onion soup,Vegetable,936,7
+green tomato,Vegetable,937,7
+hot green chili pepper,Vegetable,938,23
+hot red chili pepper,Vegetable,939,21
+italian sausage link,Meat,940,16
+lump crabmeat,Seafood,941,12
+rice vermicelli,Cereal,942,23
+thai chile,Vegetable,943,32
+agave nectar,Additive,945,3
+chunky peanut butter,Additive,946,39
+cinnamon sugar,Additive,947,3
+green apple,Fruit,948,18
+lite olive oil,Plant Derivative,949,25
+natural yoghurt,Dairy,950,31
+red grape,Fruit,951,20
+romaine lettuce leaf,Vegetable,952,17
+biscuit,Bakery,953,11
+black tea,Beverage,954,2
+ha avocadoes,Essential Oil,955,10
+pea carrot,Vegetable,957,28
+arrowroot,Vegetable,958,17
+bay seasoning,Spice,959,17
+espresso powder,Beverage,960,0
+grain brown rice,Cereal,961,34
+jumbo pasta shell,Cereal,962,7
+no boil lasagna noodle,Cereal,963,14
+silken tofu,Plant,964,12
+streaky bacon,Meat,965,28
+bacon bit,Meat,966,16
+chervil,Herb,967,16
+graham cracker,Bakery,968,0
+splenda granular,Vegetable,970,3
+walnut half,Nuts and Seeds,971,9
+dark red kidney bean,Legume,972,14
+demerara sugar,Additive-Sugar,973,2
+orange blossom water,Essential Oil,974,0
+shortcrust pastry,Dish,975,8
+tuna steak,Fish,976,6
+yellow cake mix,Dish,978,0
+baking chocolate,Plant,979,2
+butter bean,Legume,980,9
+glace cherry,Additive,981,2
+hummus,Dish,982,22
+orange flower water,Essential Oil,983,1
+pork sparerib,Meat,984,6
+squash,Fruit,985,28
+banana pepper,Vegetable,986,13
+coleslaw mix,Condiment,987,16
+grainy mustard,Condiment,988,17
+pecorino cheese,Dairy,989,0
+rump steak,Meat,990,1
+thai chili sauce,Condiment,992,30
+andouille sausage,Meat,993,44
+beef mince,Meat,994,5
+channa dal,Legume,995,3
+escarole,Vegetable,996,53
+ice cream,Dish,997,0
+kirsch,Beverage-Alcoholic,998,2
+manicotti,Cereal,999,8
+mexican tomato,Vegetable,1000,30
+pam cooking spray,Additive,1001,14
+pimento,Condiment,1002,16
+tamarind juice,Fruit,1003,23
+bouillon cube,Dish,1004,6
+grape leaf,Plant,1005,20
+grapefruit juice,Beverage,1006,2
+japanese eggplant,Vegetable,1007,14
+philadelphia cream cheese,Dairy,1008,9
+red apple,Fruit,1010,13
+single cream,Dairy,1011,18
+strawberry jam,Fruit,1012,0
+tuna water,Fish,1013,6
+wheat pita bread,Cereal,1014,18
+almond milk,Nuts and Seeds,1015,4
+beetroot,Vegetable,1016,3
+ciabatta,Bakery,1017,14
+coconut extract,Beverage,1018,8
+gherkin,Gourd,1019,7
+kiwi,Fruit,1020,2
+pomegranate seed,Fruit,1021,12
+saltine cracker,Bakery,1022,11
+skirt steak,Meat,1023,6
+white button mushroom,Fungi,1024,26
+broiler fryer chicken,Meat,1025,80
+chow mein noodle,Cereal,1026,36
+genoa salami,Meat,1027,2
+ketjap manis,Condiment,1028,28
+lebanese cucumber,Gourd,1029,10
+madras curry powder,Herb,1030,27
+mascarpone,Dairy,1031,3
+peanut oil vegetable,Plant Derivative,1032,35
+syrup,Plant Derivative,1033,0
+vegetable bouillon cube,Dish,1034,3
+burrito flour tortilla,Dish,1035,18
+chicken tender,Meat,1036,78
+coconut flake,Beverage,1037,7
+english mustard,Spice,1038,4
+lemonade,Beverage,1039,1
+nonfat milk powder,Dairy,1040,5
+tamari soy sauce,Condiment,1041,13
+walnut oil,Essential Oil,1042,8
+ancho chilies,Vegetable,1043,30
+baby bok choy,Vegetable,1044,24
+bacon grease,Meat,1045,16
+chicken bouillon powder,Meat,1046,76
+chipotle pepper adobo sauce,Additive,1047,24
+dashi,Dish,1048,15
+fajita seasoning mix,Spice,1049,43
+orange juice zest,Fruit,1050,10
+rotel tomato chilies,Dish,1051,29
+season salt,Additive,1052,24
+sesame seed oil,Cereal,1053,25
+summer squash,Fruit,1054,12
+tarragon vinegar,Additive-Vinegar,1055,16
+bay scallop,Seafood,1056,17
+cayenne powder,Vegetable,1057,23
+chicken breast meat,Meat,1058,76
+mango powder,Spice,1059,4
+string bean,Cereal,1060,14
+dark raisin,Fruit,1061,9
+green grape,Fruit,1062,16
+italian turkey sausage,Meat,1063,19
+lime peel,Fruit,1064,12
+edamame,Legume,1067,12
+fenugreek,Herb,1068,15
+miracle whip,Dairy,1069,11
+navel orange,Fruit,1070,7
+pearl onion,Vegetable,1071,18
+pomegranate juice,Fruit,1072,10
+rice paper,Cereal,1073,11
+barbeque sauce,Condiment,1074,15
+plum sauce,Condiment,1076,24
+red leaf lettuce,Vegetable,1077,13
+tarragon leaf,Herb,1078,22
+white peppercorn,Maize,1079,18
+amarula cream liqueur,Beverage-Alcoholic,1080,1
+baby pea,Legume,1081,22
+cheddar cheese soup,Dairy,1083,21
+french green bean,Cereal,1084,20
+french onion,Vegetable,1085,15
+honey mustard,Condiment,1086,16
+kaiser,Bakery,1087,7
+nonfat plain yogurt,Dairy,1088,18
+almond meal,Nuts and Seeds,1089,1
+baby portabella mushroom,Fungi,1090,19
+green peppercorn,Spice,1092,13
+key lime juice,Beverage,1094,3
+lemon pepper seasoning,Spice,1095,26
+mushroom stem,Fungi,1096,18
+red snapper fillet,Fish,1097,6
+salmon steak,Fish,1098,3
+soda water,Beverage,1099,0
+bulb garlic,Herb,1100,20
+chicken thigh fillet,Meat,1102,70
+collard green,Vegetable,1103,18
+garlic granule,Herb,1104,13
+guajillo chilies,Spice,1105,22
+mini chocolate chip,Additive,1106,0
+roast,Meat,1107,1
+tapioca,Vegetable,1108,7
+white hominy,Maize,1109,30
+chestnut,Fruit,1110,21
+marsala,Beverage-Alcoholic,1111,26
+milk chocolate chip,Additive,1112,0
+polish sausage,Meat,1113,16
+tapioca flour,Vegetable,1114,5
+tapioca starch,Vegetable,1115,13
+udon noodle,Cereal,1116,26
+vegetable stock chicken,Meat,1117,69
+wasabi paste,Vegetable,1118,3
+acorn squash,Fruit,1120,13
+cider,Beverage-Alcoholic,1122,14
+cream coconut,Fruit,1123,9
+jaggery,Additive,1124,2
+lager beer,Beverage-Alcoholic,1125,11
+monterey jack cheddar cheese,Dairy,1126,31
+no salt tomato,Vegetable,1127,23
+pomegranate molasses,Fruit,1128,12
+pork belly,Meat,1129,11
+potato flake,Vegetable,1130,7
+suet,Dish,1131,1
+thai red chili pepper,Spice,1132,13
+white cheddar cheese,Dairy,1133,10
+chicken cutlet,Meat,1134,67
+chinese noodle,Cereal,1135,28
+pineapple tidbit,Beverage,1136,22
+rice krispies,Cereal,1137,1
+soba noodle,Cereal,1138,11
+stout beer,Beverage-Alcoholic,1139,2
+blue curacao,Beverage-Alcoholic,1140,0
+brown mustard seed,Vegetable,1142,5
+chuck steak,Meat,1143,2
+extra sharp cheddar cheese,Dairy,1144,8
+grapeseed oil,Essential Oil,1145,16
+lemon grass,Essential Oil,1146,31
+ouzo,Beverage-Alcoholic,1147,0
+safflower oil,Plant Derivative,1148,12
+shaoxing wine,Beverage-Alcoholic,1149,30
+bisquick baking mix,Cereal,1150,10
+butter margarine,Additive,1151,8
+colby cheese,Dairy,1152,16
+halibut fillet,Fish,1153,3
+mung bean sprout,Legume,1155,6
+passion fruit,Fruit,1156,0
+xanthan gum,Plant Derivative,1157,0
+bread dough,Bakery,1158,0
+coconut rum,Beverage-Alcoholic,1159,1
+crab,Seafood,1160,11
+fire tomato,Vegetable,1161,28
+green chili salsa,Condiment,1162,30
+italian spice,Spice,1163,10
+mushroom soup,Dish,1164,15
+risotto rice,Cereal,1165,25
+wasabi,Vegetable,1166,3
+yam,Vegetable,1167,11
+artificial sweetener,Vegetable,1169,5
+baby shrimp,Seafood,1171,10
+bratwurst,Dish,1172,5
+chambord raspberry liquor,Beverage-Alcoholic,1173,1
+dill sprig,Herb,1174,5
+lobster,Seafood,1175,7
+matzo meal,Bakery,1176,12
+parmigiano,Dairy,1177,8
+rocket,Herb,1178,8
+stilton cheese,Dairy,1179,10
+amaretto liqueur,Beverage-Alcoholic,1180,0
+cranberry sauce,Fruit,1181,8
+ginger juice,Spice,1182,15
+lobster tail,Seafood,1183,12
+sirloin tip roast,Meat,1184,2
+belgian endive,Vegetable,1185,7
+cherry pie filling,Dish,1186,0
+chocolate square,Plant Derivative,1187,3
+dark molasses,Additive,1188,7
+muenster cheese,Dairy,1190,16
+pastry crust pie,Bakery,1191,1
+white bread flour,Cereal,1192,0
+arugula leaf,Vegetable,1193,10
+baby potato,Vegetable Tuber,1194,11
+celery root,Vegetable,1195,9
+chicken tenderloin,Meat,1196,60
+french bean,Cereal,1197,7
+fusilli,Cereal,1198,7
+golden delicious apple,Fruit,1199,7
+hot dog,Dish,1200,2
+hot pepper sauce,Additive,1201,17
+idaho potato,Vegetable Tuber,1202,10
+milk powder,Dairy,1203,3
+pickling salt,Additive-Salt,1204,0
+rabbit,Meat,1205,14
+radicchio,Vegetable,1206,9
+spaghetti noodle,Cereal,1207,17
+sugar syrup,Plant Derivative,1208,0
+turbinado sugar,Additive-Sugar,1209,4
+wheat pastry flour,Cereal,1210,0
+white balsamic vinegar,Plant Derivative,1211,7
+white corn,Maize,1212,12
+white kidney bean,Legume,1213,19
+wild mushroom,Fungi,1214,19
+black coffee,Beverage,1215,4
+coffee powder,Beverage,1216,0
+cooking wine,Beverage-Alcoholic,1217,20
+crisco,Additive,1218,3
+jam,Fruit,1219,1
+lobster meat,Seafood,1220,10
+mexican chocolate,Plant Derivative,1221,18
+trout,Fish,1222,2
+vegetarian bean,Legume,1223,1
+za'atar spice mix,Spice,1224,6
+chile pepper,Spice,1225,17
+corn cob,Maize,1226,8
+greek oregano,Spice,1227,6
+pomegranate,Fruit,1228,7
+vanilla pod,Legume,1229,1
+white sesame seed,Cereal,1230,11
+anise extract,Spice,1231,0
+beefsteak tomato,Vegetable,1232,8
+chili seasoning mix,Spice,1233,10
+epazote,Herb,1234,17
+frying chicken,Meat,1235,57
+mexicorn,Maize,1236,13
+peel,Fruit,1237,0
+pork fillet,Meat,1238,4
+red pepper sauce,Spice,1239,21
+serrano chile pepper,Vegetable,1240,10
+spanish olive,Plant,1241,17
+wasabi powder,Vegetable,1242,5
+white cabbage,Vegetable,1243,13
+white miso,Spice,1244,8
+white pepper powder,Spice,1245,15
+anaheim chili,Spice,1247,18
+biscuit mix,Dish,1248,0
+black vinegar,Additive-Vinegar,1249,21
+boston lettuce,Vegetable,1250,14
+bulgar wheat,Cereal,1251,7
+capsicum,Vegetable Fruit,1252,15
+citron,Fruit,1253,0
+custard powder,Dish,1254,0
+halloumi cheese,Dairy,1255,1
+head iceberg lettuce,Vegetable,1256,11
+pineapple ring,Beverage,1257,10
+tortellini,Cereal,1258,13
+baby arugula,Vegetable,1259,16
+black bean sauce,Condiment,1260,18
+bouillon,Dish,1261,10
+dough,Cereal,1262,4
+hing,Spice,1263,0
+linguine pasta,Cereal,1264,10
+lipton onion soup mix,Dish,1265,5
+nonfat yogurt,Dairy,1266,12
+oyster mushroom,Fungi,1267,15
+red snapper,Fish,1268,2
+roquefort cheese,Dairy,1269,3
+sweetcorn,Maize,1270,9
+veal cutlet,Meat,1271,9
+cabbage leaf,Vegetable,1272,8
+cheese ravioli,Dairy,1273,8
+chocolate pudding mix,Dish,1274,0
+creme de cacao,Plant Derivative,1275,0
+emmenthaler cheese,Dairy,1276,5
+french fry,Dish,1277,7
+ghee butter,Dairy,1278,10
+heirloom tomato,Legume,1279,3
+lavender,Flower,1280,11
+lime leaf,Plant,1281,32
+margarita mix,Dish,1282,7
+mexican corn,Maize,1283,13
+natural peanut butter,Additive,1284,16
+sugar substitute,Vegetable,1285,6
+beef base,Meat,1286,5
+camembert cheese,Dairy,1287,7
+chicken part,Meat,1288,53
+chinese wine,Beverage-Alcoholic,1289,25
+golden mushroom soup,Dish,1290,6
+potato traditional,Vegetable Tuber,1291,9
+beef shank,Meat,1293,6
+bibb lettuce,Vegetable,1294,12
+chinese mushroom,Fungi,1295,32
+ear corn,Maize,1296,3
+egg beater substitute,Meat,1297,4
+ha avocado,Essential Oil,1298,6
+hash brown,Dish,1299,16
+lemon lime beverage,Beverage,1300,1
+sea bass fillet,Fish,1301,5
+sofrito sauce,Condiment,1302,9
+yellow mustard seed,Spice,1303,7
+butterscotch chip,Additive,1304,0
+golden brown sugar,Additive,1306,4
+hash brown potato,Vegetable Tuber,1307,6
+masala,Spice,1308,13
+raspberry vinegar,Additive-Vinegar,1309,3
+romaine lettuce heart,Vegetable,1310,15
+rum extract,Beverage-Alcoholic,1311,2
+salad dressing,Dish,1312,17
+sparkling water,Beverage,1313,0
+alfalfa sprout,Legume,1314,3
+limoncello,Additive,1318,1
+marmalade,Additive,1319,5
+nam pla,Condiment,1320,17
+spaghetti squash,Fruit,1322,7
+vanilla pudding,Dish,1323,0
+wheat spaghetti,Cereal,1324,15
+beef eye,Meat,1325,1
+brown rice flour,Cereal,1326,2
+cake,Dish,1327,0
+cellophane noodle,Dish,1328,22
+focaccia bread,Bakery,1329,12
+kumara,Vegetable,1330,6
+mustard oil,Plant,1331,7
+nigella seed,Nuts and Seeds,1332,6
+peppermint extract,Essential Oil,1333,0
+pimento pepper,Condiment,1334,7
+bulk pork sausage,Meat,1336,3
+dashi stock,Dish,1337,8
+greek olive,Plant,1339,6
+mushroom cap,Fungi,1340,9
+nectarine,Fruit,1341,7
+oriental sesame oil,Essential Oil,1342,18
+scotch whisky,Beverage-Alcoholic,1343,4
+sparerib,Meat,1344,3
+szechwan pepper,Spice,1345,13
+vegemite,Condiment,1346,3
+beef liver,Meat,1347,6
+beef stock cube,Meat,1348,1
+brown mustard,Vegetable,1349,3
+chili paste garlic,Plant Derivative,1350,21
+chinese rice wine,Beverage-Alcoholic,1351,18
+crawfish tail,Seafood,1352,6
+farmer cheese,Dairy,1353,3
+fine salt,Additive,1354,4
+head broccoli,Flower,1355,12
+masa harina flour,Maize,1356,13
+no salt tomato sauce,Condiment,1357,9
+potato flour,Vegetable,1358,4
+ranch bean,Legume,1359,12
+rock salt,Additive,1360,5
+spicy brown mustard,Condiment,1361,4
+straw mushroom,Fungi,1363,32
+tap water,Additive,1364,5
+venison,Meat,1365,1
+banana liqueur,Beverage-Alcoholic,1367,0
+champagne vinegar,Plant Derivative,1368,5
+chocolate baking square,Plant Derivative,1369,0
+chocolate ice cream,Dish,1370,0
+duck breast,Meat,1371,11
+glutinous rice,Cereal,1372,14
+golden caster sugar,Additive,1373,1
+grapefruit,Beverage,1374,5
+kielbasa sausage,Meat,1375,8
+muscovado sugar,Additive-Sugar,1376,3
+pastry,Dish,1377,3
+sazon goya,Spice,1378,17
+turkey sausage,Meat,1379,17
+almond essence,Nuts and Seeds,1380,0
+almond flour,Nuts and Seeds,1381,3
+bonito flake,Fish,1382,3
+brown basmati rice,Cereal,1383,14
+calvados,Beverage-Alcoholic,1384,11
+center pork chop,Meat,1385,5
+corn husk,Maize,1386,19
+dill seed,Herb,1387,2
+espresso coffee,Beverage,1388,0
+head romaine lettuce,Vegetable,1389,13
+littleneck clam,Seafood,1390,8
+midori melon liqueur,Beverage-Alcoholic,1391,0
+pea pod,Legume,1392,25
+pesto,Herb,1393,10
+pineapple chunk juice,Beverage,1394,22
+raspberry preserve,Fruit,1395,2
+ricotta,Dairy,1396,1
+salt cod fish,Fish,1397,0
+tahini paste,Dish,1398,4
+anise,Spice,1399,7
+bulgur wheat,Cereal,1400,10
+cane sugar,Additive,1401,1
+chicken stock powder,Meat,1402,44
+custard,Dish,1404,0
+gluten flour,Cereal,1405,2
+pigeon pea,Condiment,1406,12
+potato chip,Dish,1407,14
+rose petal,Flower,1408,0
+turkey bacon,Meat,1409,12
+wheat pasta,Cereal,1411,9
+apple pie filling,Fruit,1412,0
+arbol chile,Spice,1413,12
+banana leaf,Fruit,1414,5
+beef cube,Meat,1415,1
+catfish fillet,Fish,1416,4
+cooking tapioca,Vegetable,1417,5
+corn niblets,Maize,1418,12
+gravy,Dish,1419,3
+horseradish sauce,Additive,1420,1
+lemonade concentrate,Beverage,1421,0
+mandarin orange segment,Plant Derivative,1422,8
+mexican chili powder,Spice,1423,11
+mini marshmallow,Bakery,1424,0
+mutton,Meat,1425,2
+neufchatel cheese,Dairy,1426,9
+orange extract,Beverage,1427,1
+sandwich bread,Bakery,1428,4
+yellow lentil,Legume,1429,7
+yellow potato,Vegetable,1430,11
+apricot nectar,Fruit,1432,8
+chinese egg noodle,Meat,1433,21
+cod fillet,Fish,1434,10
+dressing,Dish,1435,7
+floury potato,Vegetable Tuber,1436,6
+french mustard,Condiment,1437,8
+gnocchi,Vegetable Tuber,1438,14
+grain bread,Bakery,1439,1
+grape juice,Beverage,1440,4
+green plantain,Fruit,1441,8
+honeydew melon,Fruit,1442,3
+hot chili powder,Spice,1443,14
+pastry dough,Bakery,1444,3
+pork bean,Dish,1445,1
+pork shoulder roast,Meat,1446,12
+rack lamb,Meat,1447,5
+red radish,Vegetable,1448,4
+sandwich bun,Bakery,1449,1
+stevia,Vegetable,1450,1
+tagliatelle pasta noodle,Cereal,1451,8
+tiger shrimp,Seafood,1452,3
+white cake mix,Dish,1453,0
+baby clam,Seafood,1454,4
+baby red potato,Vegetable Tuber,1455,10
+bocconcini,Dairy,1456,8
+bourbon whiskey,Beverage-Alcoholic,1457,9
+broad bean,Legume,1458,5
+celeriac,Vegetable,1459,4
+corn muffin mix,Maize,1460,6
+cubanelle pepper,Vegetable,1461,17
+curd,Dairy,1462,4
+graham cracker crust,Bakery,1463,0
+ham steak,Meat,1464,7
+heart palm,Vegetable,1465,6
+hot salsa,Condiment,1466,14
+liqueur,Beverage-Alcoholic,1468,0
+mccormick seasoning,Spice,1469,13
+oat bran,Cereal,1471,0
+passion fruit pulp,Fruit,1472,0
+pepperoni sausage,Meat,1473,2
+portabella mushroom cap,Fungi,1474,5
+tuna olive oil,Fish,1476,1
+brioche bread,Bakery,1477,2
+buckwheat flour,Cereal,1478,0
+chicken base,Meat,1479,40
+cracker crumb,Bakery,1480,4
+craisins,Fruit,1481,8
+hard salami,Meat,1482,0
+hot mustard,Spice,1483,2
+lasagna,Cereal,1484,1
+malibu rum,Beverage-Alcoholic,1485,0
+panko bread crumb,Bakery,1486,12
+red chili sauce,Condiment,1487,15
+ro tel tomato,Vegetable,1488,12
+serrano chili pepper,Vegetable,1489,14
+sourdough starter,Dish,1490,0
+swede,Vegetable,1491,3
+tempeh,Plant,1492,2
+vanilla wafer,Dish,1493,0
+vital wheat gluten,Cereal,1494,1
+anaheim chile pepper,Spice,1495,10
+basil sprig,Herb,1496,7
+black mushroom,Fungi,1497,19
+butter lettuce,Vegetable,1498,8
+coriander sprig,Herb,1500,11
+dark chocolate chip,Plant,1501,1
+gluten,Cereal,1502,0
+london broil beef,Meat,1503,1
+nicoise olive,Plant,1504,8
+pepperjack cheese,Dairy,1505,10
+pernod,Beverage-Alcoholic,1506,8
+prosciutto ham,Meat,1508,11
+ranch salad dressing,Dish,1509,18
+red chili paste,Spice,1510,13
+red tomato,Vegetable,1511,4
+rib beef,Meat,1512,6
+sausage meat,Dish,1513,4
+seltzer water,Beverage,1514,2
+serrano ham,Meat,1515,5
+shoyu,Condiment,1516,10
+spearmint,Herb,1517,2
+vanilla vodka,Beverage-Alcoholic,1518,0
+vegetable oil peanut,Plant Derivative,1519,15
+wheat bran,Cereal,1520,0
+yellow rice,Cereal,1521,26
+cooking onion,Vegetable,1523,12
+eggnog,Dish,1524,0
+haddock fillet,Fish,1525,2
+italian flat leaf parsley,Spice,1526,14
+lamb loin chop,Meat,1527,5
+orecchiette,Cereal,1528,10
+peach schnapps,Beverage-Alcoholic,1529,2
+rib eye steak,Meat,1530,0
+salt water,Additive-Salt,1531,4
+sea salt pepper,Spice,1532,2
+soybean,Plant Derivative,1533,4
+taco flour tortilla,Bakery,1534,14
+tomato basil pasta sauce,Condiment,1535,11
+apricot half,Fruit,1536,13
+baking cocoa,Seed,1537,1
+berry cranberry sauce,Fruit,1538,8
+browning sauce,Condiment,1539,1
+butternut pumpkin,Fruit,1540,7
+chicken breast tender,Meat,1541,37
+chile powder,Spice,1542,11
+chocolate curl,Plant Derivative,1543,0
+cream cottage cheese,Dairy,1544,1
+cream soup,Dish,1545,8
+fontina,Dairy,1546,3
+french onion soup mix,Dish,1547,8
+head lettuce,Vegetable,1548,8
+island dressing,Condiment,1549,3
+japanese soy sauce,Condiment,1550,11
+oxtail,Meat,1551,4
+penne rigate,Cereal,1553,10
+red cayenne pepper,Vegetable,1554,9
+ritz cracker,Bakery,1555,8
+salad leaf,Dish,1556,6
+sultana raisin,Fruit,1557,3
+summer savory,Herb,1558,5
+tuna vegetable oil,Fish,1559,3
+ajwain,Spice,1560,4
+beef bouillon powder,Meat,1561,2
+broccoli rabe,Flower,1562,9
+consomme,Meat,1563,1
+flounder fillet,Fish,1564,3
+gold tequila,Beverage-Alcoholic,1566,2
+green mango,Fruit,1567,1
+jalapeno chile pepper,Spice,1568,10
+mung bean,Legume,1569,6
+pastry flour,Cereal,1570,0
+red cherry,Fruit,1571,0
+san marzano tomato,Vegetable,1572,6
+tangerine,Fruit,1573,2
+tomatillo salsa,Condiment,1574,16
+water artichoke heart,Flower,1575,10
+almond butter,Nuts and Seeds,1576,5
+berbere,Spice,1577,10
+chicken fillet,Meat,1578,35
+chicken leg quarter,Meat,1579,35
+dinner,Bakery,1580,2
+farina,Cereal,1581,0
+garlic pepper seasoning,Spice,1582,9
+havarti cheese,Dairy,1583,5
+herring fillet,Fish,1584,1
+jarlsberg cheese,Dairy,1585,3
+juice,Beverage,1586,8
+lavender flower,Flower,1587,3
+marzipan,Dish,1588,0
+portobello mushroom,Fungi,1589,15
+purpose white flour,Cereal,1590,2
+riesling wine,Beverage-Alcoholic,1591,14
+slab bacon,Meat,1592,9
+sole fillet,Fish,1593,3
+sugar cube,Additive,1594,0
+vegan margarine,Additive,1595,2
+bean thread noodle,Legume,1596,19
+challah,Bakery,1597,0
+cherry pepper,Spice,1599,9
+coriander root,Herb,1600,9
+cornish hen,Maize,1601,13
+garlic oil,Essential Oil,1602,11
+german chocolate,Plant Derivative,1603,0
+lamb meat,Meat,1604,5
+lamb stock,Meat,1605,0
+lukewarm water,Additive,1606,1
+mozzarella ball,Dairy,1608,4
+natural bran,Cereal,1609,1
+pace picante sauce,Condiment,1610,9
+palm oil,Plant Derivative,1611,7
+quark,Dairy,1612,1
+spiral pasta,Cereal,1613,4
+vegetable protein,Vegetable,1615,1
+yucca root,Vegetable,1617,17
+apple juice concentrate,Beverage,1618,5
+baby lima bean,Legume,1619,10
+chile paste,Condiment,1620,11
+cream sherry,Beverage-Alcoholic,1621,8
+enoki mushroom,Fungi,1622,7
+fine semolina,Cereal,1623,0
+german chocolate cake mix,Plant Derivative,1624,0
+halibut,Fish,1625,6
+kosher salt pepper,Spice,1626,9
+marshmallow creme,Bakery,1627,0
+mineral water,Additive,1628,0
+mustard green,Vegetable,1629,6
+onion seed,Vegetable,1630,6
+quince,Fruit,1631,1
+red pepper paste,Spice,1632,5
+sponge cake,Bakery,1633,0
+steel oat,Cereal,1634,1
+strawberry preserve,Fruit,1635,0
+texas toast bread,Bakery,1636,2
+tomato basil oregano garlic,Spice,1637,14
+trout fillet,Fish,1638,0
+watercress leaf,Plant,1639,6
+wonton skin,Herb,1640,8
+ancho chili,Vegetable,1641,11
+bitter melon,Vegetable,1642,4
+caesar salad dressing,Dish,1643,12
+caribbean jerk seasoning,Spice,1644,13
+chestnut mushroom,Fungi,1645,7
+citron peel,Fruit,1646,0
+creme de menthe,Beverage-Alcoholic,1647,0
+edam cheese,Dairy,1648,2
+endive,Vegetable,1649,3
+fajita seasoning,Spice,1650,11
+fillet,Fish,1651,2
+galliano,Beverage-Alcoholic,1652,1
+gelatin powder,Additive,1653,1
+grit,Cereal,1654,7
+haddock,Fish,1655,2
+lamb fillet,Meat,1656,3
+new mexico chile,Spice,1657,13
+pasilla chile,Vegetable,1658,13
+pecan nut,Nuts and Seeds,1659,1
+pretzel,Bakery,1660,1
+red thai chile,Spice,1661,7
+salt substitute,Additive,1662,5
+seitan,Plant,1663,1
+sorrel,Herb,1664,4
+star anise pod,Spice,1665,9
+swordfish steak,Fish,1666,2
+table cream,Dairy,1667,11
+tzatziki,Condiment,1668,8
+wide rice noodle,Cereal,1669,10
+brazil nut,Nuts and Seeds,1670,2
+bread cube,Bakery,1671,4
+bulk sausage,Dish,1672,8
+cheddar,Dairy,1673,1
+chili without bean,Dish,1674,1
+cola,Beverage,1675,1
+cooking barley,Cereal,1676,8
+garlic chive,Herb,1678,8
+german mustard,Condiment,1679,5
+granola cereal,Cereal,1680,0
+green leaf lettuce,Vegetable,1681,3
+jamaican jerk spice,Spice,1682,10
+jeera powder,Spice,1683,4
+kasseri cheese,Dairy,1684,2
+pink grapefruit,Beverage,1686,0
+red beet,Vegetable,1687,1
+rice cereal,Cereal,1688,1
+spanish rice,Cereal,1689,12
+wakame,Seafood,1690,7
+wheat flour tortilla,Bakery,1692,4
+wheat penne,Cereal,1693,9
+white corn tortilla,Bakery,1694,18
+white fish,Fish,1695,6
+white tequila,Bakery,1696,0
+almond flavoring,Nuts and Seeds,1697,0
+asadero cheese,Dairy,1698,5
+bay seasoning tm,Spice,1699,7
+buttermilk biscuit,Bakery,1700,2
+chayotes,Vegetable,1701,8
+clove garlic,Herb,1702,7
+coffee bean,Plant,1703,0
+creme de cassis,Beverage-Alcoholic,1704,1
+extra large egg,Meat,1706,2
+filet mignon,Fish,1707,2
+fine sugar,Additive-Sugar,1708,2
+garlic crouton,Bakery,1709,13
+hot dog bun,Bakery,1710,0
+linguica sausage,Meat,1711,7
+lychee,Fruit,1712,3
+merlot,Beverage-Alcoholic,1713,6
+mostaccioli pasta,Cereal,1714,2
+oil black olive,Plant,1715,1
+oleo,Additive,1716,1
+pork cutlet,Meat,1717,6
+pumpernickel bread,Bakery,1718,2
+red jalapeno chile,Vegetable,1719,6
+rib,Herb,1720,0
+tart cherry,Fruit,1721,1
+vegetable bouillon granule,Dish,1722,3
+wheat bread crumb,Bakery,1723,4
+white wheat flour,Cereal,1724,1
+baharat,Spice,1725,9
+baking apple,Fruit,1726,0
+beef sausage,Dish,1727,1
+bun,Bakery,1728,1
+chanterelle mushroom,Fungi,1729,6
+chocolate shaving,Plant Derivative,1730,0
+crawfish,Seafood,1731,7
+fingerling potato,Vegetable,1733,6
+flat rice noodle,Cereal,1734,7
+four cheese mexican,Dairy,1735,5
+gingersnap,Bakery,1736,1
+glutinous rice flour,Cereal,1737,2
+green tea,Beverage,1738,1
+green zucchini,Vegetable,1739,4
+jalapeno juice,Beverage,1740,12
+loaf french bread,Bakery,1741,2
+louisiana sauce,Condiment,1742,11
+mortadella,Dairy,1743,2
+naan bread,Bakery,1744,8
+passion fruit juice,Fruit,1745,1
+pastry shell,Bakery,1746,2
+pickling cucumber,Vegetable,1747,0
+plum jam,Fruit,1748,6
+porridge oat,Cereal,1749,0
+pre mozzarella cheese,Dairy,1750,6
+rice milk,Beverage,1751,1
+seashell pasta,Cereal,1752,9
+sirloin beef,Meat,1753,2
+spanish rice mix,Cereal,1754,12
+tandoori paste,Spice,1755,21
+au jus mix,Meat,1756,1
+back bacon,Meat,1757,6
+bran cereal,Cereal,1758,1
+breakfast sausage,Meat,1759,2
+bucatini pasta,Cereal,1760,1
+candy sprinkle,Plant Derivative,1762,0
+caramel sauce,Additive,1763,1
+carnation milk,Dairy,1764,1
+chocolate morsel,Plant Derivative,1765,1
+coconut flour,Cereal,1766,0
+corn tortilla strip,Bakery,1767,19
+cream cheese spread,Dairy,1768,3
+ear corn cob,Maize,1769,3
+fruit preserve,Fruit,1770,0
+fryer chicken,Meat,1771,28
+gorgonzola cheese,Dairy,1772,6
+icing,Additive,1773,0
+lamb stew meat,Meat,1774,3
+lemon thyme,Herb,1775,3
+liver,Meat,1776,2
+new mexico chile powder,Spice,1777,11
+peach juice,Fruit,1778,3
+peach preserve,Fruit,1779,3
+pot roast,Meat,1780,2
+red salmon,Fish,1781,1
+ruby port,Beverage-Alcoholic,1782,1
+salad,Dish,1783,6
+sardine,Fish,1784,1
+snow pea pod,Legume,1785,10
+tomato jalapeno,Vegetable,1786,8
+turkey meat,Meat,1787,18
+white cheese,Dairy,1788,4
+white sauce,Dish,1789,5
+yellow tomato,Vegetable,1790,2
+bean paste,Legume,1791,2
+beef marrow,Meat,1792,2
+cheddar monterey jack cheese,Dairy,1794,11
+chili bean paste,Dish,1795,8
+corn flake crumb,Maize,1796,9
+crust,Bakery,1797,0
+demi glace,Condiment,1798,1
+fruit cocktail,Beverage,1799,0
+garlic flake,Herb,1800,4
+hazelnut liqueur,Beverage-Alcoholic,1801,1
+king prawn,Seafood,1802,3
+leaf lettuce,Vegetable,1803,6
+lemon curd,Fruit,1804,1
+mahi fillet,Fish,1805,3
+mesclun,Dish,1806,2
+mincemeat,Meat,1807,3
+orange wedge,Fruit,1808,5
+pappardelle pasta,Cereal,1809,5
+plain white flour,Cereal,1811,1
+pork neck,Meat,1812,0
+red currant,Fruit,1813,0
+roast pork,Meat,1815,5
+sirloin tip steak,Meat,1816,0
+spelt flour,Cereal,1817,0
+steak seasoning,Spice,1818,4
+sticky rice,Cereal,1819,2
+stock cube,Meat,1820,3
+tart shell,Bakery,1821,0
+tomato garlic,Herb,1822,6
+vegetable bouillon,Dish,1823,2
+vegetable carrot,Vegetable,1824,7
+wheat lasagna noodle,Cereal,1825,3
+apricot brandy,Beverage-Alcoholic,1826,0
+bean sauce,Legume,1827,8
+bechamel sauce,Condiment,1828,2
+bosc pear,Fruit,1829,4
+calamari,Seafood,1830,5
+caramel,Plant Derivative,1831,0
+chard leaf,Vegetable,1832,3
+chicken stock beef,Meat,1833,26
+chinese sausage,Dish,1834,12
+clementine,Fruit,1835,2
+coleslaw,Condiment,1836,4
+cornbread,Maize,1837,9
+currant jelly,Fruit,1838,4
+deli turkey,Meat,1839,0
+digestive biscuit,Bakery,1840,0
+dill leaf,Herb,1841,5
+double crust pie,Bakery,1842,3
+flat bread,Bakery,1843,8
+greek salad dressing,Dish,1844,9
+green chili sauce,Condiment,1845,9
+green salsa,Condiment,1846,10
+hamburger meat,Bakery,1847,4
+kasuri methi,Spice,1848,4
+mango juice,Fruit,1849,2
+oat flour,Cereal,1851,0
+ponzu sauce,Condiment,1852,8
+pork sausage link,Meat,1853,5
+red chile powder,Vegetable,1854,3
+spaghettini,Cereal,1855,3
+splenda brown sugar,Additive-Sugar,1856,1
+teriyaki marinade,Condiment,1858,12
+treacle,Additive,1859,1
+wheat hamburger bun,Bakery,1860,5
+winter squash,Fruit,1861,7
+agave syrup,Additive,1863,1
+amaretti cooky,Dish,1864,0
+apple butter,Fruit,1865,1
+asian chili sauce,Spice,1866,8
+asian pear,Fruit,1867,3
+baking mix,Dish,1868,1
+balsamic vinaigrette,Additive,1869,7
+besan,Cereal,1870,2
+bird eye chile,Vegetable,1871,6
+bitter,Beverage-Alcoholic,1872,0
+buttery cracker,Dairy,1873,6
+cabbage kimchi,Vegetable,1874,3
+cannellini,Legume,1875,8
+cherry brandy,Beverage-Alcoholic,1876,0
+coca cola,Beverage,1877,5
+crisco shortening,Additive,1878,1
+cube steak,Meat,1879,1
+curly leaf parsley,Spice,1880,2
+egg wash,Meat,1881,4
+grain wild rice,Cereal,1882,15
+greek feta cheese,Dairy,1883,0
+halibut steak,Fish,1884,5
+jalapeno jack cheese,Dairy,1885,5
+lamb cutlet,Meat,1886,5
+lardons,Meat,1887,3
+leaf thyme,Herb,1888,8
+macaroni noodle,Plant,1889,6
+mango pulp,Fruit,1890,0
+melon,Fruit,1891,0
+methi seed,Spice,1892,2
+millet,Cereal,1893,1
+orange section,Plant Derivative,1894,5
+pistachio pudding mix,Dish,1895,0
+pork mince,Meat,1896,5
+snap pea,Legume,1897,9
+soup,Dish,1898,8
+soy flour,Plant Derivative,1899,3
+spaghetti sauce mix,Condiment,1900,2
+spanish olive oil,Plant Derivative,1901,6
+sumaq,Spice,1902,5
+tangerine juice,Beverage,1903,6
+white cornmeal,Maize,1904,1
+angel food cake,Dish,1905,0
+asian sesame oil,Essential Oil,1906,4
+avocado oil,Essential Oil,1907,4
+baby onion,Vegetable,1908,4
+bagel,Bakery,1909,1
+black forest ham,Meat,1910,1
+caramel topping,Additive,1911,0
+cashew half,Nuts and Seeds,1912,10
+chardonnay wine,Beverage-Alcoholic,1913,10
+cheese spread,Dairy,1914,2
+chocolate cake mix,Plant Derivative,1915,0
+citric acid,Spice,1916,0
+corkscrew macaroni,Cereal,1917,5
+english pea,Legume,1918,8
+green creme de menthe,Beverage-Alcoholic,1919,0
+guava,Fruit,1920,0
+hokkien noodle,Cereal,1921,12
+hunt tomato sauce,Condiment,1922,3
+kikkoman soy sauce,Condiment,1923,8
+kombu,Seafood,1924,1
+kumquat,Fruit,1925,4
+mango nectar,Plant Derivative,1926,2
+maple extract,Additive,1927,0
+mexican crema,Dairy,1928,12
+mozzarella,Dairy,1929,3
+parma ham,Meat,1930,9
+pink bean,Legume,1931,2
+pomegranate syrup,Plant Derivative,1932,5
+prosciutto di parma,Meat,1933,10
+queso blanco,Dairy,1934,7
+red miso,Spice,1935,3
+seasoning italian salad dressing mix,Dish,1936,6
+spanish chorizo,Meat,1937,15
+stone mustard,Spice,1938,5
+sun tomato paste,Condiment,1939,6
+taco cheese,Dairy,1940,7
+thai peanut sauce,Nuts and Seeds,1941,11
+toor dal,Legume,1942,0
+tripe,Meat,1943,3
+wheat breadcrumb,Bakery,1944,4
+white creme de cacao,Beverage-Alcoholic,1945,0
+white raisin,Fruit,1946,1
+white shoepeg corn,Maize,1947,8
+yellow capsicum,Vegetable Fruit,1948,7
+bartlett pear,Fruit,1949,2
+beef chuck steak,Meat,1950,2
+beef tongue,Meat,1951,0
+butterscotch schnapps,Plant Derivative,1952,0
+campbell tomato soup,Dish,1953,5
+caramel ice cream topping,Additive,1954,0
+cassava,Vegetable,1955,3
+chili bean sauce,Dish,1956,9
+chocolate bar,Plant,1957,0
+cinnamon bark,Additive,1958,4
+citrus peel,Fruit,1959,1
+dark soya sauce,Condiment,1960,9
+ditalini,Cereal,1961,10
+fennel leaf,Herb,1962,2
+garlic butter,Dairy,1963,4
+green coriander,Herb,1964,3
+haricot bean,Legume,1965,6
+israeli couscous,Cereal,1966,10
+italian bread french,Bakery,1967,0
+italian green bean,Cereal,1968,6
+italian turkey sausage link,Meat,1969,10
+kashmiri chili powder,Spice,1970,6
+key lime,Beverage,1971,2
+oriental flavor ramen noodle,Cereal,1972,4
+pandan leaf,Herb,1973,11
+poblano chile pepper,Spice,1974,8
+pork steak,Meat,1975,7
+raisin bread,Bakery,1976,0
+stew beef chunk,Meat,1977,3
+stuffing mix,Dish,1978,10
+vanilla soymilk,Plant Derivative,1979,0
+veal stock,Meat,1980,2
+vegetable oil olive,Plant Derivative,1981,7
+yellow hominy,Maize,1982,8
+aleppo pepper,Spice,1983,4
+barley flour,Cereal,1984,1
+beef rump roast,Meat,1985,0
+black bean garlic sauce,Condiment,1986,7
+black soy sauce,Condiment,1987,7
+boursin cheese,Dairy,1988,9
+cabernet sauvignon wine,Beverage-Alcoholic,1989,4
+cacao,Plant Derivative,1990,1
+celery heart,Herb,1991,4
+cherry juice,Beverage,1992,1
+chinese vegetable,Vegetable,1993,9
+cinnamon raisin bread,Bakery,1994,0
+coffee crystal,Beverage,1995,0
+coffee ice cream,Dish,1996,0
+cornbread mix,Dish,1997,3
+dripping,Meat,1998,3
+fleur de sel,Additive,1999,1
+french bread italian,Bakery,2000,1
+fruit chutney,Condiment,2001,8
+goose,Meat,2003,4
+hot chicken broth,Meat,2005,21
+hot noodle,Cereal,2006,4
+kale leaf,Vegetable,2007,10
+lamb steak,Meat,2008,2
+loaf bread,Bakery,2009,1
+miso paste,Spice,2010,1
+morel,Fungus,2011,8
+nuoc nam,Condiment,2012,5
+pancake mix,Dish,2014,2
+popped popcorn,Dish,2015,1
+pork baby back rib,Meat,2016,0
+portobello mushroom cap,Fungi,2017,2
+range egg,Meat,2018,0
+red pepper cayenne,Vegetable,2019,3
+red pepper powder,Spice,2020,3
+rose wine,Beverage-Alcoholic,2021,2
+rotisserie chicken,Meat,2022,22
+sharp white cheddar cheese,Dairy,2023,3
+sun tomato pesto,Vegetable,2024,9
+tomato green chile,Spice,2025,3
+truffle,Fungi,2026,4
+turkey broth,Meat,2027,4
+vanilla bean paste,Legume,2028,0
+veal shank,Meat,2029,6
+white poppy seed,Spice,2030,7
+white truffle oil,Additive,2031,2
+ajinomoto,Additive,2032,11
+anchovy oil,Additive,2033,4
+anise oil,Additive,2034,0
+apple jelly,Fruit,2035,3
+apple pie spice,Spice,2036,0
+beef stock chicken,Meat,2037,20
+black cumin seed,Spice,2038,4
+black salt,Additive-Salt,2039,1
+bottom roast,Meat,2040,1
+brown button mushroom,Fungi,2042,4
+burdock root,Spice,2043,9
+chayote,Vegetable,2044,12
+cheese food,Dairy,2045,2
+chicken turkey,Meat,2046,21
+chihuahua cheese,Dairy,2047,5
+chocolate coffee bean,Plant Derivative,2048,0
+cream milk,Dairy,2049,2
+cream wheat,Cereal,2050,2
+dumpling wrapper,Dish,2053,2
+egg bread,Meat,2054,0
+epazote leaf,Herb,2055,6
+eye roast,Meat,2056,2
+fennel powder,Herb,2058,6
+fuji apple,Fruit,2059,1
+fusion liqueur,Beverage-Alcoholic,2060,0
+garlic olive oil,Plant Derivative,2061,4
+grill seasoning,Spice,2063,7
+guar gum,Plant Derivative,2064,2
+guava nectar,Fruit,2065,1
+italian pork sausage,Meat,2066,1
+jerk seasoning,Spice,2068,6
+jiffy cornbread mix,Dish,2069,2
+mackerel,Fish,2070,0
+marshmallow cream,Bakery,2071,0
+masa corn flour,Maize,2072,6
+meat stock,Meat,2073,0
+non milk,Dairy,2074,3
+octopus,Seafood,2076,0
+oregano flake,Spice,2077,2
+piri,Spice,2078,6
+pita pocket,Bakery,2079,6
+reg,Spice,2080,10
+sazon seasoning,Spice,2081,8
+seafood,Seafood,2082,6
+shoulder lamb chop,Meat,2083,4
+spicy mustard,Condiment,2084,2
+tomato basil,Vegetable,2085,4
+tostada,Dish,2086,7
+vanilla flavoring,Additive,2087,0
+acinus di pepe pasta,Cereal,2088,11
+anjou pear,Fruit,2089,2
+baby bella mushroom,Fungi,2090,8
+beef dripping,Meat,2091,0
+beef hot dog,Dish,2092,1
+beef suet,Meat,2093,1
+bottom steak,Meat,2095,0
+cashew butter,Nuts and Seeds,2096,9
+catfish,Fish,2097,1
+chipotle chile powder,Spice,2098,3
+cranberry bean,Fruit,2099,10
+english mustard powder,Spice,2100,1
+flax seed meal,Nuts and Seeds,2101,1
+fritos corn chip,Maize,2102,1
+garlic head,Herb,2103,7
+gemelli pasta,Cereal,2104,6
+ginger beer,Beverage-Alcoholic,2105,0
+gochujang,Spice,2106,8
+grain,Cereal,2107,9
+habaneros,Spice,2108,4
+hot italian sausage link,Meat,2109,4
+hot sausage,Dish,2110,2
+italian meatball,Dish,2111,3
+korean red pepper paste,Spice,2112,5
+lemon twist,Fruit,2113,3
+lovage,Essential Oil,2114,5
+marjoram leaf,Spice,2115,4
+mizithra cheese,Dairy,2116,3
+oil olive,Plant Derivative,2117,4
+pak choi,Vegetable,2118,4
+pastry double crust pie,Bakery,2120,0
+raspberry liqueur,Beverage-Alcoholic,2121,0
+rotelle pasta,Cereal,2122,5
+shiitake mushroom cap,Fungi,2123,5
+spicy sausage,Dish,2124,5
+tabasco jalapeno sauce,Condiment,2125,3
+tia maria,Bakery,2126,0
+turkey pepperoni,Meat,2127,2
+vanilla wafer crumb,Dish,2128,0
+vegetable stock powder,Vegetable,2129,0
+velveeta mexican cheese,Dairy,2130,7
+wheat berry,Berry,2131,3
+wheat bread flour,Cereal,2132,0
+white corn syrup,Maize,2133,0
+wood ear mushroom,Fungi,2135,9
+adzuki bean,Legume,2136,0
+asparagus tip,Vegetable,2137,4
+baby rocket,Vegetable,2138,3
+bean curd,Legume,2140,6
+bing cherry,Fruit,2141,2
+black treacle,Additive,2142,0
+blood orange,Fruit,2143,0
+butter lettuce leaf,Vegetable,2144,5
+calorie margarine,Additive,2145,3
+catalina dressing,Condiment,2146,2
+cavatappi pasta,Cereal,2147,3
+chicken breast strip,Meat,2148,19
+chicken quarter,Meat,2149,19
+chicken strip,Meat,2150,19
+chinese chili sauce,Condiment,2151,6
+chipotle chile pepper,Spice,2152,6
+chipotle hot sauce,Condiment,2153,2
+chocolate sprinkle,Plant Derivative,2154,0
+clamato juice,Beverage,2155,3
+dog bun,Bakery,2158,0
+field mushroom,Fungi,2159,3
+fillet salmon,Fish,2160,2
+fine bread crumb,Bakery,2161,2
+fruit juice,Fruit,2162,1
+frying oil,Additive,2163,6
+goat meat,Meat,2164,1
+graham cracker pie crust,Bakery,2165,0
+graham wafer crumb,Bakery,2166,0
+green banana,Fruit,2167,1
+green chile pepper lengthwise,Vegetable,2168,4
+green chili paste,Vegetable,2169,6
+italian tomato sauce,Condiment,2170,3
+jalapeno chilies,Spice,2171,6
+kirby cucumber,Gourd,2172,2
+liquid pectin,Additive,2173,0
+mango salsa,Spice,2174,3
+matzo cake meal,dish,2175,0
+mochiko rice flour,Cereal,2176,2
+muesli,Cereal,2177,0
+pancetta bacon,Meat,2179,7
+paneer,Dairy,2180,0
+pasilla pepper,Vegetable,2181,9
+popcorn,Maize,2182,0
+pork stew meat,Meat,2183,3
+ravioli,Dairy,2184,2
+red shallot,Vegetable,2185,4
+rib celery,Herb,2186,9
+rice bran oil,Cereal,2187,6
+rice bubble,Cereal,2188,0
+ricotta salata,Dairy,2189,0
+sago,Cereal,2190,1
+shell macaroni,Cereal,2191,2
+soy yogurt,Dairy,2192,4
+steak grain,Fish,2193,6
+swiss chard leaf,Vegetable,2194,3
+tuna oil,Fish,2195,0
+turkish bread,Bakery,2196,4
+venison steak,Meat,2197,1
+bay leaf powder,Plant,2198,4
+beef stock broth,Meat,2199,0
+bermuda onion,Vegetable,2200,4
+bottom beef roast,Meat,2201,2
+broccoli stem,Flower,2203,5
+calf liver,Meat,2204,1
+canning salt,Additive,2205,1
+caraway,Spice,2206,3
+chia seed,Nuts and Seeds,2207,0
+chocolate candy bar,Plant Derivative,2208,0
+cocktail sauce,Condiment,2209,0
+coconut powder,Fruit,2210,3
+corn flour,Maize,2211,4
+creole mustard,Condiment,2212,0
+dulce de leche,Dish,2213,0
+frisee,Vegetable,2214,1
+gala apple,Fruit,2215,4
+grape jelly,Fruit,2216,1
+green serrano chilies,Vegetable,2217,4
+hellmann mayonnaise,Condiment,2218,2
+kelp,Seafood,2219,3
+kraft italian dressing,Dish,2220,4
+lime jell o gelatin,Additive,2221,0
+maui onion,Vegetable,2222,1
+mexican rice,Dish,2223,9
+mint extract,Herb,2224,0
+non vanilla yogurt,Dairy,2225,1
+nopales,Plant,2226,3
+onion juice,Vegetable,2227,0
+pearl tapioca,Vegetable,2228,0
+pectin,Additive,2229,0
+pineapple preserve,Fruit,2230,6
+pink peppercorn,Maize,2231,3
+pisco,Beverage-Alcoholic,2232,0
+pork butt roast,Meat,2233,0
+potato gnocchi,Vegetable Tuber,2234,6
+purple cabbage,Vegetable,2235,5
+red delicious apple,Fruit,2236,2
+rice powder,Cereal,2237,5
+sazon goya con culantro y achiote,Spice,2238,5
+sea bass,Fish,2239,2
+serrano pepper jalapeno,Vegetable,2240,4
+silver beet,Vegetable,2241,3
+silver tequila,Beverage-Alcoholic,2242,1
+spam,Meat,2243,4
+stove stuffing mix,Dish,2244,8
+strawberry syrup,Plant Derivative,2245,0
+stuffing,Additive,2246,7
+sunflower seed oil,Plant Derivative,2247,6
+taco,Dish,2248,4
+tamale,Dish,2249,1
+thai chile pepper,Vegetable,2250,4
+tomato onion garlic,Dish,2251,9
+torn salad green,Dish,2252,3
+tri color spiral pasta,Cereal,2253,2
+tuna fish,Fish,2254,2
+veal shoulder,Meat,2255,5
+white radish,Vegetable,2256,3
+white vermouth,Beverage-Alcoholic,2257,5
+artichoke bottom,Flower,2259,6
+beef flavor ramen noodle,Cereal,2260,1
+beef oxtail,Meat,2261,1
+bengal dal,Legume,2262,2
+black bean paste,Legume,2263,3
+black currant,Fruit,2264,0
+boston lettuce leaf,Vegetable,2265,1
+brown bread,Bakery,2266,1
+buffalo mozzarella,Dairy,2267,1
+carrot juice,Beverage,2268,3
+cayenne pepper sauce,Vegetable,2269,2
+celery flake,Herb,2270,8
+cheese sauce,Dairy,2271,1
+chicken soup,Meat,2272,17
+chinese black mushroom,Fungi,2273,7
+chocolate milk,Beverage,2274,0
+chunk tuna,Fish,2275,1
+dill pickle relish,Herb,2276,0
+dipping sauce,Condiment,2277,3
+egg wrapper,Meat,2278,0
+fettuccini pasta,Cereal,2279,8
+file powder,Herb,2280,8
+filet mignon steak,Fish,2281,1
+fine egg noodle,Meat,2282,5
+frankfurter,Meat,2283,4
+garlic bread,Bakery,2284,2
+golden rum,Beverage-Alcoholic,2285,0
+grain dijon mustard,Condiment,2286,2
+green asparagus,Vegetable,2287,0
+green tea powder,Beverage,2288,0
+jelly,Berry,2289,0
+lemon lime soda,Beverage,2290,0
+longhorn cheese,Dairy,2291,0
+mung dal,Legume,2293,1
+onion ring,Vegetable,2294,3
+oregano sprig,Spice,2295,5
+parsley root,Spice,2296,1
+pepper jack cheese,Dairy,2297,6
+pink salmon,Fish,2298,2
+pita chip,Bakery,2299,5
+pork back rib,Meat,2300,0
+pork hock,Meat,2301,2
+russian salad dressing,Dish,2303,6
+self rising cornmeal,Maize,2304,0
+sherry vinegar,Beverage-Alcoholic,2305,5
+star fruit,Fruit,2307,3
+steak sauce,Condiment,2308,2
+stewing chicken,Meat,2309,17
+stewing lamb,Meat,2310,0
+tart green apple,Fruit,2311,2
+tri tip steak,Meat,2312,2
+turnip green,Vegetable,2313,6
+vinaigrette,Plant Derivative,2314,3
+white grape juice,Fruit,2315,1
+agar,Additive,2317,1
+baby eggplant,Vegetable,2318,1
+beef cube steak,Meat,2319,1
+black caviar,Fish,2320,1
+black cumin,Spice,2321,2
+brownie mix,Dish,2322,0
+chicory lettuce,Vegetable,2323,2
+chipotle salsa,Condiment,2324,9
+chive onion cream cheese,Dairy,2325,2
+cocktail onion,Vegetable,2326,4
+coconut sugar,Additive,2327,0
+coconut water,Fruit,2328,0
+conch,Fish,2329,1
+crab meat,Seafood,2330,2
+crimini mushroom,Fungi,2331,3
+dark cherry,Additive,2332,1
+duck leg,Meat,2333,5
+fillet catfish,Fish,2334,0
+frank red sauce,Condiment,2335,8
+garlic infused olive oil,Essential Oil,2337,3
+grouper fillet,Fish,2338,0
+habanero sauce,Spice,2339,6
+hazelnut oil,Nuts and Seeds,2340,3
+herb stuffing mix,Herb,2341,7
+herring,Fish,2342,0
+italian tomato paste,Condiment,2343,4
+kimchi,Dish,2344,7
+lingonberry,Fruit,2345,0
+loaf ciabatta,Bakery,2346,2
+no salt tomato paste,Vegetable,2348,3
+non dairy topping,Dairy,2349,0
+orange food coloring,Additive,2350,3
+peanut sauce,Nuts and Seeds,2351,8
+pig foot,Meat,2352,1
+pink grapefruit juice,Beverage,2353,1
+plain soymilk,Plant Derivative,2354,2
+pouring cream,Dairy,2355,2
+premade puff pastry,Bakery,2356,1
+ranch seasoning mix,Spice,2357,7
+red bliss potato,Vegetable,2358,2
+root beer,Beverage-Alcoholic,2359,1
+sazon goya coriander annatto,Condiment,2360,3
+sesame paste,Dish,2361,2
+spanish paprika,Vegetable,2363,2
+sparkling wine,Beverage-Alcoholic,2364,0
+spring green,Herb,2365,7
+stevia powder,Vegetable,2366,0
+tabasco brand chipotle pepper sauce,Condiment,2367,4
+taro root,Herb,2368,3
+toffee,Dish,2369,0
+truffle oil,Additive,2370,5
+veal scallopini,Meat,2371,6
+vegetarian beef,Meat,2372,0
+wedge lime,Fruit,2373,5
+yellow cherry tomato,Fruit,2374,3
+yellow zucchini,Vegetable,2375,2
+albacore tuna,Fish,2376,1
+almond liqueur,Nuts and Seeds,2377,0
+beef heart,Meat,2379,0
+beef rump,Meat,2380,1
+black rice,Cereal,2381,0
+blackberry jam,Fruit,2382,1
+brinjal,Vegetable,2383,1
+butterscotch pudding mix,Plant Derivative,2384,0
+calrose rice,Cereal,2385,6
+carom seed,Spice,2386,1
+catalina salad dressing,Condiment,2387,1
+chocolate frosting,Plant Derivative,2389,0
+choy sum,Vegetable,2390,5
+cinnamon swirl bread,Bakery,2391,0
+co lettuce,Vegetable,2392,4
+copha,Additive,2393,0
+corona beer,Beverage,2394,3
+cranberry juice cocktail,Beverage,2395,0
+curly endive lettuce,Vegetable,2396,3
+danish blue cheese,Dairy,2397,2
+espresso coffee powder,Beverage,2398,0
+european cucumber,Vegetable,2399,2
+eye chile,Vegetable,2400,4
+farro,Cereal,2401,4
+guajillo chile,Vegetable,2402,5
+jiffy corn muffin mix,Maize,2403,1
+karo syrup,Plant Derivative,2404,1
+limeade,Beverage,2405,1
+link sausage,Dish,2406,3
+lukewarm milk,Dairy,2407,0
+maple flavoring,Plant Derivative,2408,1
+maraschino cherry juice,Beverage-Alcoholic,2409,0
+meal flour,Cereal,2410,0
+mint jelly,Fruit,2412,1
+mint sauce,Herb,2413,3
+mole,Condiment,2414,11
+oil canola,Plant Derivative,2415,3
+oil vegetable,Plant Derivative,2416,3
+onion soup,Vegetable,2417,1
+peach half,Fruit,2418,1
+pickapeppa sauce,Additive,2419,7
+pork leg,Meat,2421,1
+potato reg,Vegetable Tuber,2422,1
+prime rib roast,Meat,2423,3
+process american cheese,Dairy,2424,5
+purslane,Plant,2425,0
+range chicken,Meat,2426,15
+rapeseed oil,Additive,2427,4
+rose syrup,Flower,2428,0
+sambhar powder,Spice,2429,0
+sazon goya seasoning,Spice,2430,7
+sesame,Cereal,2431,0
+shin beef,Meat,2432,1
+snail,Seafood,2433,1
+sponge cake finger,Bakery,2434,0
+sriracha hot sauce,Condiment,2435,2
+thai pepper,Vegetable,2436,4
+tomato oil,Vegetable,2437,5
+tostada shell,Dish,2438,4
+triple sec liqueur,Beverage-Alcoholic,2439,0
+turkey kielbasa,Meat,2440,6
+vegetable stock cube,Vegetable,2441,0
+vegetarian worcestershire sauce,Additive,2442,0
+vermicelli rice noodle,Cereal,2443,1
+white asparagus,Vegetable,2444,1
+white chicken meat,Meat,2445,15
+wondra flour,Cereal,2446,3
+zucchini lengthwise,Vegetable,2447,1
+adobo sauce chipotle pepper,Additive,2448,2
+anisette,Spice,2449,0
+baby back rib,Meat,2450,2
+bean dip,Legume,2451,2
+beef loin steak,Meat,2452,1
+bengal,Legume,2453,0
+black cherry,Additive,2454,1
+black lentil,Legume,2455,3
+broccoli coleslaw mix,Flower,2456,6
+brown mushroom,Fungi,2457,3
+buckwheat groat,Cereal,2458,1
+bulb fennel,Herb,2459,4
+buttermilk baking mix,Dish,2460,2
+carob powder,Additive,2461,0
+chevre cheese,Dairy,2462,1
+chianti wine,Beverage-Alcoholic,2463,2
+chicken drummettes,Meat,2464,14
+chocolate cookie crumb,Dish,2465,0
+chocolate liqueur,Beverage-Alcoholic,2466,0
+coffee creamer,Beverage Caffeinated,2467,0
+colby jack cheese,Dairy,2468,2
+cornichons,Maize,2469,0
+crisp bacon,Meat,2470,1
+deli chicken,Meat,2471,14
+egg yolk water,Meat,2472,1
+extra wide egg noodle,Meat,2474,3
+fajita flour tortilla,Dish,2475,4
+fillet tilapia,Fish,2476,2
+french bread cube,Bakery,2477,1
+french bread dough,Bakery,2478,0
+french lentil,Legume,2479,1
+french onion dip,Vegetable,2480,1
+fruit peel,Fruit,2481,0
+garlic herb seasoning,Herb,2482,7
+garlic juice,Herb,2483,1
+glutinous white rice,Cereal,2484,1
+grouper,Fish,2485,0
+guava paste,Fruit,2486,1
+hamburger bun sesame seed,Cereal,2487,2
+hard,Dairy,2488,0
+hot pepper flake,Vegetable,2489,4
+hot red pepper,Vegetable,2490,1
+kabocha squash,Fruit,2491,3
+kirschwasser,Beverage-Alcoholic,2493,0
+kohlrabi,Vegetable,2494,2
+lotus root,Plant,2495,5
+lumpia skin,Dish,2496,0
+mango puree,Fruit,2497,0
+melon liqueur,Beverage-Alcoholic,2498,0
+methi leaf,Spice,2499,3
+mexican tomato sauce,Condiment,2500,4
+millet flour,Cereal,2501,1
+multigrain bread,Bakery,2502,1
+nacho chip,Dish,2503,2
+no salt ketchup,Additive,2504,0
+nonfat cottage cheese,Dairy,2505,1
+o'brien potato,Vegetable,2506,2
+onion mushroom soup mix,Dish,2507,0
+parsley stem,Spice,2508,5
+pickling onion,Vegetable,2509,1
+pork shank,Meat,2510,3
+raspberry syrup,Plant Derivative,2511,0
+red pesto sauce,Spice,2512,3
+romaine leaf,Vegetable,2513,1
+rose lime juice,Beverage,2514,0
+sorghum flour,Cereal,2516,0
+soy margarine,Additive,2517,1
+spanish peanut,Nuts and Seeds,2518,1
+sprout,Legume,2519,4
+squid ring,Seafood,2520,3
+strawberry jell o gelatin dessert,Additive,2521,0
+string,Cereal,2522,3
+szechuan bean sauce,Legume,2523,7
+tang orange crystal,Fruit,2524,0
+tangerine peel,Fruit,2525,5
+tartar sauce,Condiment,2526,0
+tea leaf,Beverage,2527,1
+thai basil leaf,Herb,2528,9
+thai chili paste,Condiment,2529,7
+thyme honey,Dish,2531,1
+tomato basil garlic oregano,Spice,2532,6
+tomato passata,Vegetable,2533,3
+vanilla powder,Legume,2534,0
+veal steak,Fish,2535,2
+vegan butter,Dairy,2536,0
+vegetable juice cocktail,Beverage,2537,3
+veggie crumbles,Vegetable,2538,0
+vinaigrette dressing,Dish,2539,3
+white rice flour,Cereal,2540,1
+aioli,Dish,2542,1
+ancho chile pepper,Vegetable,2543,2
+asian fish sauce,Condiment,2544,6
+baby artichoke,Flower,2545,1
+baby octopus,Seafood,2546,0
+barberry,Fruit,2547,4
+beef rib roast,Meat,2548,0
+beef tenderloin fillet,Meat,2549,6
+biscuit dough,Dish,2550,2
+black grape,Fruit,2551,1
+blackening seasoning,Spice,2552,3
+blackstrap molasses,Additive,2553,1
+cajun spice,Plant Derivative,2555,3
+chestnut puree,Fruit,2556,0
+chicken chunk,Meat,2557,13
+chicken giblet,Meat,2558,13
+chicken rice soup,Meat,2559,13
+chile sauce,Condiment,2560,2
+chinese eggplant,Vegetable,2561,4
+chunk chicken,Meat,2562,13
+cinnamon sugar mixture,Additive,2563,0
+citrus infused vodka,Beverage-Alcoholic,2564,0
+cooking brown rice,Cereal,2565,6
+cool whip topping,Dairy,2566,0
+corn oil vegetable,Plant Derivative,2567,3
+crema,Dairy,2568,6
+cuban bread,Bakery,2569,0
+dark creme de cacao,Beverage-Alcoholic,2571,0
+enchilada mix,Condiment,2572,5
+french ladyfinger cooky,Bakery,2573,0
+galangal root,Spice,2574,11
+gingersnap cooky,Bakery,2575,0
+gravy mix,Dish,2576,2
+green cherry,Additive,2577,0
+habanero,Spice,2578,1
+hard cheese,Dairy,2579,1
+head bok choy,Vegetable,2580,8
+heinz ketchup,Additive,2581,2
+hibiscus flower,Fruit,2582,0
+horseradish cream,Dairy,2583,0
+jalapeno chili,Spice,2584,5
+jalapeno pepper juice,Spice,2585,5
+kingfish,Fish,2586,0
+korean red pepper powder,Spice,2587,2
+lard vegetable oil,Plant Derivative,2588,1
+large mushroom,Fungi,2589,4
+laurel leaf,Plant,2590,2
+lea perrins worcestershire sauce,Condiment,2591,1
+leaf basil,Herb,2592,2
+lemon balm,Spice,2593,0
+lemon verbena leaf,Fruit,2594,0
+log goat cheese,Dairy,2595,0
+macaroni cheese,Dairy,2596,5
+mange tout pea,Legume,2597,4
+manicotti shell,Cereal,2598,3
+masoor dal,Legume,2599,1
+matzo,Bakery,2600,2
+mccormick taco seasoning,Spice,2601,5
+mcintosh apple,Fruit,2602,2
+milk cream,Dairy,2603,1
+nacho cheese flavor doritos,Dairy,2604,6
+onion paste,Vegetable,2605,6
+orange blossom honey,Plant Derivative,2606,0
+paneer cheese,Dairy,2607,0
+pizza cheese,Dairy,2608,2
+potato water,Vegetable Tuber,2609,0
+pudding,Dish,2610,0
+quail,Meat,2611,5
+recaito,Spice,2612,2
+red bean paste,Legume,2613,0
+red table wine,Beverage-Alcoholic,2614,0
+rose essence,Essential Oil,2615,0
+roux,Additive,2616,6
+salad shrimp,Seafood,2617,3
+sausage link,Dish,2618,1
+seafood seasoning,Seafood,2619,1
+shortbread cooky,Dish,2620,0
+snow pea sprout,Legume,2621,3
+soy milk,Plant Derivative,2622,1
+soy mozzarella cheese,Dairy,2623,0
+spicy pork sausage,Meat,2624,3
+spinach fettuccine,Cereal,2625,2
+tuna brine,Fish,2626,1
+vanilla syrup,Additive,2627,0
+vegan cream,Dairy,2628,0
+vegetarian oyster sauce,Seafood,2629,3
+waffle,Dish,2630,2
+wheat cereal,Cereal,2631,0
+wheat cracker,Bakery,2632,1
+white bread wheat,Bakery,2633,0
+anise flavoring,Spice,2634,0
+apple brandy,Beverage-Alcoholic,2635,2
+armagnac,Beverage-Alcoholic,2636,3
+asian chili garlic sauce,Condiment,2637,4
+asian chili paste,Vegetable,2638,6
+backfin crab meat,Seafood,2639,0
+bacon strip,Meat,2640,5
+banana pepper ring,Vegetable,2641,2
+bean black,Legume,2642,1
+beef shoulder,Meat,2643,0
+beef tip,Meat,2644,0
+beet juice,Vegetable,2645,0
+black greek olive,Plant,2646,1
+black walnut,Nuts and Seeds,2647,0
+blade steak,Fish,2648,2
+blueberry pie filling,Dish,2649,0
+bouillon granule,Meat,2650,1
+bran flake,Cereal,2651,0
+brine,Additive,2652,3
+broiler chicken,Meat,2653,12
+buffalo meat,Meat,2654,0
+butter flavor shortening,Additive,2655,1
+campbell cheddar cheese soup,Dairy,2656,4
+cavenders purpose greek seasoning,Spice,2657,1
+cheese whiz,Dairy,2658,3
+cherry preserve,Additive,2659,0
+chicken leg thigh,Meat,2660,12
+chinese barbecue pork,Meat,2661,7
+chocolate chunk,Plant Derivative,2663,0
+chocolate wafer,Plant Derivative,2664,0
+chorizo,Meat,2665,3
+clove powder,Spice,2666,2
+coconut milk powder,Plant Derivative,2667,4
+coconut pecan frosting,Additive,2668,0
+cooking grit,Cereal,2669,2
+corn bread mix,Dish,2670,6
+cornflakes cereal,Maize,2671,3
+cornstarch paste,Maize,2672,8
+cream tomato soup,Vegetable,2673,1
+creme de banane,Beverage-Alcoholic,2674,0
+crookneck yellow squash,Fruit,2675,2
+crystal sugar,Additive-Sugar,2676,0
+cucumber lengthwise,Gourd,2677,0
+deep dish pie crust,Bakery,2678,1
+eagle brand milk,Dairy,2679,0
+egg tomato,Dish,2680,1
+extra finely sugar,Additive-Sugar,2681,1
+extra large shrimp,Seafood,2682,2
+garlic sauce,Condiment,2683,1
+globe eggplant,Vegetable,2684,0
+gooseberry,Fruit,2686,0
+green taco sauce,Additive,2687,4
+guava juice,Fruit,2688,0
+ham stock,Meat,2689,0
+hard alcoholic cider,Beverage-Alcoholic,2690,3
+hershey chocolate syrup,Plant Derivative,2691,0
+honey dijon mustard,Condiment,2692,3
+horseradish root,Vegetable,2693,0
+hot red chilies,Vegetable,2694,2
+jellied cranberry sauce,Fruit,2695,0
+kewra essence,Essential Oil,2696,3
+knorr vegetable soup mix,Dish,2697,0
+lamb liver,Meat,2698,0
+lamb rack,Meat,2699,1
+large curd cottage cheese,Dairy,2700,0
+lemon leaf,Fruit,2701,1
+lemon pudding mix,Dish,2702,2
+loaf italian bread,Bakery,2704,1
+loaf white bread,Bakery,2705,1
+maida flour,Cereal,2706,2
+malt extract,Beverage,2707,0
+mandarin orange section,Plant Derivative,2708,3
+manzanilla olive,Fruit,2709,4
+mature cheddar cheese,Dairy,2710,1
+meat beef,Meat,2711,2
+meat chicken,Meat,2712,12
+meatless sauce,Additive,2713,2
+meatless spaghetti sauce,Condiment,2714,2
+mushroom soy sauce,Condiment,2715,4
+new york strip steak,Meat,2716,0
+non cooking spray,Additive,2717,6
+non dairy coffee creamer,Beverage Caffeinated,2718,1
+orange bitter,Beverage-Alcoholic,2719,0
+pack pumpkin,Fruit,2720,5
+parmesan romano cheese mix,Dairy,2721,2
+peach nectar,Plant Derivative,2722,0
+pepper onion,Vegetable,2723,5
+pepperoncini pepper juice,Vegetable,2724,1
+pinot grigio wine,Beverage-Alcoholic,2725,2
+pizza crust dough,Bakery,2726,1
+polska kielbasa,Meat,2727,3
+pork sirloin roast,Meat,2728,3
+pudding mix,Dish,2729,0
+rag pasta sauce,Additive,2730,2
+red burgundy wine,Beverage-Alcoholic,2731,2
+salt white pepper,Spice,2732,3
+sambal oelek chili paste,Spice,2733,4
+satay sauce,Condiment,2734,5
+shirataki noodle,Cereal,2735,1
+shortcut bacon,Meat,2736,2
+sofrito,Condiment,2737,3
+soup stock,Dish,2738,2
+spanish olive pimento,Plant,2739,2
+strawberry ice cream,Dish,2740,0
+sucanat,Additive,2741,0
+sugar pumpkin,Fruit,2742,3
+tahini sauce,Dish,2743,2
+tamarind chutney,Plant Derivative,2744,2
+tandoori spice mix,Spice,2745,5
+tawny port,Beverage-Alcoholic,2746,3
+thai green chili,Spice,2747,4
+toblerone chocolate bar,Plant,2748,0
+tonic water,Beverage,2749,0
+tuna fillet,Fish,2750,1
+vegan mayonnaise,Condiment,2752,0
+vegan parmesan cheese,Dairy,2753,1
+vegetable suet,Dish,2754,0
+vegetarian sausage,Dish,2755,0
+wattleseed,Nuts and Seeds,2756,0
+white chocolate baking square,Plant Derivative,2758,0
+yellow bean,Legume,2760,6
+zinfandel,Beverage-Alcoholic,2761,0
+advocaat,Beverage-Alcoholic,2763,0
+agave,Additive,2764,2
+ahi tuna,Fish,2765,0
+albacore tuna water,Fish,2766,0
+anaheim pepper,Spice,2767,3
+ancho pepper,Vegetable,2768,7
+angelica,Herb,2769,0
+avocado dip,Essential Oil,2770,1
+baby carrot lengthwise,Vegetable,2771,3
+baby green pea,Legume,2772,7
+barbecue seasoning,Spice,2773,1
+beef meat,Meat,2774,2
+beef tip steak,Meat,2775,0
+besan flour,Cereal,2776,3
+bird chile,Vegetable,2777,2
+black tea leaf,Beverage,2778,1
+black truffle,Fungi,2779,2
+braising steak,Fish,2780,1
+breadcrumb bread,Bakery,2781,1
+brie,Dairy,2782,0
+broccoli slaw mix,Flower,2783,5
+candlenut,Nuts and Seeds,2784,6
+cannelloni tube,Cereal,2785,4
+carnaroli rice,Cereal,2786,5
+chicken flavor bouillon,Meat,2787,11
+chinese chive,Vegetable,2788,0
+chinese pea pod,Legume,2789,6
+chinkiang vinegar,Additive-Vinegar,2790,4
+cilantro root,Herb,2791,3
+coconut essence,Beverage,2792,2
+coconut meat,Fruit,2793,1
+cookie,Dish,2794,0
+cooking,Fruit,2795,3
+cooking rice,Cereal,2796,1
+cool whip lite,Dairy,2797,0
+coriander cilantro,Herb,2798,1
+cream onion soup,Vegetable,2799,3
+dark cooking chocolate,Plant,2800,0
+dark rye bread,Bakery,2801,0
+deep dish pie shell,Bakery,2802,0
+deep frying oil,Additive,2803,1
+dill pickle spear,Herb,2804,2
+dish pie shell,Bakery,2805,0
+double cream heavy,Dairy,2806,1
+dream whip,Dairy,2807,0
+dutch cocoa,Seed,2808,0
+edible silver foil,Vegetable,2809,0
+equal sugar substitute,Vegetable,2810,0
+fiddlehead,Vegetable,2811,1
+fillet cod,Fish,2812,0
+french haricot vert,Legume,2813,3
+french vanilla ice cream,Dish,2814,0
+fruit raisin,Fruit,2815,0
+garlic sausage,Meat,2816,3
+garlic scape,Herb,2817,0
+ginger snap,Spice,2818,0
+gluten soy sauce,Condiment,2819,4
+godiva chocolate liqueur,Beverage-Alcoholic,2820,0
+green jalapeno pepper,Spice,2821,1
+green olive brine,Plant,2822,4
+grenadine syrup,Plant Derivative,2823,0
+hamburger patty,Bakery,2824,0
+hot oil,Additive,2826,2
+iceberg lettuce leaf,Vegetable,2827,3
+jack daniel whiskey,Beverage-Alcoholic,2828,1
+japanese cucumber,Gourd,2829,2
+jumbo egg,Meat,2830,0
+kluski noodle,Cereal,2831,4
+lamb kidney,Meat,2832,0
+lamb neck,Meat,2833,0
+lamb rib chop,Meat,2834,0
+lemon cake mix,Dish,2836,0
+lime sherbet,Fruit,2837,0
+liquid egg substitute,Dish,2838,0
+loin lamb,Meat,2839,2
+maple sugar,Additive,2840,0
+mar bar,Plant,2841,0
+meat broth,Vegetable,2842,1
+mexican beer,Beverage-Alcoholic,2843,3
+nacho cheese soup,Dish,2844,5
+nacho cheese tortilla chip,Dish,2845,6
+nonfat vanilla yogurt,Dairy,2846,0
+oaxaca cheese,Dairy,2847,1
+oil lard,Additive,2848,2
+orange lentil,Fruit,2849,3
+orzo,Cereal,2850,4
+pancake syrup,Plant Derivative,2851,1
+patis,Fish,2852,4
+peach liqueur,Fruit,2853,0
+pepperoncini,Vegetable,2854,2
+peri,Spice,2855,1
+pheasant,Meat,2856,4
+pie apple,Fruit,2857,0
+pita pocket bread,Bakery,2858,1
+polish kielbasa,Meat,2859,3
+pudding rice,Cereal,2860,0
+purple potato,Vegetable Tuber,2861,0
+red caviar,Fish,2862,0
+red grapefruit,Beverage,2863,1
+rindless bacon,Meat,2864,1
+rock sugar,Additive,2865,5
+ruby red grapefruit juice,Beverage,2866,1
+rum flavoring,Beverage-Alcoholic,2867,1
+russet baking potato,Vegetable Tuber,2868,2
+rustic bread,Bakery,2869,2
+rye cocktail bread,Bakery,2870,1
+scotch,Beverage-Alcoholic,2871,1
+shichimi togarashi,Spice,2872,1
+shiso leaf,Herb,2873,1
+smelt,Fish,2874,0
+soda cracker,Bakery,2875,1
+spaetzle noodle,Cereal,2876,1
+stir fry beef,Meat,2877,0
+strawberry liqueur,Fruit,2878,0
+sugar icing,Additive-Sugar,2879,0
+taco chip,Dish,2880,1
+tart cooking apple,Fruit,2881,1
+tomato chutney,Condiment,2882,1
+tomato vegetable juice cocktail,Beverage,2883,2
+tony chachere seasoning,Spice,2884,0
+turkey chicken,Meat,2885,11
+veal chop,Meat,2886,1
+vegetable broccoli,Flower,2887,0
+wax bean,Legume,2888,2
+white crab meat,Seafood,2889,2
+white grape,Fruit,2890,4
+white tuna water,Fish,2891,0
+white zinfandel wine,Beverage-Alcoholic,2892,3
+amchur powder,Spice,2893,0
+anise liqueur,Beverage-Alcoholic,2894,0
+basil chiffonade,Herb,2896,1
+bean pork,Dish,2897,0
+bean thread,Legume,2898,6
+beef tamale,Dish,2899,1
+beet leaf,Vegetable,2900,2
+black fungus,Spice,2901,7
+bologna,Meat,2902,0
+bolognese sauce,Additive,2903,0
+breadstick dough,Cereal,2904,0
+brown bean sauce,Legume,2905,3
+brown sauce,Additive,2906,2
+butter flavor crisco,Additive,2907,0
+calorie mayonnaise,Condiment,2908,3
+canola oil cooking spray,Plant Derivative,2909,3
+cheese curd,Dairy,2910,0
+cheez whiz,Dairy,2911,6
+cherry syrup,Additive,2912,0
+chicken gizzard,Meat,2913,10
+chicken stock water,Meat,2914,10
+chile de arbol pepper,Spice,2915,1
+chinese duck sauce,Meat,2916,4
+chinese mustard,Spice,2917,2
+cornbread stuffing mix,Dish,2918,5
+cornstarch roux,Maize,2919,6
+crab boil,Seafood,2920,2
+cranberry juice concentrate,Beverage,2921,1
+creamy goat cheese,Dairy,2922,0
+crisp rice cereal,Cereal,2923,1
+dark chicken meat,Meat,2924,10
+dark chili powder,Vegetable,2925,2
+dashi powder,Dish,2926,0
+dessert topping,Additive,2928,0
+devil food cake mix,Dish,2929,0
+durkee onion,Vegetable,2931,3
+eel,Seafood,2932,1
+english walnut,Nuts and Seeds,2933,0
+erythritol,Additive,2934,0
+fettuccini noodle,Cereal,2935,3
+french bread lengthwise,Bakery,2936,0
+fusilli pasta,Cereal,2937,2
+garbanzo flour,Legume,2938,0
+ginger syrup,Plant Derivative,2939,0
+glace ginger,Spice,2940,0
+graham wafer,Bakery,2941,0
+grain bun,Bakery,2942,2
+green cardamom seed,Spice,2943,3
+green pepper strip,Spice,2944,2
+green salad,Vegetable,2945,0
+green shrimp,Seafood,2946,2
+guajillo chile pepper,Vegetable,2947,5
+hawaiian bread,Bakery,2948,2
+head escarole,Vegetable,2949,5
+head green cabbage,Vegetable,2950,1
+head red cabbage,Vegetable,2951,3
+hunt tomato paste,Vegetable,2953,2
+irish cream liqueur,Beverage-Alcoholic,2954,1
+italian chicken sausage,Meat,2955,9
+italian hoagie bun,Bakery,2956,2
+italian vegetable,Vegetable,2957,2
+jalapeno pepper lengthwise,Spice,2958,2
+japanese mayonnaise,Condiment,2959,1
+jerusalem artichoke,Flower,2960,2
+kamaboko,Seafood,2961,5
+kefalotiri,Dairy,2962,1
+knorr chicken bouillon,Meat,2963,9
+kosher dill pickle,Herb,2964,1
+kraft parmesan cheese,Dairy,2965,2
+large marshmallow,Bakery,2966,0
+lavash bread,Bakery,2967,2
+lemon yogurt,Dairy,2968,0
+lemonade mix,Beverage,2969,1
+lime gelatin,Fruit,2970,0
+lingonberry preserve,Fruit,2971,1
+live lobster,Seafood,2972,2
+lotus seed,Nuts and Seeds,2973,0
+macadamia,Nuts and Seeds,2974,1
+macadamia nut oil,Essential Oil,2975,0
+macaroni cheese mix,Dish,2976,0
+macaroon,Dish,2977,0
+mace blade,Spice,2978,0
+meal bread,Bakery,2979,1
+metaxa brandy,Beverage-Alcoholic,2980,0
+meyer lemon,Fruit,2981,2
+morton lite salt,Additive,2982,3
+no cook lasagna noodle,Cereal,2983,0
+oil peanut,Plant,2984,2
+olive vegetable oil,Plant Derivative,2985,1
+orange jell o,Additive,2986,0
+orange liqueur juice,Fruit,2987,0
+orange twist,Fruit,2988,1
+parmesan,Dairy,2989,5
+pawpaw,Fruit,2990,0
+peppadew pepper,Vegetable,2991,1
+peppermint candy,Additive,2992,0
+pie dough,Cereal,2993,2
+piquillo pepper,Spice,2994,3
+plain gelatin,Additive,2995,0
+pork liver,Meat,2996,1
+pork sauce,Meat,2997,0
+prego spaghetti sauce,Condiment,2998,1
+puff pastry shell,Bakery,2999,3
+red hot pepper,Vegetable,3000,2
+red onion ring,Vegetable,3001,3
+red pepper yellow,Spice,3002,4
+red plum,Fruit,3003,0
+red swiss chard,Vegetable,3004,3
+rib eye,Meat,3005,0
+rub,Herb,3007,2
+sambal chili paste,Dish,3008,4
+scotch whiskey,Beverage-Alcoholic,3009,3
+screwpine leaf,Herb,3010,2
+seafood stock,Seafood,3011,0
+season italian dressing,Dish,3012,1
+sesame oil vegetable,Plant Derivative,3013,4
+sichuan peppercorn,Spice,3014,4
+southwest seasoning,Spice,3015,3
+spinach tortilla,Dish,3016,2
+starch,Vegetable,3017,3
+stock chicken,Meat,3018,10
+strawberry gelatin,Additive,3019,0
+sugar maple syrup,Additive,3020,0
+sugar vanilla pudding mix,Dish,3021,0
+taco meat,Meat,3022,0
+tandoori masala,Spice,3023,4
+tex mex cheese,Dairy,3024,2
+thai rice noodle,Cereal,3025,5
+tomato bouillon,Dish,3026,3
+tomato green pepper onion,Dish,3027,6
+unsulphured molasses,Additive,3028,0
+vanilla wafer cooky,Dish,3029,0
+vegetable cooking spray,Additive,3030,2
+vegetarian chicken,Meat,3031,10
+venison roast,Meat,3032,0
+wedge lemon,Fruit,3033,3
+wesson oil,Additive,3034,2
+wheel brie cheese,Dairy,3035,1
+white horseradish,Vegetable,3036,0
+white tuna,Fish,3037,2
+wild blueberry,Fruit,3038,0
+yellow moong dal,Legume,3040,0
+almond half,Nuts and Seeds,3041,1
+almond nut,Nuts and Seeds,3042,0
+amchoor powder,Spice,3043,0
+amchur,Spice,3044,0
+amish friendship bread starter,Bakery,3045,0
+anchovy filet,Fish,3046,1
+angel flake coconut,Fruit,3047,0
+asian chili oil,Plant Derivative,3048,6
+au jus sauce,Additive,3049,0
+baby beet,Vegetable,3050,1
+bake buttermilk flaky biscuit,Bakery,3051,0
+banana lengthwise,Fruit,3053,0
+beef blade roast,Meat,3054,3
+beef cap,Meat,3055,0
+beef neck,Meat,3056,2
+beef soup,Meat,3057,0
+beef stock powder,Meat,3058,0
+black mission fig,Fruit,3059,0
+bodied red wine,Beverage-Alcoholic,3060,1
+borlotti bean,Legume,3061,1
+brand rice,Cereal,3062,7
+bread white,Bakery,3063,0
+butter cooking spray,Additive,3065,3
+cactus,Plant,3066,1
+cake pastry flour,Cereal,3067,0
+calabaza squash,Fruit,3068,3
+calorie bread,Bakery,3069,0
+calorie sweetener,Additive,3070,2
+campbell french onion soup,Dish,3071,3
+campbell golden mushroom soup,Dish,3072,1
+campbell southwest pepper jack soup,Dairy,3073,3
+candy,Additive,3074,1
+cauliflower head,Flower,3076,2
+cereal,Cereal,3078,0
+chai tea,Beverage,3079,0
+char siu sauce,Additive,3080,2
+chicken ramen noodle,Meat,3081,9
+chicken seasoning,Spice,3082,9
+chocolate sandwich cooky,Bakery,3083,0
+ciabatta bread,Bakery,3084,1
+clam broth,Beverage-Alcoholic,3085,1
+cocoa mix,Seed,3086,0
+cod fish,Fish,3087,0
+colby,Dairy,3088,2
+coleslaw mix cabbage carrot,Condiment,3089,1
+comte cheese,Dairy,3090,1
+corn flake cereal,Cereal,3091,0
+corn niblet,Maize,3092,1
+cornstarch water,Maize,3093,7
+cream cheese frosting,Dairy,3094,0
+cream cheese herb,Dairy,3095,2
+cream half,Dairy,3096,1
+cream soda,Dairy,3097,0
+cream whipping,Dairy,3098,1
+creamy butter,Additive,3099,3
+crisco cooking oil,Additive,3100,1
+curry sauce,Additive,3101,5
+dark muscovado sugar,Additive-Sugar,3102,1
+de arbol,Vegetable,3103,3
+deli beef,Meat,3104,0
+dungeness crab,Seafood,3105,2
+escargot,Seafood,3107,2
+extra oil,Plant Derivative,3108,2
+flavor fruit jam,Fruit,3109,0
+french onion ring,Vegetable,3110,3
+fruit strawberry,Fruit,3111,0
+funghi porcini,Fungi,3112,3
+gem lettuce,Vegetable,3113,2
+graham flour,Cereal,3114,0
+green pepper ring,Vegetable,3116,3
+gyoza skin,Herb,3117,1
+hard apple cider,Beverage-Alcoholic,3118,3
+heath candy bar,Plant,3119,0
+herbes de,Herb,3120,5
+hickory smoke salt,Additive-Salt,3121,0
+honey peanut,Plant Derivative,3122,2
+horseradish mustard,Condiment,3123,0
+hot coffee,Beverage,3124,0
+irish mist liqueur,Beverage-Alcoholic,3125,0
+jalapeno pepper cheese,Dairy,3126,2
+jello gelatin,Additive,3127,0
+jelly bean,Dish,3128,0
+jerk sauce,Additive,3129,4
+jimmy dean sausage,Dish,3130,0
+key lime zest,Fruit,3131,0
+kirsch liqueur,Beverage-Alcoholic,3132,0
+korean chili paste,Plant Derivative,3134,5
+lamb backstraps,Meat,3135,2
+lemon balm leaf,Spice,3136,1
+lemon gelatin,Additive,3137,1
+lemon myrtle,Fruit,3138,1
+lemon sorbet,Fruit,3139,0
+lettuce green,Vegetable,3140,2
+manila clam,Seafood,3141,1
+matcha green tea powder,Beverage,3142,0
+milk chocolate candy bar,Plant,3143,0
+milk chocolate melt,Beverage,3144,0
+milk mozzarella,Dairy,3145,1
+moisture part mozzarella cheese,Dairy,3146,1
+monkfish,Fish,3147,1
+napa cabbage leaf,Vegetable,3149,2
+natural almond,Nuts and Seeds,3150,2
+non dairy milk substitute,Dish,3151,1
+nonstick vegetable cooking spray,Additive,3152,0
+nut almond,Nuts and Seeds,3153,0
+nut walnut,Nuts and Seeds,3154,0
+oil vinegar dressing,Plant Derivative,3155,4
+orange roughy fillet,Fruit,3156,0
+orange sherbet,Beverage,3157,0
+ortega taco seasoning,Spice,3158,3
+peanut butter chip,Additive,3159,0
+peanut oil corn,Plant Derivative,3160,2
+pear half,Fruit,3161,0
+petite pea,Legume,3162,2
+picante salsa,Condiment,3163,0
+pickling,Additive-Salt,3164,0
+pie pastry,Bakery,3165,1
+pignoli nut,Nuts and Seeds,3166,2
+pinhead oat,Cereal,3167,0
+pizza sauce spaghetti,Condiment,3168,0
+plain breadcrumb,Bakery,3169,3
+pork broth,Meat,3170,0
+pork loin steak,Meat,3171,2
+pork meat,Meat,3172,3
+pork stock,Meat,3173,0
+portuguese bread,Bakery,3174,3
+purpose seasoning,Spice,3175,1
+ranch dip mix,Condiment,3176,3
+range egg yolk,Meat,3177,0
+reblochon cheese,Dairy,3178,0
+red date,Fruit,3179,5
+red jalapeno,Spice,3180,1
+red pasta sauce,Dish,3181,0
+remoulade sauce,Condiment,3182,0
+roast beef gravy,Meat,3184,0
+romano bean,Legume,3185,3
+rotini noodle,Cereal,3186,3
+salsa con queso,Condiment,3187,2
+sardine oil,Additive,3188,1
+shimeji mushroom,Fungi,3189,4
+shrimp stock,Seafood,3190,1
+soman noodle,Cereal,3191,2
+southeast asian fish sauce,Condiment,3192,2
+soybean paste,Plant Derivative,3193,3
+spicy hot,Additive,3194,0
+strawberry jelly,Fruit,3195,0
+sumac powder,Spice,3196,0
+sunflower oil vegetable,Plant Derivative,3197,0
+swordfish,Fish,3198,0
+tangerine zest,Fruit,3199,0
+tenderloin,Meat,3200,1
+thai seasoning,Spice,3201,4
+tomato olive oil,Plant Derivative,3202,3
+tomato onion,Dish,3203,1
+tomato pesto,Dish,3204,4
+tri tip roast,Meat,3205,0
+turkey breast tenderloin,Meat,3206,4
+turkey ham,Meat,3207,4
+turkey leg,Meat,3208,2
+turkey stock,Meat,3209,1
+vanilla custard powder,Dish,3210,0
+veal stock beef,Meat,3211,0
+vegetable seasoning,Vegetable,3212,3
+vegetarian bacon,Meat,3213,0
+veggie burger,Dish,3214,0
+vermicelli pasta,Cereal,3215,2
+wheat egg noodle,Meat,3216,2
+wheat linguine,Cereal,3217,3
+wheat rotini,Cereal,3218,2
+white pea bean,Legume,3219,0
+yellow chile,Vegetable,3221,3
+yellow corn,Maize,3222,2
+yellow miso,Spice,3223,0
+ancho chili pepper,Spice,3225,3
+annatto oil,Plant Derivative,3226,3
+apple juice orange,Fruit,3227,0
+arabic spice,Spice,3228,4
+azuki bean,Legume,3229,0
+baby dill pickle,Herb,3230,0
+baby leek,Vegetable,3231,4
+baby swiss cheese,Dairy,3232,0
+bacardi rum,Beverage-Alcoholic,3233,0
+baker german chocolate,Plant,3234,0
+bamboo,Plant,3235,3
+beef ravioli,Dish,3236,1
+beef rib eye roast,Meat,3237,0
+beef sirloin tip,Meat,3238,0
+beef stock vegetable,Meat,3239,0
+blue cheese dressing,Dairy,3240,4
+blue cheese salad dressing,Dairy,3241,5
+blue food coloring,Additive,3242,0
+boil rice,Cereal,3243,3
+breadfruit,Fruit,3244,1
+brown ale,Beverage-Alcoholic,3245,1
+brown rice vinegar,Additive-Vinegar,3246,0
+buffalo,Meat,3247,1
+buffalo wing sauce,Condiment,3248,6
+cabbage carrot coleslaw mix,Condiment,3249,2
+caerphilly cheese,Dairy,3250,0
+caper salt,Additive,3251,0
+carambola,Fruit,3252,1
+caramel syrup,Plant Derivative,3253,0
+carb flour tortilla,Bakery,3254,4
+caribbean jerk marinade,Additive,3255,3
+cashew nut paste,Nuts and Seeds,3256,5
+castor sugar,Additive-Sugar,3257,0
+champignon mushroom,Fungi,3258,2
+cherry heering,Additive,3259,0
+cherry liqueur,Additive,3260,1
+chicken back,Meat,3261,8
+chicken gravy,Meat,3262,8
+chicken noodle soup mix,Meat,3263,8
+chicken stock broth,Meat,3264,8
+chinese celery,Herb,3265,4
+chinese wheat noodle,Cereal,3266,1
+chinese white rice vinegar,Beverage-Alcoholic,3267,1
+chipotle chile adobo sauce,Vegetable,3268,2
+chive blossom,Vegetable,3269,1
+chocolate hazelnut nutella,Additive,3270,0
+chocolate hazelnut spread,Additive,3271,0
+chocolate wafer crumb,Additive,3272,0
+cocktail mix,Dish,3273,0
+cooking couscous,Cereal,3274,3
+cooky,Dish,3275,0
+corn oil peanut,Plant Derivative,3276,4
+cream asparagus soup,Dish,3277,3
+cream cheese chive,Dairy,3278,4
+creamy salad dressing,Dish,3279,1
+culantro,Herb,3280,0
+dal,Legume,3281,1
+dark cocoa,Plant,3282,0
+double gloucester cheese,Dairy,3283,0
+dukkah,Spice,3284,1
+dumpling,Dish,3285,3
+earl grey tea,Plant,3286,0
+elderberry,Fruit,3287,0
+ener egg substitute,Dish,3288,1
+extra large egg yolk,Meat,3289,1
+fatty bacon,Meat,3290,4
+fine herbes,Additive-Sugar,3291,3
+flax seed oil,Essential Oil,3292,0
+foie gras,Dish,3293,3
+french vanilla coffee creamer,Dish,3294,0
+fruit pectin,Additive,3295,0
+fryer,Meat,3296,8
+ginger marmalade,Additive,3298,1
+ginger wine,Beverage-Alcoholic,3299,1
+gingersnap cookie,Bakery,3300,0
+gingersnap crumb,Bakery,3301,0
+glace pineapple,Beverage,3302,0
+green chile paste,Vegetable,3303,2
+green ginger,Spice,3304,3
+green maraschino cherry,Beverage-Alcoholic,3305,0
+green mushroom,Fungi,3306,1
+green tea leaf,Beverage,3307,1
+hawaiian sea salt,Additive-Salt,3308,3
+hazelnut meal,Nuts and Seeds,3309,0
+heather honey,Plant Derivative,3310,1
+herb seasoning mix,Spice,3311,2
+hickory bacon,Meat,3312,2
+hickory barbecue sauce,Condiment,3313,0
+honeydew,Fruit,3314,1
+hot red chile,Spice,3315,2
+irish moss,Herb,3316,0
+italian salami,Fish,3317,0
+jagermeister,Beverage-Alcoholic,3318,0
+jalapeno pepper serrano,Vegetable,3319,2
+jalapeno sauce,Condiment,3320,2
+jalapeno seasoning salt,Additive-Salt,3321,2
+jamaican jerk seasoning,Spice,3322,3
+jigger triple sec,Beverage-Alcoholic,3323,0
+jigger vodka,Beverage-Alcoholic,3324,0
+kipfler potato,Vegetable,3326,1
+kittencal taco seasoning mix,Spice,3328,2
+kraft italian salad dressing,Condiment,3330,3
+lamb leg steak,Meat,3331,1
+lavender honey,Plant Derivative,3332,2
+leaf oregano,Spice,3333,3
+lemon essence,Fruit,3334,0
+lemon grass root,Vegetable,3335,1
+lime powder,Spice,3336,4
+link italian sausage,Meat,3337,0
+liquid seasoning,Spice,3338,1
+liverwurst,Dish,3339,1
+locatelli cheese,Dairy,3340,2
+maple bacon,Meat,3341,2
+marie biscuit,Bakery,3342,0
+meat pork,Meat,3343,0
+melba toast,Bakery,3344,3
+mexican cornbread mix,Dish,3345,1
+mochiko,Cereal,3347,1
+mustard paste,Spice,3348,3
+nacho cheese,Dairy,3349,2
+nanami togarashi,Spice,3350,0
+non greek yogurt,Dairy,3351,0
+nonstick vegetable oil cooking spray,Additive,3352,1
+olive tapenade,Dish,3353,1
+onion white,Vegetable,3354,2
+orange soda,Fruit,3355,0
+orecchiette pasta,Cereal,3356,3
+oven cooking,Fruit,3357,1
+oven lasagna noodle,Cereal,3358,2
+panettone,Bakery,3359,0
+papaya nectar,Fruit,3360,0
+pasta dough,Cereal,3361,1
+pasta sauce mushroom,Dish,3362,1
+peach syrup,Plant Derivative,3363,0
+peanut oil sunflower,Plant,3364,1
+pepper ring,Spice,3365,0
+persimmon pulp,Herb,3366,0
+pico de gallo salsa,Condiment,3367,2
+pina colada nonalcoholic drink mix,Dish,3368,0
+pinot noir wine,Beverage-Alcoholic,3369,3
+pita,Bakery,3370,2
+pizza seasoning,Spice,3371,3
+pomelo fruit,Fruit,3372,1
+poppy seed filling,Spice,3373,0
+porterhouse steak,Fish,3374,0
+portuguese chourico,Meat,3375,0
+prosecco,Beverage-Alcoholic,3376,0
+purple plum,Fruit,3377,1
+purpose dinner crepe batter,Dish,3378,2
+queso fresco cheese,Dairy,3379,2
+quince paste,Fruit,3380,2
+raclette cheese,Dairy,3381,1
+raspberry jelly,Fruit,3382,0
+red bird eye chili,Vegetable,3383,2
+red fresno chile,Vegetable,3384,2
+red maraschino cherry,Fruit,3385,0
+red paprika,Vegetable,3386,1
+red raspberry,Fruit,3387,0
+red rice,Cereal,3388,3
+sage sprig,Herb,3389,3
+salt beef,Meat,3391,1
+salt seasoning,Additive-Salt,3392,4
+sandwich,Dish,3393,0
+sauvignon blanc wine,Beverage-Alcoholic,3394,5
+serrano chile,Vegetable,3395,3
+sirloin roast,Meat,3396,2
+smart balance butter spread,Dairy,3397,1
+soya flour,Cereal,3398,0
+soya milk,Plant Derivative,3399,0
+sparkling white wine,Beverage-Alcoholic,3400,0
+spicy italian sausage,Meat,3401,2
+stew vegetable,Vegetable,3402,1
+tamarind extract,Plant Derivative,3404,0
+tobiko,Fish,3405,0
+tomato salsa,Condiment,3406,2
+turkey gravy,Meat,3407,1
+turkey tenderloin,Meat,3408,2
+umeboshi,Fruit,3409,1
+valencia orange,Fruit,3410,1
+veal scallop,Seafood,3411,2
+vegetable chicken stock,Meat,3412,8
+vegetable oil corn,Plant Derivative,3413,1
+vegetable soup,Dish,3414,1
+vegetable soup mix,Dish,3415,0
+vol au vent case,Vegetable,3416,1
+walla onion,Vegetable,3417,4
+wheat english muffin,Bakery,3418,0
+wheat macaroni,Cereal,3419,4
+white bread cube,Bakery,3420,2
+white corn kernel,Maize,3421,5
+white meat chicken,Meat,3422,8
+yellow rice mix,Cereal,3423,4
+young ginger root,Spice,3424,3
+agar flake,Additive,3426,1
+ahi tuna steak,Fish,3427,0
+almond oil,Nuts and Seeds,3428,1
+alphabet pasta,Cereal,3429,3
+andes mint candy,Herb,3430,0
+baby back pork rib,Meat,3431,0
+baby corn cob,Maize,3432,4
+bay shrimp,Seafood,3433,0
+bean soup mix,Dish,3434,2
+beau monde seasoning,Spice,3435,0
+beef burger,Bakery,3436,0
+beef consomme soup,Meat,3437,0
+beef rib eye steak,Meat,3438,0
+beef stock bouillon,Meat,3439,1
+beef stock consomme,Meat,3440,1
+berry sugar,Additive,3441,0
+biscuit baking mix,Dish,3442,1
+biscuit crumb,Bakery,3443,0
+bitter chocolate,Plant Derivative,3444,1
+black dal,Legume,3445,1
+black plum,Fruit,3446,1
+bleu cheese salad dressing,Dairy,3447,4
+blood orange juice,Fruit,3448,0
+bonnet chile pepper,Vegetable,3449,3
+bread butter pickle,Dish,3451,0
+bread wheat,Bakery,3452,1
+broccoli carrot cauliflower mix,Flower,3453,2
+brown breadcrumb,Bakery,3454,2
+bulk hot italian sausage,Meat,3455,0
+butter cracker,Dairy,3456,3
+butter shortening,Additive,3457,0
+cake mix,Dish,3458,0
+california avocado,Fruit,3459,0
+calimyrna fig,Fruit,3460,0
+cannoli shell,Seafood,3462,0
+chayote squash,Vegetable,3464,2
+cheddar monterey cheese,Dairy,3465,2
+cheerio oat cereal,Cereal,3466,0
+cherry jam,Additive,3467,0
+cherrystone clam,Seafood,3468,2
+cheshire cheese,Dairy,3469,0
+chicken gravy mix,Meat,3470,7
+chicken nugget,Meat,3471,7
+chile pequins,Vegetable,3472,1
+chile salsa,Condiment,3473,2
+chili pod,Spice,3474,3
+chinese chili paste,Plant Derivative,3475,3
+chinese hot mustard,Spice,3476,2
+chipotle chili sauce,Condiment,3477,2
+chipotle paste,Condiment,3478,2
+chocolate cake,Dish,3479,0
+chocolate powder,Plant Derivative,3480,0
+chunk tuna water,Fish,3481,0
+chunky spaghetti sauce,Condiment,3482,1
+cinnamon graham cracker,Bakery,3483,0
+clam shell,Seafood,3484,2
+coconut juice,Beverage,3485,3
+coconut liqueur,Beverage,3486,0
+coleslaw dressing,Condiment,3487,1
+cream mushroom garlic soup,Dish,3488,2
+cream rice,Cereal,3489,0
+dark mexican beer,Beverage,3490,0
+dark rye flour,Bakery,3491,0
+dashi kombu kelp,Condiment,3492,0
+date syrup,Fruit,3493,0
+dessert apple,Fruit,3494,0
+dessert wine,Beverage-Alcoholic,3495,0
+dozen oyster,Seafood,3496,0
+duckling,Meat,3497,0
+el paso enchilada sauce,Condiment,3499,4
+el paso taco seasoning mix,Spice,3500,4
+extra turkey breast,Meat,3501,1
+falafel mix,Dish,3502,0
+fillet halibut,Fish,3503,0
+fillet sole,Fish,3504,0
+fine bulgur,Cereal,3505,1
+fireball whiskey,Beverage-Alcoholic,3507,1
+fish cake,Dish,3508,1
+flounder,Fish,3510,2
+four bean mix,Dish,3511,0
+french breadcrumb,Bakery,3512,0
+french vanilla pudding,Dish,3513,0
+frog leg,Dish,3514,1
+fromage frais,Dairy,3515,1
+garbanzo bean chickpea,Legume,3516,0
+garlic alfredo sauce,Condiment,3517,2
+ginger puree,Spice,3518,3
+ginseng root,Vegetable,3519,6
+gluten self raising flour,Cereal,3521,0
+gourd,Fruit,3522,0
+goya adobo pepper,Spice,3523,3
+goya sazon,Dish,3524,1
+green cabbage head,Vegetable,3525,0
+green red bell pepper,Vegetable Fruit,3527,2
+ham shank,Meat,3528,1
+head napa cabbage,Vegetable,3530,1
+head red leaf lettuce,Vegetable,3531,0
+head savoy cabbage,Vegetable,3532,1
+hearty white bread,Bakery,3533,1
+hershey cocoa,Seed,3534,0
+hintz cocoa powder,Seed,3535,0
+hollandaise sauce,Condiment,3536,1
+italian pepper,Spice,3537,2
+jackfruit,Fruit,3538,0
+jalapeno lengthwise,Spice,3539,4
+jalapeno pepper seed,Spice,3540,1
+jalapeno serrano pepper,Vegetable,3541,3
+jamaican rum,Beverage-Alcoholic,3542,1
+japanese pumpkin,Fruit,3543,2
+japanese sake,Beverage-Alcoholic,3544,2
+konbu,Seafood,3545,1
+laughing cow cheese,Dairy,3546,0
+lavender blossom,Flower,3547,1
+lemon herb seasoning,Meat,3548,2
+lemon jell o gelatin,Additive,3549,0
+linguini pasta,Cereal,3550,2
+lox,Fish,3551,1
+mackerel fillet,Fish,3552,0
+mahi,Fish,3553,2
+mango liqueur,Fruit,3554,0
+manicotti pasta,Cereal,3555,2
+maraschino juice,Beverage-Alcoholic,3556,0
+matzo cracker,Bakery,3557,2
+mccormick grill seasoning,Spice,3558,3
+melon ball,Fruit,3559,0
+meringue,Bakery,3560,0
+mexican tomato jalapeno pepper,Vegetable,3561,0
+milk yogurt,Dairy,3562,2
+moose,Meat,3563,0
+mozzarella string cheese,Dairy,3564,0
+mushroom broth,Fungi,3565,0
+mushroom liquid,Fungi,3566,2
+nacho flavor tortilla chip,Dish,3567,2
+nori sushi,Seafood,3568,1
+oil butter,Plant Derivative,3569,1
+olive brine,Plant,3570,2
+olive juice,Plant,3571,2
+oriental vegetable,Vegetable,3573,2
+pad thai rice noodle,Cereal,3574,2
+pasta noodle,Cereal,3575,2
+pastry pie crust,Bakery,3576,0
+peach brandy,Beverage-Alcoholic,3577,0
+peking duck,Meat,3578,4
+pepper jelly,Vegetable,3579,3
+pepper paste,Condiment,3580,2
+pie crust mix,Bakery,3581,0
+pig tail,Meat,3582,0
+piloncillo cone,Additive-Sugar,3583,1
+pineapple juice orange,Beverage,3584,2
+pineapple syrup,Fruit,3585,2
+pink lemonade concentrate,Beverage,3586,0
+pizza topping,Spice,3587,1
+pod cardamom,Spice,3588,4
+pork butt shoulder,Meat,3589,2
+pork rib rack,Meat,3590,0
+pork sausage casing,Meat,3591,0
+pork shoulder butt,Meat,3592,3
+pork skin,Meat,3593,1
+prickly pear,Fruit,3594,3
+purpose baking mix,Dish,3595,1
+quail egg,Meat,3596,2
+queso anejo,Dairy,3597,4
+queso sauce,Condiment,3598,3
+ra el hanout spice,Spice,3599,2
+radish sprout,Vegetable,3600,1
+rapini,Vegetable,3601,1
+raspberry gelatin powder,Additive,3602,0
+raspberry juice,Fruit,3603,0
+red chile pod,Vegetable,3604,3
+red cooking wine,Beverage-Alcoholic,3605,2
+red pepper jelly,Spice,3606,0
+red spanish onion,Vegetable,3607,0
+reposado tequila,Beverage-Alcoholic,3608,1
+request cream mushroom soup,Dish,3609,2
+rice wrapper,Cereal,3610,0
+rye meal,Bakery,3612,0
+saffron powder,Spice,3613,1
+sauerkraut juice,Vegetable,3614,0
+sausage casing,Dish,3615,0
+seasoning sauce,Condiment,3616,3
+sicilian olive,Plant,3617,1
+sirloin tip,Meat,3618,2
+skor english toffee bit,Gourd,3619,0
+sourdough baguette,Bakery,3620,0
+spaghetti sauce meat,Condiment,3621,1
+spicy bean,Legume,3622,2
+spicy salami,Fish,3623,0
+spicy tomato sauce,Condiment,3624,2
+spicy vegetable juice,Vegetable,3625,2
+stewing veal,Meat,3626,2
+strawberry yogurt,Dairy,3627,0
+sugar chocolate pudding mix,Dish,3628,0
+tamarind pod,Fruit,3629,1
+tapenade,Dish,3630,0
+tex mex seasoning,Spice,3631,2
+tikka paste,Spice,3632,5
+tomato concentrate,Vegetable,3633,1
+tomato pasta sauce,Condiment,3634,1
+turkey breast half,Meat,3635,3
+turkey carcass,Meat,3636,2
+vegetable drumstick,Vegetable,3639,0
+vegetable oil butter,Plant Derivative,3640,2
+vegetable oil lard,Plant Derivative,3641,1
+wheat baguette,Bakery,3643,0
+wheat noodle,Cereal,3644,3
+white bread dough,Bakery,3645,0
+white miso paste,Spice,3646,0
+white mustard seed,Vegetable,3647,2
+wild rice mix,Dish,3648,2
+winter savory,Herb,3649,1
+wolf brand chili,Spice,3650,0
+absinthe,Beverage-Alcoholic,3651,0
+agave tequila,Beverage-Alcoholic,3652,0
+almond halve,Nuts and Seeds,3653,1
+amaretto almond liqueur,Beverage-Alcoholic,3654,0
+andouille sausage link,Meat,3655,4
+apple liqueur,Fruit,3656,0
+apple ring,Fruit,3657,0
+aquavit,Beverage-Alcoholic,3658,0
+asian chile pepper sauce,Condiment,3659,3
+baby arugula leaf,Vegetable,3660,0
+baby back rib rack,Meat,3661,0
+baby calamari,Seafood,3662,0
+baby portobello mushroom,Fungi,3663,3
+balsamic vinaigrette dressing,Additive,3665,2
+balsamic vinaigrette salad dressing,Additive,3666,2
+barramundi fillet,Fish,3667,0
+bean green chilies,Vegetable,3668,0
+beef gravy mix,Dish,3669,0
+beef jerky,Meat,3670,0
+beef rice roni,Dish,3671,0
+beef schnitzel,Meat,3672,0
+beef tenderloin roast,Meat,3673,0
+beefy mushroom soup,Dish,3674,0
+black cardamom,Legume,3675,3
+braeburn apple,Fruit,3676,0
+bratwurst sausage,Dish,3677,0
+bread mix,Dish,3679,2
+bread stuffing mix,Dish,3680,3
+breadcrumb italian,Bakery,3681,1
+breast half,Meat,3682,6
+brown bean,Legume,3683,0
+brown rice syrup,Cereal,3684,0
+buddig beef,Meat,3686,1
+budweiser beer,Beverage,3687,0
+burger,Dish,3688,0
+burrito seasoning mix,Spice,3689,0
+butter bud,Dairy,3690,2
+butter cooky,Dairy,3691,1
+buttermilk pancake mix,Dish,3692,0
+campanelle pasta,Cereal,3693,3
+campbell chicken soup,Meat,3694,6
+canning,Additive-Salt,3695,0
+cantaloupe ball,Fruit,3696,1
+caper brine,Fruit,3697,1
+cavender greek seasoning,Spice,3698,0
+center bacon,Meat,3699,2
+cheddar cheese mexican,Dairy,3700,0
+cheese soup,Dish,3701,2
+chestnut flour,Nuts and Seeds,3702,0
+chicken breast halve,Meat,3703,6
+chicken carcass,Meat,3704,6
+chicken flavor stuffing mix,Meat,3705,6
+chile adobo sauce,Condiment,3706,0
+chile garlic sauce,Condiment,3707,4
+chile oil,Plant Derivative,3708,1
+chinese bean paste,Legume,3709,1
+chinese red vinegar,Additive-Vinegar,3710,3
+chocolate candy,Additive,3711,0
+chocolate fudge topping,Additive,3712,0
+cilantro sprig,Herb,3713,2
+cipollini onion,Vegetable,3714,2
+cocktail frank,Beverage,3715,0
+coconut flavoring,Beverage,3716,1
+coconut ice cream,Dish,3717,0
+coconut macaroon,Beverage,3718,0
+cod steak,Fish,3719,0
+cointreau,Beverage-Alcoholic,3720,0
+cold butter,Dairy,3722,2
+cold milk,Dairy,3723,0
+corn black bean salsa,Condiment,3724,3
+corn cereal,Maize,3725,0
+corn pepper,Maize,3726,1
+crab leg,Seafood,3727,1
+cream chicken mushroom soup,Meat,3728,6
+cream mushroom soup chicken,Meat,3729,6
+cream shrimp soup,Seafood,3730,0
+cream topping,Additive,3731,0
+creamy italian dressing,Spice,3732,1
+creamy italian salad dressing,Dish,3733,0
+crisp taco shell,Dish,3734,0
+crispix cereal,Cereal,3735,0
+crumb topping,Bakery,3736,0
+dark semi chocolate,Plant,3737,0
+decorator sugar,Additive,3738,0
+deer meat,Meat,3739,0
+deli salami,Fish,3740,0
+dhaniya powder,Spice,3741,1
+dill pickle juice,Herb,3742,0
+ditali pasta,Cereal,3743,3
+dragee,Dish,3744,0
+dutch process cocoa powder,Plant,3745,0
+earth balance margarine,Additive,3746,1
+eau de vie,Beverage-Alcoholic,3747,0
+edamame green,Legume,3748,0
+eggplant lengthwise,Vegetable,3749,0
+el enchilada sauce,Condiment,3750,1
+el taco seasoning,Spice,3751,2
+elderflower cordial,Fruit,3752,0
+emmentaler cheese,Dairy,3753,1
+english toffee bit,Gourd,3754,0
+espresso bean,Legume,3755,0
+feta cheese basil tomato,Dairy,3756,1
+filo pastry,Bakery,3757,1
+fine italian breadcrumb,Bakery,3758,2
+fine noodle,Cereal,3759,1
+fish ball,Fish,3760,4
+fish bouillon cube,Fish,3761,1
+fish oil,Fish,3762,4
+fish stock chicken,Meat,3763,6
+five spice seasoning,Spice,3764,2
+flageolet bean,Legume,3765,4
+foot hog casing,Dish,3766,0
+french vanilla pudding mix,Dish,3767,0
+frito corn chip,Maize,3768,3
+fruit apricot,Fruit,3769,1
+fruit sugar,Additive,3770,0
+ganache,Additive,3771,0
+garlic pepper,Vegetable,3772,2
+gluten breadcrumb,Cereal,3773,1
+gluten vanilla extract,Essential Oil,3774,0
+grain tortilla,Dish,3775,3
+granola,Cereal,3776,0
+greek dressing,Condiment,3777,2
+greek pita bread,Bakery,3778,0
+green chili powder,Vegetable,3779,2
+green pepper red,Vegetable Fruit,3780,1
+grey poupon dijon mustard,Condiment,3781,2
+habanero chile pepper,Condiment,3782,0
+hake fillet,Fish,3783,0
+hard egg yolk,Meat,3785,0
+havarti dill,Dairy,3786,2
+head leaf lettuce,Vegetable,3787,0
+head romaine,Vegetable,3788,2
+heinz tomato ketchup,Additive,3789,3
+high white bread,Bakery,3790,1
+hormel chili,Spice,3791,0
+italian plum,Fruit,3792,1
+italian prune plum,Fruit,3793,0
+jalapeno pepper ring,Spice,3794,1
+japanese sushi rice,Cereal,3795,1
+jigger tequila,Beverage-Alcoholic,3796,0
+jigger whiskey,Beverage-Alcoholic,3797,0
+kaiser hamburger bun,Bakery,3798,0
+kalonji,Spice,3799,0
+kentucky bourbon,Beverage-Alcoholic,3800,0
+kikkoman teriyaki sauce,Condiment,3801,1
+king oyster mushroom,Fungi,3802,2
+korean red pepper flake,Spice,3803,1
+kraft mexican,Dairy,3804,3
+ladyfinger cooky,Vegetable,3805,0
+lamb rib,Meat,3806,1
+leaf spinach,Vegetable,3807,0
+lemon pudding,Dish,3808,0
+lemon thyme leaf,Herb,3809,1
+lily bud,Flower,3810,3
+lime twist,Fruit,3811,0
+lipton beefy onion soup mix,Dish,3812,0
+lite milk,Dairy,3814,5
+loaf sourdough bread,Bakery,3815,0
+mandarin orange juice,Fruit,3816,1
+marcona almond,Nuts and Seeds,3817,0
+meatloaf mix beef,Meat,3818,1
+merlot wine,Beverage-Alcoholic,3819,1
+mexican bean,Legume,3820,1
+mexican chili bean,Legume,3821,0
+mint flake,Herb,3822,0
+mission fig,Fruit,3823,2
+mulato chile,Vegetable,3824,3
+mutton chop,Meat,3825,1
+natural cane sugar,Additive-Sugar,3826,0
+non yogurt,Dairy,3827,2
+nuoc cham sauce,Condiment,3828,2
+oetker vanilla sugar,Additive-Sugar,3829,0
+oil chicken,Meat,3830,6
+oil tomato,Vegetable,3831,2
+okra pod,Vegetable,3832,0
+onion hamburger bun,Bakery,3833,0
+orange juice pineapple,Beverage,3834,2
+oreo cookie crumb,Dish,3835,0
+ortega chile,Spice,3836,4
+oxo beef cube,Meat,3837,0
+oyster cracker,Seafood,3838,1
+pareve margarine,Additive,3839,0
+parmesan romano cheese,Dairy,3840,1
+partridge,Meat,3841,1
+pate,Dish,3842,2
+pattypan squash,Fruit,3843,0
+pea pearl onion,Vegetable,3844,1
+peanut oil sesame,Essential Oil,3845,3
+peasant bread,Bakery,3846,2
+peppermint schnapps,Herb,3847,0
+pierogi,Dish,3848,1
+pierogies,Dish,3849,1
+pillsbury pie crust,Bakery,3850,0
+pineapple orange juice,Beverage,3851,1
+pinto bean chili sauce,Dish,3852,3
+pinto bean jalapeno pepper,Legume,3853,0
+pork fatback,Meat,3855,1
+pork knuckle,Meat,3856,0
+pot barley,Cereal,3858,1
+pumpkin pie filling,Bakery,3860,0
+quark cheese,Dairy,3861,0
+rack baby back pork rib,Meat,3863,0
+raisin bran cereal,Cereal,3864,0
+ranch dip,Condiment,3865,0
+raspberry jell o gelatin,Additive,3866,0
+raspberry sherbet,Beverage,3867,0
+raspberry vodka,Beverage-Alcoholic,3868,0
+red bird eye chilies,Vegetable,3870,1
+red cherry pepper,Vegetable Fruit,3871,1
+red chile flake,Vegetable,3872,0
+red cinnamon candy,Additive,3873,0
+red glace cherry,Fruit,3874,0
+red pepper oil,Vegetable Fruit,3875,0
+red wine vinaigrette,Beverage-Alcoholic,3876,3
+rice cake,Dish,3877,0
+rice vermicelli noodle,Cereal,3878,1
+rose,Additive,3879,0
+rosemary needle,Herb,3880,1
+rye breadcrumb,Bakery,3881,1
+salt garlic powder,Herb,3882,2
+salt tomato sauce,Condiment,3883,2
+saltine crumb,Bakery,3884,0
+sauce hot,Condiment,3885,3
+sauterne white wine,Beverage-Alcoholic,3886,3
+savoiardi cooky,Bakery,3887,0
+seed,Spice,3888,0
+seville orange,Fruit,3889,1
+shake n bake,Meat,3890,5
+shoestring potato,Vegetable Tuber,3891,1
+shrimp cracker,Seafood,3892,2
+snake bean,Legume,3893,1
+soba noodle buckwheat,Cereal,3894,1
+sockeye salmon,Fish,3895,0
+soho lychee liqueur,Beverage-Alcoholic,3896,0
+soy cheese,Dairy,3897,1
+soy cream,Dairy,3898,0
+soybean oil,Additive,3899,2
+sparkling apple cider,Beverage-Alcoholic,3900,0
+speck,Meat,3901,0
+spice essence,Spice,3902,1
+spice mix,Spice,3903,2
+spinach linguine,Vegetable,3904,2
+spinach pasta,Cereal,3905,3
+sponge,Bakery,3906,0
+sriracha asian garlic sauce,Condiment,3907,1
+sriracha chili garlic sauce,Condiment,3908,1
+sriracha garlic sauce,Condiment,3909,0
+steak fillet,Fish,3910,3
+steak meat,Fish,3911,1
+stone dijon mustard,Condiment,3912,2
+sugar orange gelatin,Additive,3913,1
+super,Additive-Sugar,3914,0
+swordfish fillet,Fish,3915,2
+szechuan sauce,Additive,3916,4
+taco bell seasoning mix,Spice,3917,0
+tamarillo,Fruit,3918,0
+tamarind concentrate,Plant Derivative,3919,1
+tart crust,Bakery,3920,0
+teff flour,Cereal,3921,1
+teriyaki marinade sauce,Condiment,3922,3
+thai red chili pepper jalapeno,Spice,3923,2
+thompson grape,Fruit,3924,0
+thymol seed,Spice,3925,0
+tiger prawn,Seafood,3927,4
+tip roast,Meat,3928,0
+tom yum paste,Additive,3929,4
+tomato basil garlic,Herb,3930,1
+tomato bisque soup,Dish,3931,3
+tomato clam juice cocktail,Beverage-Alcoholic,3932,0
+tomato herb,Vegetable,3933,1
+tomato jalapeno pepper,Spice,3934,2
+tonkatsu sauce,Additive,3935,0
+torn romaine lettuce,Vegetable,3936,0
+turkey thigh,Meat,3937,2
+vanilla cake mix,Dish,3938,0
+vanilla custard,Dish,3939,0
+vanilla frosting,Legume,3940,0
+veal fillet,Meat,3941,1
+vegan cheddar cheese,Dairy,3942,0
+vegan mozzarella cheese,Dairy,3943,0
+vegetable pepper,Spice,3944,4
+vegetarian beef strip,Meat,3945,0
+vienna sausage,Dish,3946,2
+weetabix,Cereal,3947,0
+wheat pasta shell,Cereal,3948,2
+wheat pizza dough,Bakery,3949,0
+wheat rotini pasta,Cereal,3950,1
+white cooking wine,Beverage-Alcoholic,3951,2
+white flour tortilla,Bakery,3952,5
+wishbone italian dressing,Condiment,3953,3
+wrapper,Herb,3954,2
+yautia,Plant,3955,1
+yellow squash lengthwise,Fruit,3957,1
+yellow summer squash,Fruit,3958,1
+yolk egg noodle,Meat,3959,0
+zest lemon,Fruit,3960,0
+absolut citron vodka,Beverage-Alcoholic,3962,0
+aji yellow paste,Condiment,3963,2
+alfredo sauce mix,Dish,3964,1
+anaheim chile,Spice,3966,0
+angel food cake mix,Dish,3967,0
+appenzeller cheese,Dairy,3968,0
+apple pie,Fruit,3969,0
+apple schnapps,Fruit,3970,0
+argan oil,Plant Derivative,3971,1
+arrowroot powder,Vegetable,3972,2
+asian dressing,Dish,3973,1
+baby salad leaf,Vegetable,3975,1
+baby tomato,Fruit,3976,2
+bacardi dark rum,Beverage-Alcoholic,3977,0
+baker semi chocolate,Plant,3978,0
+baking chocolate square,Plant Derivative,3979,2
+balsamic dressing,Dish,3980,1
+basil oil,Essential Oil,3981,1
+bean bacon soup,Dish,3982,0
+bean pinto,Legume,3983,2
+bear meat,Meat,3984,0
+beef kidney,Meat,3985,0
+beef ramen noodle,Cereal,3986,0
+beef skirt steak,Meat,3987,2
+beef tenderloin filet,Meat,3988,0
+beef tip roast,Meat,3989,0
+black bean soup,Dish,3990,1
+black chinese mushroom,Fungi,3991,2
+black currant jelly,Fruit,3992,0
+black onion seed,Vegetable,3993,0
+black pudding,Dish,3994,0
+black turtle bean,Legume,3995,3
+blackberry brandy,Beverage-Alcoholic,3996,0
+blue crab,Seafood,3998,0
+blue grape,Fruit,3999,0
+bread grain,Bakery,4000,0
+breakfast sausage link,Meat,4002,1
+broccoli cheese soup,Dish,4003,0
+broccoli spear,Flower,4004,2
+brown cardamom pod,Spice,4005,2
+brown sugar substitute,Additive-Sugar,4006,1
+brut champagne,Beverage-Alcoholic,4007,1
+buckwheat noodle,Cereal,4008,1
+bulb shallot,Seafood,4009,0
+burrata cheese,Dairy,4010,0
+butter cake mix,Dish,4011,0
+butter flavoring,Additive,4012,0
+buttermilk ranch salad dressing mix,Dish,4013,2
+butternut squash lengthwise,Fruit,4014,1
+campbell fiesta nacho cheese soup,Dish,4015,3
+canadian whiskey,Beverage-Alcoholic,4016,0
+candy bar,Plant,4017,0
+candy corn,Maize,4018,0
+caperberries,Fruit,4019,0
+carb tortilla,Bakery,4020,0
+cascabel chile,Spice,4021,1
+cashew cream,Nuts and Seeds,4022,2
+center pork loin chop,Meat,4023,1
+cham sauce,Additive,4024,1
+char siu pork,Meat,4025,1
+cheesecake,Dairy,4026,0
+chevre cheese goat,Dairy,4027,0
+chevre goat cheese,Dairy,4028,0
+chicken breast tenderloin,Meat,4029,5
+chicken breast turkey,Meat,4030,5
+chicken consomme,Meat,4031,5
+chicken gumbo soup,Meat,4032,5
+chicken half,Meat,4033,5
+chicken portion,Meat,4034,5
+chicken rice roni,Meat,4035,5
+chicken soup powder,Meat,4036,5
+chicken stock fish,Meat,4037,5
+chile guajillos,Spice,4038,2
+chile sauce garlic,Condiment,4039,2
+chili con carne,Spice,4040,0
+chinese cooking wine,Beverage-Alcoholic,4041,1
+chinese mustard green,Spice,4042,3
+chinese salt,Additive,4043,3
+chinese white rice wine,Beverage-Alcoholic,4044,4
+chocolate biscuit,Plant Derivative,4045,0
+chocolate chip cooky,Additive,4046,0
+chocolate cooky,Bakery,4047,0
+chocolate drink mix,Dish,4048,0
+chocolate flavor pudding pie filling mix,Dish,4049,0
+chocolate icing,Plant Derivative,4050,0
+chop suey vegetable,Vegetable,4051,3
+chunk pineapple,Beverage,4052,1
+chunky pasta sauce,Additive,4053,1
+chunky tomato pasta sauce,Additive,4054,1
+cilantro salsa,Condiment,4055,4
+cinnamon baking chip,Additive,4056,0
+cinnamon oil,Additive,4057,0
+cloud ear mushroom,Fungi,4058,3
+cold white rice,Cereal,4059,0
+coleman mustard,Spice,4060,0
+cooking polenta,Dish,4062,1
+cool water,Additive,4063,0
+corn chex,Maize,4064,0
+corn sugar,Maize,4065,0
+corn tostada,Bakery,4066,2
+cornflake crumb,Maize,4067,1
+crabmeat crab,Seafood,4068,1
+cracker meal,Bakery,4069,0
+cream broccoli soup,Dish,4070,2
+cream chicken soup mushroom,Meat,4071,5
+cream heavy,Dairy,4072,1
+cream milk powder,Dairy,4073,0
+creamy caesar salad dressing,Dish,4074,2
+daikon,Vegetable,4075,1
+dark chocolate melt,Plant,4077,0
+dark cocoa powder,Plant,4078,0
+de provence,Herb,4080,0
+delicata squash,Fruit,4081,0
+diet lemon lime soda,Beverage,4082,0
+dolcelatte,Dairy,4083,3
+double pie crust,Bakery,4084,1
+drinking chocolate,Plant Derivative,4085,0
+duck breast half,Meat,4086,0
+dulce de leche ice cream,Dish,4087,0
+dungeness crabmeat,Seafood,4088,0
+earth balance natural buttery spread,Additive,4089,0
+eat apricot,Fruit,4090,2
+egg lengthwise,Meat,4091,1
+egg tortellini,Meat,4092,2
+egg yolk white,Meat,4093,0
+enchilada sauce green,Condiment,4094,1
+enchilada sauce red,Condiment,4095,2
+english cheese,Dairy,4096,0
+english toffee,Gourd,4097,0
+english toffee bar,Gourd,4098,0
+enriched flour,Cereal,4099,0
+extra shrimp,Seafood,4100,0
+family tea,Plant,4101,0
+fast chicken soup base,Meat,4102,5
+feta cheese tomato,Dairy,4103,4
+fig preserve,Fruit,4104,0
+fillet red snapper,Fish,4105,0
+fine vermicelli,Cereal,4106,1
+fire oil,Additive,4107,3
+fish fillet halibut,Fish,4108,0
+fish roe,Fish,4109,0
+fish steak,Fish,4110,0
+flake,Spice,4111,0
+french thyme,Herb,4112,3
+fresno chile pepper,Vegetable,4113,2
+fruit jam,Fruit,4114,0
+fruit syrup,Plant Derivative,4115,0
+fudge topping,Additive,4116,0
+galanga root,Spice,4117,2
+garlic basil,Herb,4118,0
+garlic herb goat cheese,Dairy,4119,2
+garlic salt pepper,Spice,4120,1
+ginger cube,Spice,4121,1
+ginger green chili paste,Vegetable,4122,0
+gjetost cheese,Dairy,4123,4
+glace apricot,Fruit,4124,0
+goat milk,Dairy,4125,0
+godiva dark chocolate bar,Plant,4126,0
+goya extra virgin olive oil,Plant Derivative,4127,2
+goya garlic,Herb,4128,3
+grain wheat flour,Cereal,4129,1
+greek vinaigrette salad dressing,Condiment,4130,0
+green chile enchilada sauce,Condiment,4131,2
+green chutney,Additive,4132,1
+green decorator sugar,Additive,4133,0
+green mung bean,Legume,4134,0
+green pumpkin seed,Nuts and Seeds,4135,0
+green tomatillo sauce,Condiment,4137,2
+guava jelly,Fruit,4138,1
+gumbo file powder,Spice,4139,1
+habanero hot sauce,Condiment,4140,0
+haldi powder,Spice,4141,0
+hard taco shell,Bakery,4142,1
+hatch chile,Vegetable,4143,1
+hazelnut syrup,Nuts and Seeds,4144,0
+heinz chili sauce,Additive,4145,0
+hemp seed,Spice,4146,0
+hibiscus,Flower,4147,0
+hormel chili without bean,Dish,4148,0
+ice cream cone,Dish,4149,0
+jalapeno jelly,Spice,4150,1
+jalapeno pepper sauce,Condiment,4152,1
+jalapeno powder,Spice,4153,0
+jalapeno seed,Spice,4154,2
+japanese bread crumb,Bakery,4155,1
+kabuli channa,Legume,4156,0
+kaffir lime zest,Herb,4157,1
+kecap manis,Condiment,4158,1
+kefalograviera cheese,Dairy,4159,0
+kiwi liqueur,Fruit,4160,0
+korean chile powder,Spice,4162,0
+korean pepper paste,Spice,4163,2
+korean radish,Vegetable,4164,0
+kraft mexican cheese,Dairy,4165,3
+lady finger cooky,Bakery,4166,0
+lamb broth,Vegetable,4167,0
+lamb stock cube,Meat,4168,0
+lamb tenderloin,Meat,4169,2
+lasagna pasta,Cereal,4170,2
+lavender oil,Additive,4171,0
+lemon juice concentrate,Beverage,4172,1
+lemon peel strip,Fruit,4173,0
+lemon verbena,Fruit,4174,0
+licorice,Herb,4175,1
+liquid egg white,Meat,4176,0
+liquid gravy browner,Dish,4177,2
+liquid pepper sauce,Condiment,4178,2
+lo mein noodle,Cereal,4180,2
+longan,Plant,4181,2
+loose tea,Plant,4182,0
+macaroni pasta,Cereal,4183,3
+madeira cake,Dish,4184,0
+malibu coconut rum,Beverage-Alcoholic,4185,1
+malt biscuit,Bakery,4186,0
+mandarin segment,Plant Derivative,4187,0
+mango chunk,Fruit,4188,0
+mango rum,Beverage-Alcoholic,4189,0
+marinara sauce pasta,Condiment,4190,2
+masa dough,Maize,4191,1
+matzo farfel,Bakery,4193,1
+mccormick,Spice,4194,2
+mediterranean oregano,Spice,4195,0
+mexican four cheese,Dairy,4196,0
+meyer dark rum,Beverage-Alcoholic,4197,0
+mezcal,Beverage-Alcoholic,4198,0
+microwave popcorn,Maize,4199,0
+mint chocolate chip,Additive,4200,0
+mint chocolate chip ice cream,Dish,4201,0
+miso soup mix,Dish,4202,0
+moist white cake mix,Dish,4203,0
+moose roast,Meat,4204,0
+morton nature seasoning,Spice,4205,1
+mostaccioli noodle,Cereal,4206,1
+mozzarella cheddar cheese,Dairy,4207,2
+mung bean noodle,Legume,4208,1
+mushroom beef gravy,Dish,4209,0
+mushroom gravy,Fungi,4210,0
+mushroom gravy mix,Fungi,4211,0
+nacho cheese dip,Dairy,4212,0
+natural greek yogurt,Dairy,4214,0
+nonfat greek yogurt,Dairy,4215,2
+nopalitos,Plant,4216,0
+nut cashew,Nuts and Seeds,4217,0
+olive black green,Plant,4218,1
+olive green,Plant,4219,2
+orange gelatin,Additive,4220,0
+orange juice apple,Fruit,4221,0
+orange juice lime,Beverage,4222,0
+orange juice liqueur,Fruit,4223,0
+orange pekoe tea,Beverage,4224,1
+orange pepper,Vegetable Fruit,4225,1
+organic carrot,Vegetable,4226,1
+oyster juice,Seafood,4227,2
+paad thai sauce,Condiment,4228,2
+pancake,Dish,4230,1
+panela cheese,Dairy,4231,1
+panko crumb,Bakery,4232,0
+paradise mango rum liqueur,Beverage-Alcoholic,4233,0
+parmesan asiago romano cheese,Dairy,4234,0
+pastis,Bakery,4235,0
+pastry crust,Bakery,4236,0
+pear juice,Beverage,4237,1
+pearl sugar,Additive-Sugar,4238,0
+pepper oil,Spice,4239,2
+peppercorn ranch dressing,Condiment,4240,1
+perch,Fish,4241,0
+phyllo,Bakery,4242,0
+pickling vinegar,Spice,4243,0
+pie filling,Dish,4244,0
+pillsbury biscuit,Bakery,4245,0
+pina colada mix,Dish,4246,1
+pink lemonade,Beverage,4247,0
+piquillo pepper red,Vegetable Fruit,4248,2
+pista,Nuts and Seeds,4249,0
+pizza,Bakery,4250,1
+pizza crust mix,Bakery,4251,0
+plantain leaf,Plant,4252,2
+plum brandy,Beverage-Alcoholic,4253,0
+plum wine,Beverage-Alcoholic,4254,1
+pomegranate paste,Fruit,4255,2
+pomegranate powder,Fruit,4256,0
+pork bouillon cube,Dish,4257,0
+pork medallion,Meat,4258,1
+pork rib roast,Meat,4259,1
+pork shoulder blade roast,Meat,4260,1
+pork shoulder chop,Meat,4261,1
+pork trotter,Meat,4262,0
+potato bread,Vegetable Tuber,4263,1
+potato lengthwise,Vegetable Tuber,4264,1
+protein powder,Spice,4265,0
+prune juice,Fruit,4266,0
+pumpkin flesh,Fruit,4267,2
+pumpkin spice,Spice,4268,0
+ra el hanout,Spice,4269,3
+rack pork sparerib,Meat,4270,0
+radiatore pasta,Cereal,4271,1
+rainbow trout,Fish,4272,0
+rajma,Legume,4273,0
+raspberry jelly crystal,Fruit,4274,0
+red chili oil,Plant Derivative,4275,0
+red currant jam,Fruit,4276,1
+red grape juice,Fruit,4277,0
+red green cherry,Additive,4278,0
+red hot sauce,Additive,4279,3
+red miso paste,Spice,4280,1
+red pear tomato,Vegetable,4281,0
+red pepper strip,Vegetable,4282,1
+red peppercorn,Spice,4283,0
+red raspberry preserve,Fruit,4284,0
+red thai chili pepper,Vegetable,4285,1
+red yellow bell pepper,Vegetable Fruit,4286,2
+rice brown,Cereal,4287,1
+rice chex,Cereal,4288,0
+rice cracker,Cereal,4289,1
+rice noodle vermicelli,Cereal,4290,1
+rigatoni,Cereal,4291,2
+ring bologna,Meat,4292,0
+ritz cracker crumb,Bakery,4293,1
+robusto cheese,Dairy,4294,1
+rose extract,Essential Oil,4295,1
+rosewater,Additive,4296,1
+rusk,Bakery,4297,0
+rustic white bread,Bakery,4298,1
+rye bread pumpernickel,Bakery,4299,0
+salt italian herb seasoning,Spice,4300,0
+sardine tomato sauce,Condiment,4301,0
+sashimi grade tuna,Fish,4302,0
+saskatoon berry,Berry,4303,1
+scamorza cheese,Dairy,4304,0
+scotch bonnet chile pepper,Spice,4305,1
+sea bream,Additive-Salt,4306,0
+seafood cocktail sauce,Condiment,4307,0
+seasoning salt pepper,Spice,4308,1
+sesame chili oil,Essential Oil,4309,2
+sesame seed paste,Dish,4310,1
+shell crab,Seafood,4311,1
+shiitake mushroom water,Fungi,4312,1
+shiraz wine,Beverage-Alcoholic,4313,0
+shrimp without tail,Seafood,4314,3
+simple syrup sugar,Plant Derivative,4315,0
+sole,Fish,4317,1
+soup meat,Meat,4318,0
+soup mix,Dish,4319,0
+sourdough bread french,Bakery,4320,0
+soy chorizo,Meat,4321,0
+soy crumbles,Bakery,4322,0
+spanish rice vermicelli mix,Cereal,4323,2
+spanish saffron thread,Spice,4324,1
+spice rub,Spice,4325,1
+spicy bulk sausage,Dish,4326,1
+spinach fettuccine pasta,Cereal,4327,0
+spinach noodle,Vegetable,4328,0
+spinach tortellini,Vegetable,4329,0
+splenda sugar baking,Vegetable,4330,0
+spray cooking,Additive,4331,1
+spring,Herb,4332,0
+squirrel,Meat,4333,1
+stew meat beef,Meat,4334,0
+stir,Dish,4335,4
+stir fry oil,Dish,4336,3
+stock beef,Meat,4337,0
+strawberry puree,Fruit,4338,0
+strength chicken broth,Meat,4339,5
+strip steak,Fish,4340,0
+sugar apricot jam,Fruit,4341,3
+sugar orange marmalade,Fruit,4342,1
+sugar strawberry jam,Fruit,4343,0
+sunflower margarine,Additive,4344,0
+super fine sugar,Additive-Sugar,4345,0
+swanson chicken broth,Meat,4346,5
+taco bell home ' n chunky salsa,Condiment,4347,1
+taleggio,Dairy,4348,0
+tamarind soup mix,Dish,4349,2
+tarragon sprig,Herb,4350,3
+tart red cherry,Fruit,4351,0
+thai chili garlic sauce,Additive,4352,1
+thai red chili paste,Condiment,4353,1
+tomato basil oregano,Vegetable,4354,0
+tomato jam,Vegetable,4355,0
+tomatoe,Vegetable,4356,1
+torn basil leaf,Herb,4357,0
+torn spinach leaf,Vegetable,4358,2
+tri color rotini pasta,Cereal,4359,0
+tropical fruit salad,Dish,4360,1
+turkey chili,Meat,4361,0
+turkey meatball,Meat,4362,3
+turkey wing,Meat,4363,0
+turmeric root,Spice,4364,4
+tzatziki sauce,Condiment,4365,1
+vanilla flavor pudding pie filling mix,Dish,4366,0
+vanilla liqueur,Legume,4367,0
+vanilla schnapps,Legume,4368,0
+veal demi glace,Additive,4369,1
+veal kidney,Meat,4370,0
+veal knuckle,Meat,4371,0
+veal roast,Meat,4372,1
+veal schnitzel,Meat,4373,2
+vegan cheese,Dairy,4374,1
+vegan worcestershire sauce,Condiment,4376,0
+vegetable oil cooking,Additive,4377,1
+vegetable oil sesame,Plant Derivative,4378,2
+vegetable stock base,Vegetable,4379,1
+vegetarian chili,Vegetable,4380,1
+vegetarian fish sauce,Condiment,4381,0
+vegetarian ham,Meat,4382,0
+velveeta cheese product,Dairy,4383,2
+venison loin,Meat,4384,1
+watermelon ball,Fruit,4385,1
+watermelon juice,Beverage,4386,0
+wheat angel hair pasta,Cereal,4387,2
+wheat beer,Beverage-Alcoholic,4388,1
+wheat elbow macaroni,Cereal,4389,3
+wheat toast,Cereal,4391,0
+whipping cream heavy,Dairy,4392,0
+white pita bread,Bakery,4393,3
+white port,Beverage-Alcoholic,4394,1
+white truffle,Additive,4395,2
+white wine worcestershire sauce,Condiment,4396,1
+whitefish fillet,Fish,4397,0
+wildflower honey,Plant Derivative,4398,1
+winter melon,Fruit,4399,2
+yakisoba noodle,Cereal,4400,1
+yellow cake mix white,Dish,4401,0
+yellow curry powder,Herb,4402,2
+yellow sugar,Additive-Sugar,4403,0
+zucchini blossom,Vegetable,4405,1
+absolut vodka,Beverage-Alcoholic,4407,0
+agar powder,Additive,4408,0
+alcohol,Beverage-Alcoholic,4410,0
+alfalfa,Legume,4411,1
+almond extract vanilla,Additive,4412,0
+almond filling,Dish,4413,1
+almond powder,Nuts and Seeds,4414,1
+almond syrup,Plant Derivative,4415,0
+amaretti cookie,Dish,4416,0
+amber beer,Beverage,4417,1
+amchoor mango powder,Spice,4418,0
+angostura aromatic bitter,Condiment,4419,1
+angostura worcestershire sauce,Condiment,4420,0
+anise pod,Spice,4421,2
+anisette liqueur,Spice,4422,0
+apricot fruit,Fruit,4424,0
+apricot half juice,Fruit,4425,0
+apricot jelly,Fruit,4426,0
+artichoke heart brine,Flower,4427,0
+asian basil,Herb,4428,0
+atkins baking mix,Dish,4430,1
+avocado leaf,Essential Oil,4431,1
+baby chicken,Meat,4432,4
+baby corn lengthwise,Maize,4433,0
+baby lettuce spring green,Vegetable,4434,2
+badia complete seasoning,Spice,4435,1
+bagel chip,Bakery,4436,1
+bagoong,Additive,4437,1
+ball pizza dough,Bakery,4439,0
+balsamic glaze,Dish,4440,1
+banana chip,Fruit,4441,0
+banana pudding mix,Dish,4442,0
+banana squash,Fruit,4443,2
+barley malt,Cereal,4444,0
+basa fillet,Fish,4445,0
+basic pizza dough,Bakery,4446,0
+basil pesto sauce,Additive,4447,0
+bean thread vermicelli,Legume,4448,1
+becel margarine,Additive,4449,1
+beef back rib,Meat,4450,0
+beef chuck shoulder pot roast,Meat,4451,0
+beef loin,Meat,4452,3
+beef medallion,Meat,4453,0
+beef onion soup mix,Dish,4454,0
+beef pot roast,Meat,4455,0
+beef steak fillet,Meat,4456,0
+beef t steak,Meat,4457,0
+beef tripe,Meat,4458,0
+biryani spice mix,Spice,4459,0
+bite mozzarella cheese ball,Dairy,4460,0
+black bean dip,Legume,4461,0
+black currant jam,Fruit,4462,0
+black fig,Fruit,4463,1
+black olive tapenade,Plant,4464,1
+black red pepper,Spice,4466,1
+black soybean,Legume,4467,2
+black truffle oil,Plant,4468,1
+blackberry preserve,Fruit,4469,0
+blue corn tortilla,Dish,4470,3
+blue corn tortilla chip,Bakery,4471,3
+bluefish,Fish,4472,0
+boca burger,Dish,4473,0
+bolillo,Cereal,4474,0
+bonito shaving,Fish,4475,0
+bottlegourd,Vegetable,4476,0
+braunschweiger sausage,Meat,4477,0
+breadcrumb panko,Bakery,4479,2
+breadcrumb white bread,Bakery,4480,0
+bresaola,Meat,4482,0
+broccoli raab,Flower,4483,1
+brown sausage,Dish,4484,0
+brown stock,Dish,4485,0
+brown wild rice mix,Cereal,4486,3
+bulk hot pork sausage,Meat,4487,0
+butter cake,Dish,4489,0
+butter extract,Additive,4490,0
+butter oil,Plant Derivative,4491,0
+buttercream frosting,Dairy,4492,0
+buttermilk biscuit dough,Dish,4493,0
+cake crumb,Dish,4494,0
+california almond,Nuts and Seeds,4495,2
+california chile pod,Spice,4496,1
+canadian cheddar cheese,Dairy,4498,2
+canadian rye whisky,Beverage-Alcoholic,4500,0
+candle nut,Nuts and Seeds,4501,2
+candy cane,Additive,4502,0
+canola cooking spray,Additive,4503,1
+cape gooseberry,Fruit,4504,0
+caribou,Meat,4505,0
+carrot diagonally,Vegetable,4506,1
+challah bread,Bakery,4508,0
+chapati flour,Cereal,4509,0
+cheese cheddar,Dairy,4510,0
+cheese italian,Dairy,4511,0
+cherry candy bar,Plant,4512,0
+cherry gelatin,Additive,4513,0
+cherry grape tomato,Vegetable,4514,0
+cherry jell o,Additive,4515,0
+chicken breast cutlet,Meat,4516,4
+chicken noodle soup,Meat,4517,4
+chicken stock salt,Meat,4518,4
+chicken stock turkey,Meat,4519,4
+chicken stuffing mix,Meat,4520,4
+chicken taco seasoning mix,Spice,4521,4
+chicken vegetarian seasoning,Meat,4522,4
+chile pepper jam,Spice,4523,2
+chili hot bean,Legume,4524,0
+chili olive oil,Plant Derivative,4525,2
+chinese bean,Legume,4526,0
+chinese black vinegar,Additive-Vinegar,4527,1
+chinese chili garlic sauce,Condiment,4528,1
+chinese chili paste garlic,Plant Derivative,4529,3
+chinese pancake,Dish,4530,1
+chinese red chile bean paste,Legume,4531,2
+chipotle chili pepper,Spice,4532,0
+chipotle mayonnaise,Condiment,4533,1
+chipotle sauce,Condiment,4534,3
+chocolate fudge pudding mix,Dish,4535,0
+chocolate graham cracker,Bakery,4536,0
+chocolate liqueur godiva,Beverage-Alcoholic,4537,0
+chocolate milk mix,Beverage,4538,0
+chocolate pudding,Dish,4539,0
+chocolate ripple biscuit,Plant Derivative,4540,0
+chocolate sauce,Plant Derivative,4541,0
+chocolate wafer cooky,Bakery,4542,0
+choice,Dish,4543,1
+chunky tomato onion garlic sauce,Condiment,4544,0
+cinnamon red hot candy,Additive,4545,0
+cinnamon schnapps,Additive,4546,0
+classico tomato basil pasta sauce,Additive,4549,1
+cocktail rye bread,Bakery,4550,0
+coconut butter,Fruit,4551,0
+coconut cream pudding mix,Dish,4552,1
+coffee extract,Beverage Caffeinated,4553,0
+concord grape,Fruit,4554,0
+cooking cream,Dairy,4555,2
+cooking oil lard,Additive,4556,1
+corn relish,Maize,4557,2
+cornbread muffin mix,Dish,4558,1
+cranberry jelly,Fruit,4559,1
+cream chicken soup mix,Meat,4560,4
+cream mushroom soup celery,Dish,4561,2
+creme de cassis liqueur,Beverage-Alcoholic,4562,0
+crisp chow mein noodle,Cereal,4563,1
+culantro cilantro,Herb,4564,4
+cupcake,Dish,4565,0
+curd cheese,Dairy,4566,0
+currant juice,Fruit,4567,0
+dark amber maple syrup,Additive,4568,0
+dark balsamic vinegar,Additive-Vinegar,4569,0
+dark chocolate square,Plant,4570,1
+dashi soup,Dish,4571,1
+de leche,Dish,4572,0
+deer,Meat,4573,0
+deli pepperoni,Meat,4575,0
+deli rotisserie chicken,Meat,4576,4
+dirty rice mix,Cereal,4577,1
+double cream whipping,Dairy,4578,0
+dr pepper cola,Spice,4579,1
+duck egg,Meat,4580,0
+duncan hines yellow cake mix,Dish,4581,0
+each salt black pepper,Spice,4582,0
+each salt pepper,Spice,4583,1
+el taco seasoning mix,Spice,4584,0
+elderberry flower,Fruit,4585,0
+enchilada seasoning,Spice,4586,3
+extra coffee,Beverage Caffeinated,4587,0
+extra olive oil,Plant Derivative,4588,2
+extra pork,Meat,4589,0
+extra spicy seasoning,Spice,4590,2
+fesh coconut,Beverage,4591,1
+feta cheese herb,Dairy,4592,1
+fiesta mexican cheese,Dairy,4593,2
+fiesta nacho cheese soup,Dish,4594,3
+fillet grouper,Fish,4595,0
+fillet rainbow trout,Fish,4596,0
+fillet swai fish,Fish,4597,0
+fillet walleye,Fish,4598,1
+fine cornmeal,Maize,4599,0
+fish stock vegetable,Vegetable,4600,0
+flavoring,Additive,4601,0
+fontinella cheese,Dairy,4603,3
+freekeh,Cereal,4604,0
+freestone peach,Fruit,4605,0
+french haricot vert green bean,Cereal,4606,0
+french sandwich,Dish,4607,0
+french vanilla non dairy coffee creamer,Dairy,4608,0
+frito bean dip,Condiment,4609,0
+fry bread,Bakery,4610,0
+fudge brownie mix,Dish,4611,0
+fuggles hop,Beverage-Alcoholic,4612,0
+gammon steak,Fish,4613,1
+garbanzo bean liquid,Legume,4614,0
+garlic cheese,Dairy,4615,0
+garlic grapeseed oil,Essential Oil,4616,2
+garlic herb couscous mix,Herb,4617,0
+garlic herb spreadable cheese,Dairy,4618,2
+garlic seasoning,Herb,4619,0
+garlic sprout,Herb,4620,1
+germain elderflower liqueur,Beverage-Alcoholic,4621,0
+ginger biscuit,Spice,4622,0
+gluten bread,Cereal,4623,0
+gluten flour rice,Cereal,4624,0
+godiva white chocolate liqueur,Beverage-Alcoholic,4625,0
+goji berry,Berry,4626,0
+golden sultana raisin,Fruit,4627,1
+goya sofrito sauce,Condiment,4628,2
+grain alcohol,Beverage-Alcoholic,4629,0
+grain breadcrumb,Bakery,4630,0
+grain cereal,Cereal,4631,0
+grain paradise,Cereal,4632,0
+grain wild rice mix,Cereal,4633,0
+grapefruit juice concentrate,Beverage,4634,0
+grapefruit zest,Beverage,4635,0
+greek natural yoghurt,Dairy,4636,1
+greek vinaigrette,Additive,4637,0
+green cardamom powder,Spice,4638,0
+green glazed cherry,Additive,4640,0
+green papaya,Fruit,4641,0
+green pepper flake,Vegetable Fruit,4642,2
+green sugar,Additive,4643,0
+guajillo chile powder,Vegetable,4644,0
+half milk,Dairy,4645,1
+ham spread,Meat,4646,0
+harusame noodle,Cereal,4649,1
+hatch chile pepper,Vegetable,4650,1
+hearty bread,Bakery,4651,0
+herb salt,Additive-Salt,4654,1
+herman sourdough starter,Dish,4655,0
+hershey bar,Plant,4656,0
+hershey chocolate chip,Additive,4657,0
+hershey chocolate kiss,Plant Derivative,4658,0
+high milk chocolate,Plant,4662,0
+home bread,Bakery,4663,1
+hominy grit,Maize,4664,0
+honey comb,Plant Derivative,4665,0
+honey mustard dressing,Plant Derivative,4666,3
+hot chocolate mix,Beverage,4667,0
+hot egg noodle,Meat,4668,2
+hot red pepper sauce,Condiment,4669,2
+hp steak sauce,Condiment,4670,0
+huckleberry,Fruit,4671,0
+ice cream topping,Additive,4672,0
+ice wine,Beverage-Alcoholic,4673,0
+idaho baking potato,Vegetable,4674,0
+italian pastina,Spice,4675,2
+italian sausage spaghetti sauce,Meat,4676,0
+italian seasoning basil,Herb,4677,1
+italian seasoning oregano,Herb,4678,2
+jalapeno havarti cheese,Dairy,4679,0
+jamon serrano,Meat,4680,0
+jelly crystal,Fruit,4681,0
+jigger peach schnapps,Beverage-Alcoholic,4682,0
+jigger rum,Beverage-Alcoholic,4683,0
+jose cuervo tequila,Beverage-Alcoholic,4684,0
+juice lime,Beverage,4685,1
+jumbo black olive,Plant,4686,0
+kashmiri chilies,Spice,4687,1
+kashmiri red chili powder,Spice,4688,0
+kidney bean sauce,Legume,4689,0
+korean red chili pepper flake,Spice,4690,2
+korean rice cake,Dish,4691,0
+korean sesame oil,Essential Oil,4692,0
+korean soy bean paste,Condiment,4693,0
+kraft catalina dressing,Condiment,4694,0
+kraft english cheese spread,Dairy,4695,1
+kraft mexican four cheese,Dairy,4696,1
+lamb leg chop,Meat,4697,0
+lancashire cheese,Dairy,4698,0
+land o ' lake butter,Dairy,4699,0
+lasagne noodle,Cereal,4700,1
+lebanese bread,Bakery,4702,2
+leek soup mix,Dish,4703,3
+leek white green,Vegetable,4704,1
+lemon basil,Herb,4705,1
+lemon flavoring,Fruit,4706,0
+lemon marmalade,Additive,4707,0
+lemon soda,Beverage,4708,0
+lemon vinaigrette,Additive,4709,1
+lemongrass paste,Herb,4710,1
+licorice root,Herb,4711,0
+lime cordial,Fruit,4712,0
+lime marmalade,Additive,4713,0
+lingonberry jam,Fruit,4714,0
+liquid shrimp crab boil seasoning,Spice,4716,1
+loaf challah,Bakery,4717,0
+lobster stock,Seafood,4718,0
+lotus leaf,Plant,4719,3
+lychee heavy syrup,Fruit,4720,0
+lychee juice,Fruit,4721,0
+macadamia half,Beverage,4722,1
+mahleb,Spice,4723,0
+major grey chutney,Additive,4724,1
+mandarin orange syrup,Plant Derivative,4725,2
+mango peach salsa,Condiment,4726,2
+marinara sauce pizza,Condiment,4727,0
+matchstick carrot,Vegetable,4729,1
+meatloaf,Dish,4730,0
+melon seed,Fruit,4731,0
+menudo spice mix,Spice,4732,3
+meringue nest,Bakery,4733,0
+meringue powder,Bakery,4734,0
+mexican chorizo,Meat,4738,1
+mexican hominy,Maize,4739,2
+milk greek yogurt,Dairy,4740,2
+minado perfect sushi rice,Cereal,4741,0
+minestrone soup,Dish,4742,0
+mini tart shell,Bakery,4743,0
+mint powder,Herb,4744,0
+multi grain bread,Bakery,4745,1
+multicolored candy sprinkle,Plant Derivative,4746,0
+multicolored sprinkle,Plant Derivative,4747,0
+mushroom button,Fungi,4748,1
+mushroom soup mix,Dish,4749,0
+mutton mince,Meat,4750,0
+mutton neck,Meat,4751,0
+my take sneaky orange puree,Fruit,4752,0
+nature seasoning,Spice,4753,0
+new mexico chile pod,Spice,4754,0
+new mexico red chile powder,Spice,4755,0
+no salt chicken broth,Meat,4756,4
+no salt corn,Vegetable,4757,1
+no yolk noodle,Cereal,4758,1
+non dairy creamer,Dairy,4759,0
+nonfat cheddar cheese,Dairy,4760,0
+nonstick cooking,Additive,4761,0
+nut oil,Essential Oil,4762,1
+nutella chocolate hazelnut spread,Additive,4763,0
+oil corn,Maize,4764,1
+oil enough,Additive,4765,2
+olive black,Plant,4766,1
+orange curacao liqueur,Beverage-Alcoholic,4767,0
+orange essence,Fruit,4768,0
+ortega taco sauce,Condiment,4769,1
+pale ale,Beverage-Alcoholic,4770,0
+pancit noodle,Cereal,4772,3
+pandan extract,Additive,4773,0
+panko japanese bread crumb,Bakery,4774,1
+paprika vera,Vegetable,4776,3
+party rye,Cereal,4777,0
+passion fruit nectar,Fruit,4778,1
+pasta sauce meat,Meat,4779,0
+pea corn,Maize,4780,0
+pea green,Legume,4781,0
+peach heavy syrup,Plant Derivative,4782,0
+peach jam,Fruit,4783,0
+peameal bacon,Meat,4784,0
+peanut oil olive,Plant Derivative,4785,3
+pear half juice,Beverage,4786,0
+pearl couscous,Cereal,4787,2
+pepper bacon,Spice,4788,1
+pepper jalapeno,Spice,4789,0
+peppermint,Herb,4790,0
+phyllo tart shell,Bakery,4791,0
+pie,Dish,4792,0
+pig,Meat,4793,1
+piloncillo brown sugar,Additive-Sugar,4795,0
+pilsner beer,Beverage,4796,0
+pimento green olive,Dish,4797,0
+pineapple concentrate,Beverage,4798,1
+pineapple juice concentrate,Beverage,4799,1
+pineapple sherbet,Beverage,4800,0
+piri sauce,Additive,4801,1
+pistachio ice cream,Dish,4802,0
+pita bread wheat,Cereal,4803,0
+pizza dough crust,Bakery,4804,0
+plum jelly,Fruit,4805,2
+plum preserve,Fruit,4806,1
+plum rom tomato,Vegetable,4807,0
+plum tomato liquid,Vegetable,4808,2
+pod okra,Vegetable,4809,0
+pomegranate aril,Fruit,4810,0
+pomegranate concentrate,Fruit,4811,1
+pomfret fish,Fish,4812,0
+popped corn,Maize,4813,0
+poppy seed paste,Spice,4814,2
+pork breakfast sausage,Meat,4815,0
+pork filet,Meat,4816,0
+pork sirloin,Meat,4817,2
+potato homestyle,Vegetable Tuber,4818,1
+potato pierogies,Vegetable Tuber,4819,0
+potato southwest hash brown,Dish,4820,0
+preserve,Fruit,4821,0
+progresso italian breadcrumb,Bakery,4822,1
+pumpkin seed oil,Nuts and Seeds,4823,0
+puree,Vegetable,4824,0
+quaker oat,Cereal,4825,0
+queso asadero mexican cheese,Dairy,4826,1
+quinoa flour,Cereal,4827,1
+radiatore,Cereal,4828,0
+ranch fiesta dip mix,Condiment,4830,0
+raspberry cranberry juice concentrate,Beverage,4832,0
+raspberry vinaigrette salad dressing,Condiment,4833,0
+rava,Cereal,4834,0
+red bird eye chile,Vegetable,4835,0
+red chile paste,Spice,4836,4
+red chili flake,Spice,4837,3
+red leicester cheese,Dairy,4838,0
+red pepper seasoning,Vegetable Fruit,4839,1
+red pumpkin,Fruit,4840,0
+red raspberry jam,Fruit,4841,0
+red thai pepper,Spice,4842,2
+rib eye steak each,Meat,4843,1
+rice flour brown,Cereal,4844,0
+rice krispies cereal,Cereal,4845,0
+rice pilaf mix,Dish,4846,2
+ro tel mexican festival tomato,Vegetable,4847,2
+ro tel tomato pepper,Vegetable,4848,2
+rock shrimp,Seafood,4849,2
+royal icing,Additive,4850,0
+rub seasoning,Spice,4851,2
+runner bean,Legume,4852,0
+safflower oil corn,Maize,4853,2
+sage derby cheese,Dairy,4854,1
+salad macaroni,Plant,4855,0
+salad seasoning mix,Spice,4856,0
+salt lemon pepper,Spice,4857,1
+saltine,Bakery,4858,1
+sansho pepper,Vegetable,4859,4
+sargento mexican cheese,Dairy,4860,2
+saudi kabsa spice mix,Spice,4861,4
+sausage dripping,Dish,4862,0
+sausage gravy,Dish,4863,0
+sazon con,Dish,4864,1
+scalloped potato mix,Dish,4865,0
+season italian salad dressing mix,Dish,4866,1
+serving cooking spray,Additive,4867,2
+sesame ginger marinade,Condiment,4868,3
+sesame ginger salad dressing,Dish,4869,1
+sesame salt,Additive,4870,1
+shanghai noodle,Cereal,4871,0
+shaoxing rice wine,Beverage-Alcoholic,4872,2
+sharp provolone cheese,Dairy,4873,0
+shitake mushroom,Fungi,4874,0
+shoepeg corn,Maize,4875,1
+shortcrust pastry dough,Bakery,4876,1
+shrimp bouillon cube,Dish,4877,1
+side bacon,Meat,4878,1
+simple syrup water,Additive,4879,0
+skin chicken thigh,Meat,4880,4
+skor candy bar,Plant,4881,0
+sloe gin,Beverage-Alcoholic,4882,0
+soda cracker crumb,Bakery,4883,0
+sorrel leaf,Herb,4884,1
+sourdough breadcrumb,Bakery,4885,0
+southern comfort liqueur,Beverage-Alcoholic,4886,0
+southern hash brown potato,Dish,4887,1
+southwestern chicken strip,Meat,4888,4
+soy bean oil,Legume,4889,2
+soy cheddar cheese,Dairy,4890,0
+soy protein,Plant Derivative,4891,0
+soya granule,Condiment,4892,1
+spaghetti sauce garlic,Condiment,4893,0
+spanish mackerel,Fish,4894,0
+sparerib rack,Meat,4895,1
+spice cake mix,Spice,4896,0
+spreadable goat cheese,Dairy,4897,1
+spring onion leaf,Herb,4898,0
+squash blossom,Fruit,4899,1
+standing rib roast,Meat,4900,0
+stir fry seasoning,Dish,4901,1
+strawberry cream cheese,Dairy,4902,0
+strawberry jelly crystal,Fruit,4903,0
+sugar cookie mix,Additive,4904,0
+sugar crystal,Additive,4905,0
+summer squash lengthwise,Fruit,4906,0
+sun tomato puree,Vegetable,4907,0
+superfine sugar caster,Additive-Sugar,4908,0
+sushi,Dish,4909,2
+sysco chicken base,Meat,4910,4
+taco bell sauce,Additive,4911,1
+taco bell seasoning,Spice,4912,0
+tamarind soup base,Dish,4913,1
+tart baking apple,Fruit,4914,0
+tempura flour,Cereal,4915,1
+tempura shrimp,Seafood,4916,0
+tender,Meat,4917,0
+tennessee whiskey,Beverage-Alcoholic,4918,0

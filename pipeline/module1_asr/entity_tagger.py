@@ -1,24 +1,25 @@
-# Mock entity lists (will be replaced with real DB values when access arrives)
-INGREDIENTS = {"tomato", "onion", "garlic", "chicken", "rice", "cumin", "salt", "pepper", "turmeric", "ginger"}
+from module1_asr.extractor import extract_ingredients
+
 FLAVOR_MOLECULES = {"limonene", "capsaicin", "vanillin", "menthol", "cinnamaldehyde"}
-DIETARY_MARKERS = {"vegan", "vegetarian", "gluten-free", "keto", "diabetic", "low-sodium"}
+DIETARY_MARKERS  = {"vegan", "vegetarian", "gluten-free", "keto", "diabetic", "low-sodium"}
 
 def tag_entities(text: str) -> dict:
-    """Extract food domain entities from transcribed text using BIO tagging."""
     tokens = text.lower().split()
-    found = {
-        "ingredients": [],
-        "flavor_molecules": [],
-        "dietary_markers": []
-    }
 
+    ingredient_matches = extract_ingredients(text)
+
+    flavor  = []
+    dietary = []
     for token in tokens:
         clean = token.strip(".,?!")
-        if clean in INGREDIENTS:
-            found["ingredients"].append(clean)
-        elif clean in FLAVOR_MOLECULES:
-            found["flavor_molecules"].append(clean)
-        elif clean in DIETARY_MARKERS:
-            found["dietary_markers"].append(clean)
+        if clean in FLAVOR_MOLECULES:
+            flavor.append(clean)
+        if clean in DIETARY_MARKERS:
+            dietary.append(clean)
 
-    return found
+    return {
+        "ingredients":      [m["canonical"] for m in ingredient_matches],
+        "flavor_molecules": flavor,
+        "dietary_markers":  dietary,
+        "raw_spans":        ingredient_matches
+    }

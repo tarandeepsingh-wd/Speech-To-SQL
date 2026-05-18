@@ -1,18 +1,34 @@
-import whisper
+import speech_recognition as sr
 import tempfile
 import os
 
-# Load model once at startup (use "base" for speed, "small"/"medium" for accuracy)
-model = whisper.load_model("base")
+recognizer = sr.Recognizer()
 
 def transcribe_audio(audio_bytes: bytes) -> str:
-    """Takes raw audio bytes, returns transcribed text."""
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         tmp.write(audio_bytes)
         tmp_path = tmp.name
-
     try:
-        result = model.transcribe(tmp_path)
-        return result["text"].strip()
+        with sr.AudioFile(tmp_path) as source:
+            audio = recognizer.record(source)
+        text = recognizer.recognize_google(audio)
+        return text.strip()
     finally:
         os.unlink(tmp_path)
+        
+        
+#         import tempfile
+# import os
+# import whisper
+
+# model = whisper.load_model("small")
+
+# def transcribe_audio(audio_bytes: bytes) -> str:
+#     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+#         tmp.write(audio_bytes)
+#         tmp_path = tmp.name
+#     try:
+#         result = model.transcribe(tmp_path)
+#         return result["text"].strip()
+#     finally:
+#         os.unlink(tmp_path)
