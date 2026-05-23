@@ -239,12 +239,7 @@ SYNONYMS = {
     "asafoetida": "hing",
     "asafetida": "hing",
     "heeng": "hing",
-    
-    "litchi": "lychee",
-"lichi": "lychee",
-"lichee": "lychee",
-"lychee": "lychee",  # hindi STT variant
-"leechi": "lychee",
+
 
     # Ajwain
     "ajwain": "ajwain",
