@@ -1,0 +1,36 @@
+{
+  "model_name": "distilbert-base-uncased",
+  "training": {
+    "epochs": 3,
+    "batch_size": 16,
+    "learning_rate": 0.00005,
+    "max_length": 128,
+    "synthetic_limit": 1800,
+    "train_split": 0.85,
+    "random_seed": 42
+  },
+  "labels": [
+    "O",
+    "B-CLAUSE", "I-CLAUSE",
+    "B-LOGIC", "I-LOGIC",
+    "B-COMPARE", "I-COMPARE",
+    "B-AGG", "I-AGG",
+    "B-SET", "I-SET",
+    "B-MODIFY", "I-MODIFY"
+  ],
+  "tables": ["employees", "products", "orders", "users", "recipes", "students", "customers"],
+  "fields": ["salary", "age", "price", "department", "email", "city", "calories", "protein", "name"],
+  "values": ["30", "100", "500", "1000", "50000", "null", "active", "delhi", "sales"],
+  "templates": [
+    "show {table} where {field} {operator} {value}",
+    "find {table} with {field} {operator} {value}",
+    "get {table} whose {field} {operator} {value}",
+    "{agg} {table} grouped by {field}",
+    "show {table} sorted by {field}",
+    "select {field} from {table} where {field2} {operator} {value}",
+    "find {table} where {field} {operator} {value} and {field2} is not null",
+    "show {table} where {field} between {value} and {value2}",
+    "get {table} where {field} one of {value} {value2}",
+    "show {table} where {field} contains pattern {value}"
+  ]
+}

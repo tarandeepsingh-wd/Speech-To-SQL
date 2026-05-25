@@ -80,6 +80,7 @@ def print_result(result: dict):
     print(f"  Dietary styles   : {result['dietary_styles']}")
     print(f"  Categories       : {[c['category'] for c in result['categories']]}")
     print(f"  Nutrition filters: {result['nutrition_filters']}")
+    print(f"  SQL operators    : {result.get('sql_operators', [])}")
 
 
 # ─────────────────────────────────────────────────────────

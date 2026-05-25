@@ -1,4 +1,5 @@
 import re
+from rapidfuzz import fuzz, process
 
 
 OR_CUES = {
@@ -18,6 +19,13 @@ INCLUDE_RESET = re.compile(
     r"\b(?:with|containing|contains|contain|including|include|using|use|has|have)\b"
 )
 
+_NEGATION_TERMS = {"not", "without", "no"}
+_RELATION_TERMS = [
+    "contain", "contains", "containing",
+    "include", "includes", "including",
+    "use", "using", "has", "have",
+]
+
 
 def _normalize_space(text: str) -> str:
     return re.sub(r"\s+", " ", text.lower()).strip()
@@ -30,6 +38,27 @@ def _is_or_scope(text: str, first_start: int) -> bool:
 
 def _has_exclude_cue(segment: str) -> bool:
     return any(pattern.search(segment) for pattern in EXCLUDE_PATTERNS)
+
+
+def _has_negated_relation(segment: str) -> bool:
+    tokens = re.findall(r"[a-z]+", segment.lower())
+    for i, token in enumerate(tokens):
+        if token not in _NEGATION_TERMS:
+            continue
+        after = tokens[i + 1:]
+        if not after:
+            return True
+        phrase = " ".join(after[-2:])
+        candidates = after + ([phrase] if phrase else [])
+        for candidate in candidates:
+            if process.extractOne(
+                candidate,
+                _RELATION_TERMS,
+                scorer=fuzz.WRatio,
+                score_cutoff=78,
+            ):
+                return True
+    return False
 
 
 def _connector_between(text: str, left_end: int, right_start: int) -> str:
@@ -45,7 +74,7 @@ def _is_excluded(text: str, match: dict, prior_excluded: bool) -> bool:
     before = text[:start].lower()
     window = before[-48:]
 
-    if _has_exclude_cue(window):
+    if _has_exclude_cue(window) or _has_negated_relation(window):
         return True
 
     if prior_excluded:
