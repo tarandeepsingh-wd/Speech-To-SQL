@@ -130,6 +130,13 @@ ALL_KNOWN_TERMS = list(set(
 
 DB_INGREDIENTS_LOWER = set(x.lower().strip() for x in DB_INGREDIENTS)
 
+# ── Stop word sets (computed once at module level) ────────
+# Computing these inside extract_ingredients() on every call
+# created a new set object per query. Moved here so they are
+# built exactly once at import time.
+_SPACY_STOPS = nlp.Defaults.stop_words
+_BG_STOPS    = nlp.Defaults.stop_words | COMMON_WORDS_BLACKLIST
+
 PREFIX_INDEX: dict = defaultdict(list)
 for _term in ALL_KNOWN_TERMS:
     if _term:
@@ -685,6 +692,9 @@ def extract_ingredients(text: str) -> list:
             })
 
     # Pass 2 — Rescue (all unmatched whitespace tokens)
+    # Only runs for words >= 5 chars that are NOT English stop words.
+    # Short words (< 5 chars) almost never uniquely identify an
+    # ingredient and cause too many false positives with 20k candidates.
     for word_match in re.finditer(r"\w+", text_lower):
         clean = word_match.group()
         s     = word_match.start()
@@ -693,7 +703,11 @@ def extract_ingredients(text: str) -> list:
             continue
         if clean in COMMON_WORDS_BLACKLIST:
             continue
-        result = resolve_token(clean, UNIGRAM_THRESHOLD + 5, "unigram")
+        if clean in _SPACY_STOPS:
+            continue
+        if len(clean) < 5:          # skip short words entirely in rescue pass
+            continue
+        result = resolve_token(clean, UNIGRAM_THRESHOLD + 12, "unigram")
         if result:
             append_match({
                 "text":      clean,
@@ -710,6 +724,9 @@ def extract_ingredients(text: str) -> list:
             continue
         s, e   = t1["start"], t2["end"]
         phrase = f"{t1['text']} {t2['text']}"
+        # Reject bigrams where either token is a stop/blacklist word
+        if t1["text"] in _BG_STOPS or t2["text"] in _BG_STOPS:
+            continue
         if already_matched(s, e) or not valid_candidate(phrase):
             continue
         result = resolve_token(phrase, BIGRAM_THRESHOLD, "bigram")
@@ -729,6 +746,9 @@ def extract_ingredients(text: str) -> list:
             continue
         s, e   = t1["start"], t3["end"]
         phrase = f"{t1['text']} {t2['text']} {t3['text']}"
+        # Reject trigrams where any token is a stop/blacklist word
+        if any(t["text"] in _BG_STOPS for t in [t1, t2, t3]):
+            continue
         if already_matched(s, e) or not valid_candidate(phrase):
             continue
         result = resolve_token(phrase, TRIGRAM_THRESHOLD, "trigram")
