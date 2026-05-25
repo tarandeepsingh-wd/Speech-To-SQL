@@ -10,8 +10,7 @@ from g2p_en import G2p
 
 from module1_asr.automaton import INGREDIENT_AUTOMATON, UTENSIL_AUTOMATON
 from module1_asr.data.db_loader import DB_INGREDIENTS, DB_UTENSILS
-from module1_asr.data.ingredient_synonyms import SYNONYMS
-from module1_asr.semantic_matcher import semantic_match
+from module1_asr.data.ingredient_synonyms import SYNONYMS, canonicalize_ingredient
 
 
 # ─────────────────────────────────────────────────────────
@@ -30,6 +29,10 @@ GREY_ZONE_RATIO = 0.35
 METAPHONE_FUZZY_THRESHOLD = 70
 
 VALID_POS = {"NOUN", "PROPN", "ADJ", "X"}
+
+# Semantic embeddings are useful for exploratory matching, but they are too
+# expensive and too broad for the default entity extraction hot path.
+ENABLE_SEMANTIC_FALLBACK = False
 
 # Lower number = higher priority = wins when spans overlap.
 LAYER_PRIORITY = {
@@ -55,7 +58,7 @@ COMMON_WORDS_BLACKLIST = {
     "protein", "proteins",
     "fat", "fats",
     "carb", "carbs", "carbohydrate", "carbohydrates",
-    "fiber", "fibre", "sugar", "sugars", "sodium",
+    "fiber", "fibre", "sodium",
     "gram", "grams", "milligram", "milligrams",
     "under", "below", "above", "least", "most",
     # ── general ────────────────────────────────────────────
@@ -116,7 +119,7 @@ PHONETIC_NEIGHBORS = {
 # MODELS & INDEXES
 # ─────────────────────────────────────────────────────────
 
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
 # ── g2p model (loaded once at import time) ────────────────
 # G2p() is expensive to initialise (~1-2 s). Loading it here
@@ -197,8 +200,7 @@ def asr_normalize(text: str) -> str:
 def normalize_text(text: str) -> str:
     text = text.lower()
     text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
+    return text
 
 
 # ─────────────────────────────────────────────────────────
@@ -237,6 +239,76 @@ def valid_candidate(token: str) -> bool:
 # ─────────────────────────────────────────────────────────
 # OVERLAP RESOLUTION
 # ─────────────────────────────────────────────────────────
+
+def _is_blocked_ingredient(text: str, canonical: str) -> bool:
+    text = text.lower().strip()
+    canonical = canonical.lower().strip()
+    return (
+        text.startswith("no ") or
+        canonical.startswith("no ") or
+        text in COMMON_WORDS_BLACKLIST or
+        canonical in COMMON_WORDS_BLACKLIST or
+        text in _SPACY_STOPS or
+        canonical in _SPACY_STOPS
+    )
+
+
+def add_exact_component_matches(exact_matches: list, raw_matches: list) -> list:
+    """
+    Keep atomic ingredients nested inside DB composite phrases.
+    RecipeDB contains product/dish terms like "chicken soup" and
+    "garlic butter"; retrieval still needs "chicken", "garlic",
+    and "butter" as independent entities.
+    """
+    enriched = list(exact_matches)
+    seen = {(m["span"], m["canonical"]) for m in enriched}
+
+    for parent in exact_matches:
+        p_start, p_end = parent["span"]
+        child_candidates = [
+            raw for raw in raw_matches
+            if raw is not parent
+            and raw["span"] != parent["span"]
+            and raw["span"][0] >= p_start
+            and raw["span"][1] <= p_end
+            and raw["canonical"] != parent["canonical"]
+            and len(raw["text"].split()) == 1
+            and not _is_blocked_ingredient(raw["text"], raw["canonical"])
+        ]
+        if not _should_decompose_exact_match(parent, child_candidates):
+            continue
+
+        for raw in child_candidates:
+            key = (raw["span"], raw["canonical"])
+            if key in seen:
+                continue
+            component = dict(raw)
+            component["layer"] = "exact_component"
+            enriched.append(component)
+            seen.add(key)
+
+    return enriched
+
+
+def _should_decompose_exact_match(parent: dict, children: list[dict]) -> bool:
+    if len(children) < 2:
+        return False
+
+    parent_meta = DB_INGREDIENTS.get(parent["canonical"])
+    if not parent_meta:
+        return False
+
+    if parent_meta["category"].lower() == "dish":
+        return True
+
+    if parent_meta["frequency"] <= 9:
+        return True
+
+    return any(
+        (DB_INGREDIENTS.get(child["canonical"], {}).get("category", "").lower() == "dish")
+        for child in children
+    )
+
 
 def resolve_overlaps(matches: list) -> list:
     def _sort_key(x):
@@ -366,17 +438,9 @@ def _save_phoneme_cache():
     with open(_PHONEME_CACHE_FILE, "w") as f:
         json.dump(PHONEME_CACHE, f)
 
-# Load from disk on startup
+# Load from disk on startup. New entries are computed lazily inside
+# word_to_phoneme_key(); pre-warming the full DB makes demo startup hang.
 PHONEME_CACHE.update(_load_phoneme_cache())
-
-# Pre-warm only terms not already in cache, then save
-_missing = [t for t in ALL_KNOWN_TERMS if t not in PHONEME_CACHE]
-if _missing:
-    print(f"[extractor] Building phoneme cache for {len(_missing)} new terms...")
-    for _term in _missing:
-        word_to_phoneme_key(_term)
-    _save_phoneme_cache()
-    print("[extractor] Phoneme cache saved.")
 
 
 # ─────────────────────────────────────────────────────────
@@ -548,11 +612,14 @@ def _metaphone_rerank(query: str):
 
     best = ranked[0]
     best_consonant_ed = levenshtein_distance(query_stripped, _strip_vowels(best))
+    raw_score = fuzz.WRatio(query, best)
 
-    if best_consonant_ed > 2:
+    if best_consonant_ed > (1 if len(query) <= 4 else 2):
+        return None
+    if raw_score < 70 and not passes_edit_distance(query, best):
         return None
 
-    return (best, fuzz.WRatio(query, best), 0)
+    return (best, raw_score, 0)
 
 
 # ─────────────────────────────────────────────────────────
@@ -567,7 +634,7 @@ def resolve_token(query: str, threshold: int, mode: str = "unigram"):
     # ── Stage 0 — Exact direct match ──────────────────────
     if query in ALL_KNOWN_TERMS:
         return {
-            "canonical": SYNONYMS.get(query, query),
+            "canonical": canonicalize_ingredient(query),
             "layer":     "exact_direct",
             "score":     100,
         }
@@ -582,7 +649,7 @@ def resolve_token(query: str, threshold: int, mode: str = "unigram"):
         if meta_rerank:
             matched_term, score, _ = meta_rerank
             return {
-                "canonical": SYNONYMS.get(matched_term, matched_term),
+                "canonical": canonicalize_ingredient(matched_term),
                 "layer":     "metaphone_fuzzy",
                 "score":     score,
             }
@@ -592,7 +659,7 @@ def resolve_token(query: str, threshold: int, mode: str = "unigram"):
         if result:
             matched_term, score, _ = result
             return {
-                "canonical": SYNONYMS.get(matched_term, matched_term),
+                "canonical": canonicalize_ingredient(matched_term),
                 "layer":     "metaphone_fuzzy",
                 "score":     score,
             }
@@ -604,7 +671,7 @@ def resolve_token(query: str, threshold: int, mode: str = "unigram"):
             word_len   = max(len(query), len(best))
             real_score = round((1 - edit_dist / word_len) * 100)
             return {
-                "canonical": SYNONYMS.get(best, best),
+                "canonical": canonicalize_ingredient(best),
                 "layer":     "metaphone_edit",
                 "score":     real_score,
             }
@@ -615,17 +682,19 @@ def resolve_token(query: str, threshold: int, mode: str = "unigram"):
     if result:
         matched_term, score, _ = result
         return {
-            "canonical": SYNONYMS.get(matched_term, matched_term),
+            "canonical": canonicalize_ingredient(matched_term),
             "layer":     "neighbor_fuzzy",
             "score":     score,
         }
 
     # ── Stage 3 — Semantic embedding ──────────────────────
-    if len(query) > 4:
+    if ENABLE_SEMANTIC_FALLBACK and len(query) > 5:
+        from module1_asr.semantic_matcher import semantic_match
+
         semantic_result = semantic_match(query, threshold=0.78)
         if semantic_result:
             return {
-                "canonical": semantic_result["canonical"],
+                "canonical": canonicalize_ingredient(semantic_result["canonical"]),
                 "layer":     "semantic",
                 "score":     semantic_result["score"],
             }
@@ -650,17 +719,23 @@ def extract_ingredients(text: str) -> list:
         before = text_lower[start_idx - 1] if start_idx > 0 else " "
         after  = text_lower[end_idx + 1]   if end_idx + 1 < len(text_lower) else " "
         if before in WORD_BOUNDARIES and after in WORD_BOUNDARIES:
+            if _is_blocked_ingredient(match_text, canonical):
+                continue
             raw_matches.append({
                 "text":      match_text,
                 "canonical": canonical,
                 "span":      (start_idx, end_idx),
                 "layer":     "exact_aho",
+                "source":    source,
             })
 
-    exact_matches     = resolve_overlaps(raw_matches)
+    exact_matches     = add_exact_component_matches(resolve_overlaps(raw_matches), raw_matches)
     matched_positions = set()
     for m in exact_matches:
         matched_positions |= set(range(m["span"][0], m["span"][1] + 1))
+
+    if not exact_matches:
+        return []
 
     fuzzy_matches = []
 
@@ -761,8 +836,7 @@ def extract_ingredients(text: str) -> list:
                 "score":     result["score"],
             })
 
-    all_matches = resolve_overlaps(exact_matches + fuzzy_matches)
-    all_matches = deduplicate(all_matches)
+    all_matches = deduplicate(exact_matches + fuzzy_matches)
     return sorted(all_matches, key=lambda x: x["span"][0])
 
 

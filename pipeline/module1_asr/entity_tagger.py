@@ -1,8 +1,11 @@
 import re
+from rapidfuzz import fuzz, process
 
 from module1_asr.extractor import extract_ingredients, extract_utensils
 from module1_asr.data.db_loader import DB_ACTIONS
 from module1_asr.data.ingredient_synonyms import CATEGORY_SYNONYMS
+from module1_asr.intent_sql_mapper import build_sql_filter_plan
+from module1_asr.query_decomposer import decompose_ingredient_logic
 
 
 # ─────────────────────────────────────────────────────────
@@ -68,11 +71,26 @@ _NUTRITION_PATTERN = re.compile(
     r"over|above|more than|at least|"
     r"around|about|approximately)?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
-    r"(?P<unit>g|mg|kcal|cal|calories|calorie)?\s*"
-    r"(?P<nutrient>calorie|calories|cal|kcal|"
-    r"protein|proteins|fat|fats|"
-    r"carb|carbs|carbohydrate|carbohydrates|"
-    r"fiber|fibre|sugar|sugars|sodium)",
+    r"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?\s*"
+    r"(?P<nutrient>[a-z][a-z-]*)",
+    re.IGNORECASE,
+)
+
+_NUTRITION_NUTRIENT_FIRST_PATTERN = re.compile(
+    r"(?P<nutrient>[a-z][a-z-]*)\s*"
+    r"(?:se\s+)?"
+    r"(?P<op>under|below|less than|at most|"
+    r"over|above|more than|at least|"
+    r"around|about|approximately)?\s*"
+    r"(?P<value>\d+(?:\.\d+)?)\s*"
+    r"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
+    re.IGNORECASE,
+)
+
+_NUTRITION_PATTERNS = [_NUTRITION_PATTERN, _NUTRITION_NUTRIENT_FIRST_PATTERN]
+_CALORIE_TERMS = {"calorie", "calories", "cal", "kcal"}
+_NUTRIENT_AFTER_PATTERN = re.compile(
+    r"^\s*([a-z][a-z-]*)\b",
     re.IGNORECASE,
 )
 
@@ -84,20 +102,62 @@ _OP_MAP = {
 }
 
 
+def _normalize_nutrient(term: str) -> str | None:
+    term = term.lower().strip()
+    if term in _NUTRIENT_MAP:
+        return _NUTRIENT_MAP[term]
+
+    match = process.extractOne(
+        term,
+        list(_NUTRIENT_MAP.keys()),
+        scorer=fuzz.WRatio,
+        score_cutoff=84,
+    )
+    if not match:
+        return None
+    return _NUTRIENT_MAP[match[0]]
+
+
+def _valid_nutrition_match(pattern, match) -> bool:
+    if pattern is not _NUTRITION_NUTRIENT_FIRST_PATTERN:
+        return True
+
+    leading = _normalize_nutrient(match.group("nutrient"))
+    if not leading:
+        return False
+    trailing_unit = (match.group("unit") or "").lower()
+    if trailing_unit in _CALORIE_TERMS and leading != "calories":
+        return False
+    trailing_text = match.string[match.end():match.end() + 16]
+    trailing_nutrient = _NUTRIENT_AFTER_PATTERN.match(trailing_text)
+    if trailing_nutrient:
+        next_nutrient = _normalize_nutrient(trailing_nutrient.group(1))
+        if next_nutrient and next_nutrient != leading:
+            return False
+    return True
+
+
 def _detect_nutrition_filters(text: str) -> list:
     results = []
-    for m in _NUTRITION_PATTERN.finditer(text.lower()):
-        nutrient = _NUTRIENT_MAP.get(m.group("nutrient").lower())
-        if not nutrient:
-            continue
-        operator = _OP_MAP.get(
-            m.group("op").lower() if m.group("op") else None, "="
-        )
-        results.append({
-            "nutrient": nutrient,
-            "operator": operator,
-            "value":    float(m.group("value")),
-        })
+    seen_spans = set()
+    for pattern in _NUTRITION_PATTERNS:
+        for m in pattern.finditer(text.lower()):
+            if not _valid_nutrition_match(pattern, m):
+                continue
+            if m.span() in seen_spans:
+                continue
+            seen_spans.add(m.span())
+            nutrient = _normalize_nutrient(m.group("nutrient"))
+            if not nutrient:
+                continue
+            operator = _OP_MAP.get(
+                m.group("op").lower() if m.group("op") else None, "="
+            )
+            results.append({
+                "nutrient": nutrient,
+                "operator": operator,
+                "value":    float(m.group("value")),
+            })
     return results
 
 
@@ -136,18 +196,24 @@ def _build_dietary_regex():
 _DIETARY_REGEX = _build_dietary_regex()
 
 
-def _mask_claimed_spans(text: str) -> str:
+def _mask_claimed_spans(text: str, extra_spans: list | None = None) -> str:
     """
     Replace nutrition-filter and dietary-style spans with spaces.
     This prevents the ingredient extractor from processing words
     that have already been extracted by other detectors.
     """
     chars = list(text)
-    for pattern in [_NUTRITION_PATTERN, _DIETARY_REGEX]:
+    for pattern in [*_NUTRITION_PATTERNS, _DIETARY_REGEX]:
         for m in pattern.finditer(text.lower()):
+            if pattern in _NUTRITION_PATTERNS and not _valid_nutrition_match(pattern, m):
+                continue
             for i in range(m.start(), m.end()):
                 if i < len(chars):
                     chars[i] = " "
+    for start, end in extra_spans or []:
+        for i in range(start, end + 1):
+            if i < len(chars):
+                chars[i] = " "
     return "".join(chars)
 
 
@@ -229,7 +295,7 @@ def _detect_categories(text: str) -> list:
 _STYLE_TERMS = sorted(DIETARY_STYLES.keys(), key=len, reverse=True)
 
 
-def _detect_dietary_styles(text: str) -> list:
+def _detect_dietary_style_matches(text: str) -> list:
     text_lower = text.lower()
     found      = []
     used       = set()
@@ -242,9 +308,43 @@ def _detect_dietary_styles(text: str) -> list:
             if positions & used:
                 continue
             used |= positions
-            found.append(DIETARY_STYLES[term])
+            found.append({
+                "style": DIETARY_STYLES[term],
+                "span": (m.start(), m.end() - 1),
+            })
 
-    return list(dict.fromkeys(found))
+    tokens = list(re.finditer(r"\b[a-z][a-z-]*\b", text_lower))
+    for width in (3, 2, 1):
+        for i in range(0, len(tokens) - width + 1):
+            start = tokens[i].start()
+            end = tokens[i + width - 1].end() - 1
+            positions = set(range(start, end + 1))
+            if positions & used:
+                continue
+            phrase = text_lower[start:end + 1]
+            if len(phrase.replace(" ", "").replace("-", "")) < 4:
+                continue
+            match = process.extractOne(
+                phrase,
+                _STYLE_TERMS,
+                scorer=fuzz.WRatio,
+                score_cutoff=88,
+            )
+            if not match:
+                continue
+            used |= positions
+            found.append({
+                "style": DIETARY_STYLES[match[0]],
+                "span": (start, end),
+            })
+
+    return found
+
+
+def _detect_dietary_styles(text: str) -> list:
+    return list(dict.fromkeys(
+        match["style"] for match in _detect_dietary_style_matches(text)
+    ))
 
 
 # ─────────────────────────────────────────────────────────
@@ -267,24 +367,34 @@ def tag_entities(text: str) -> dict:
         }
     """
     # Run non-ingredient detectors first
-    dietary_styles    = _detect_dietary_styles(text)
+    dietary_matches   = _detect_dietary_style_matches(text)
+    dietary_styles    = list(dict.fromkeys(m["style"] for m in dietary_matches))
     nutrition_filters = _detect_nutrition_filters(text)
     action_matches    = _detect_actions(text)
     categories        = _detect_categories(text)
-
-    # Mask nutrition + dietary spans so ingredient extractor
-    # never processes words already claimed by other detectors
-    masked = _mask_claimed_spans(text)
-
-    ingredient_matches = extract_ingredients(masked)
     utensil_matches    = extract_utensils(text)
 
+    # Mask nutrition, dietary, and utensil spans so ingredient extractor
+    # never processes words already claimed by other detectors
+    claimed_spans = [m["span"] for m in utensil_matches]
+    claimed_spans.extend(m["span"] for m in dietary_matches)
+    masked = _mask_claimed_spans(text, claimed_spans)
+
+    ingredient_matches = extract_ingredients(masked)
+    ingredient_logic = decompose_ingredient_logic(text, ingredient_matches)
+    sql_filter_plan = build_sql_filter_plan(ingredient_logic)
+    ingredients = list(dict.fromkeys(
+        ingredient_logic["include"] + ingredient_logic["exclude"]
+    ))
+
     return {
-        "ingredients":       [m["canonical"] for m in ingredient_matches],
+        "ingredients":       ingredients,
         "utensils":          [m["canonical"] for m in utensil_matches],
         "actions":           action_matches,
         "dietary_styles":    dietary_styles,
         "categories":        categories,
         "nutrition_filters": nutrition_filters,
+        "ingredient_logic":  ingredient_logic,
+        "sql_filter_plan":   sql_filter_plan,
         "raw_spans":         ingredient_matches + utensil_matches,
     }

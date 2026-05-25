@@ -1,7 +1,7 @@
 import ahocorasick
 
 from module1_asr.data.db_loader import DB_INGREDIENTS, DB_UTENSILS
-from module1_asr.data.ingredient_synonyms import SYNONYMS
+from module1_asr.data.ingredient_synonyms import SYNONYMS, canonicalize_ingredient
 
 # ─────────────────────────────────────────────────────────
 # CHANGE: Was one single automaton for ingredients only.
@@ -47,11 +47,11 @@ def build_ingredient_automaton() -> ahocorasick.Automaton:
     for ingredient in DB_INGREDIENTS:
         key = ingredient.lower().strip()
         if key:
-            A.add_word(key, ("db", key, key))
+            A.add_word(key, ("db", key, canonicalize_ingredient(key)))
 
     for alias, canonical in SYNONYMS.items():
         key      = alias.lower().strip()
-        canon    = canonical.lower().strip()
+        canon    = canonicalize_ingredient(canonical)
         if key:
             A.add_word(key, ("synonym", key, canon))
 

@@ -73,6 +73,7 @@ def process_text(text: str) -> dict:
 def print_result(result: dict):
     print(f"\n  Transcript       : {result['transcript']}")
     print(f"  Ingredients      : {result['ingredients']}")
+    print(f"  Ingredient logic : {result.get('ingredient_logic', {})}")
     print(f"  Utensils         : {result['utensils']}")
     state_actions = [a['action'] for a in result['actions'] if a['type'] == 'state_change']
     print(f"  Cooking actions  : {state_actions}")

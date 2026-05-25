@@ -43,7 +43,7 @@ import numpy as np
 
 from module1_asr.embedding_model import get_model
 from module1_asr.embedding_index import ALL_TERMS, TERM_EMBEDDINGS
-from module1_asr.data.ingredient_synonyms import SYNONYMS
+from module1_asr.data.ingredient_synonyms import SYNONYMS, canonicalize_ingredient
 
 # ─────────────────────────────────────────────────────────
 # CHANGE: Was importing MODEL directly from embedding_model.
@@ -94,7 +94,7 @@ def semantic_match(query: str, threshold: float = 0.78) -> dict | None:
     # SYNONYMS maps alias → canonical ingredient name.
     # If the matched term is a DB ingredient (not an alias),
     # SYNONYMS.get returns the term itself as canonical.
-    canonical = SYNONYMS.get(matched_term, matched_term)
+    canonical = canonicalize_ingredient(matched_term)
 
     return {
         "matched":   matched_term,

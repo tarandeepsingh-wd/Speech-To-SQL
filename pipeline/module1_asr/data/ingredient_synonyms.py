@@ -1322,6 +1322,12 @@ SYNONYMS = {
 # Dietrx_Category labels in RecipeDB.
 # ─────────────────────────────────────────────────────────
 
+def canonicalize_ingredient(name: str) -> str:
+    """Return the configured canonical ingredient name."""
+    key = str(name).lower().strip()
+    return SYNONYMS.get(key, key)
+
+
 CATEGORY_SYNONYMS = {
     "veggie": "Vegetable",
     "vegetables": "Vegetable",
