@@ -6,7 +6,11 @@ from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForTokenClassification, AutoTokenizer
+from transformers import (
+    AutoModelForTokenClassification,
+    AutoTokenizer,
+    get_linear_schedule_with_warmup,
+)
 
 
 BASE_DIR = Path(__file__).parents[1]
@@ -211,7 +215,16 @@ def train(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    total_steps = max(1, len(train_loader) * epochs)
+    warmup_steps = max(1, total_steps // 10)
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=warmup_steps,
+        num_training_steps=total_steps,
+    )
 
+    best_f1 = -1.0
+    best_epoch = 0
     for epoch in range(1, epochs + 1):
         model.train()
         total_loss = 0.0
@@ -220,25 +233,41 @@ def train(
             optimizer.zero_grad()
             output = model(**batch)
             output.loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            scheduler.step()
             total_loss += float(output.loss.detach())
 
-        accuracy = _token_accuracy(model, val_loader, device)
+        metrics = _entity_f1(model, val_loader, device, id2label)
         print(
             f"epoch={epoch} loss={total_loss / max(len(train_loader), 1):.4f} "
-            f"val_token_accuracy={accuracy:.3f}"
+            f"entity_f1={metrics['f1']:.3f}"
         )
 
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    tokenizer.save_pretrained(MODEL_DIR)
-    model.save_pretrained(MODEL_DIR)
-    print(f"saved model to {MODEL_DIR}")
+        if metrics["f1"] > best_f1:
+            best_f1 = metrics["f1"]
+            best_epoch = epoch
+            MODEL_DIR.mkdir(parents=True, exist_ok=True)
+            tokenizer.save_pretrained(MODEL_DIR)
+            model.save_pretrained(MODEL_DIR)
+            print(f"  new best checkpoint saved to {MODEL_DIR} (f1={best_f1:.3f})")
+
+        if epoch - best_epoch >= 2:
+            print(f"  early stopping at epoch {epoch}; best epoch was {best_epoch}")
+            break
+
+    print(f"training complete. best entity_f1={best_f1:.3f} at epoch={best_epoch}")
 
 
-def _token_accuracy(model, loader, device) -> float:
+def _entity_f1(model, loader, device, id2label: dict[int, str]) -> dict:
+    """
+    Compute entity-level F1 for BIO tags. Falls back to token accuracy if
+    seqeval is not installed.
+    """
     model.eval()
-    correct = 0
-    total = 0
+    true_spans_all = []
+    pred_spans_all = []
+
     with torch.no_grad():
         for batch in loader:
             labels = batch["labels"].to(device)
@@ -248,10 +277,42 @@ def _token_accuracy(model, loader, device) -> float:
                 if key != "labels"
             }
             predictions = model(**inputs).logits.argmax(dim=-1)
-            mask = labels != -100
-            correct += int((predictions[mask] == labels[mask]).sum())
-            total += int(mask.sum())
-    return correct / total if total else 0.0
+
+            for i in range(labels.shape[0]):
+                true_labels = [
+                    id2label[int(label)]
+                    for label in labels[i]
+                    if int(label) != -100
+                ]
+                pred_labels = [
+                    id2label[int(pred)]
+                    for pred, label in zip(predictions[i], labels[i])
+                    if int(label) != -100
+                ]
+                true_spans_all.append(true_labels)
+                pred_spans_all.append(pred_labels)
+
+    if not true_spans_all:
+        return {"f1": 0.0, "report": "No validation examples."}
+
+    try:
+        from seqeval.metrics import classification_report, f1_score
+
+        return {
+            "f1": float(f1_score(true_spans_all, pred_spans_all)),
+            "report": classification_report(true_spans_all, pred_spans_all),
+        }
+    except ImportError:
+        correct = sum(
+            pred == true
+            for true_seq, pred_seq in zip(true_spans_all, pred_spans_all)
+            for true, pred in zip(true_seq, pred_seq)
+        )
+        total = sum(len(seq) for seq in true_spans_all)
+        return {
+            "f1": correct / total if total else 0.0,
+            "report": "Install seqeval for entity-level F1.",
+        }
 
 
 def _parse_args():

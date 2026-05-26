@@ -30,13 +30,21 @@ def load_ingredients() -> dict:
       - dirty rows are cleaned before entering the automaton
     """
     df = pd.read_csv(INGREDIENT_CSV)
+    df["ingredient"] = (
+        df["ingredient"]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .replace(INGREDIENT_DIRTY_FIXES)
+    )
+    df = df[(df["ingredient"].str.len() > 0) & (df["ingredient"] != "nan")]
+    df["IngID"] = pd.to_numeric(df["IngID"], errors="coerce")
+    df["frequency"] = pd.to_numeric(df["frequency"], errors="coerce")
+    df = df.dropna(subset=["IngID", "frequency"])
+
     result = {}
-    for _, row in df.iterrows():
-        name = str(row["ingredient"]).strip().lower()
-        # Apply dirty-data fixes
-        name = INGREDIENT_DIRTY_FIXES.get(name, name)
-        if not name:
-            continue
+    for row in df.to_dict("records"):
+        name = row["ingredient"]
         result[name] = {
             "category":  str(row["Dietrx_Category"]).strip(),
             "ing_id":    int(row["IngID"]),
@@ -66,16 +74,15 @@ def load_utensils() -> dict:
         df.columns[1]
     )
 
-    result = {}
-    for _, row in df.iterrows():
-        name = str(row[name_col]).strip().lower()
-        if not name or name == "nan":
-            continue
-        try:
-            result[name] = int(row[freq_col])
-        except (ValueError, TypeError):
-            continue
-    return result
+    df[name_col] = df[name_col].astype(str).str.strip().str.lower()
+    df[freq_col] = pd.to_numeric(df[freq_col], errors="coerce")
+    df = df[(df[name_col].str.len() > 0) & (df[name_col] != "nan")]
+    df = df.dropna(subset=[freq_col])
+
+    return {
+        row[name_col]: int(row[freq_col])
+        for row in df.to_dict("records")
+    }
 
 
 def load_actions() -> dict:
@@ -99,15 +106,15 @@ def load_actions() -> dict:
     freq_col = next((c for c in df.columns if "freq" in c), df.columns[1])
     type_col = next((c for c in df.columns if "type" in c), None)
 
+    df[name_col] = df[name_col].astype(str).str.strip().str.lower()
+    df[freq_col] = pd.to_numeric(df[freq_col], errors="coerce")
+    df = df[(df[name_col].str.len() > 0) & (df[name_col] != "nan")]
+    df = df.dropna(subset=[freq_col])
+
     result = {}
-    for _, row in df.iterrows():
-        name = str(row[name_col]).strip().lower()
-        if not name or name == "nan":
-            continue
-        try:
-            freq = int(row[freq_col])
-        except (ValueError, TypeError):
-            continue
+    for row in df.to_dict("records"):
+        name = row[name_col]
+        freq = int(row[freq_col])
         action_type = (
             str(row[type_col]).strip()
             if type_col and str(row[type_col]) != "nan"

@@ -1,55 +1,54 @@
-import tempfile
 import os
+import tempfile
+
 import whisper
 
-# ─────────────────────────────────────────────────────────
-# CHANGE: Switched from SpeechRecognition + Google Web API
-#         to OpenAI Whisper (local, offline model).
-#
-# WHY:
-#   1. The proposal explicitly specifies "Whisper ASR".
-#   2. Google SR sends audio to Google's servers — a privacy
-#      concern for a research database context.
-#   3. Google SR requires internet on every call. Whisper runs
-#      fully offline after the one-time model download.
-#   4. Whisper is significantly more accurate on domain-specific
-#      food vocabulary and handles accents better.
-#   5. Whisper returns word-level timestamps (useful for future
-#      BIO-style span alignment if needed).
-#
-# MODEL CHOICE: "small" (244M params) is a good default —
-# accurate enough for food queries, fast enough on CPU.
-# Swap to "medium" or "large" if a GPU is available.
-# ─────────────────────────────────────────────────────────
 
-_model = None
+_MODELS = {}
 
-def _get_model():
-    """Lazy-load Whisper model on first use."""
-    global _model
-    if _model is None:
-        _model = whisper.load_model("small")
-    return _model
+_RECIPE_PROMPT = (
+    "Recipe search. Ingredients: cumin, coriander, turmeric, paneer, "
+    "ghee, cardamom, ginger, garlic, onion, tomato, chicken, rice, lentil, "
+    "spinach, yogurt, cream, saffron, masala, biryani, dal, sabji, adrak, "
+    "haldi, jeera, lahsun, mirch."
+)
 
 
-def transcribe_audio(audio_bytes: bytes) -> str:
+def _get_model(size: str = "small"):
+    """Lazy-load and cache Whisper models by size."""
+    if size not in _MODELS:
+        _MODELS[size] = whisper.load_model(size)
+    return _MODELS[size]
+
+
+def transcribe_audio(
+    audio_bytes: bytes,
+    language: str | None = None,
+    model_size: str = "small",
+) -> str:
     """
-    Transcribe raw WAV audio bytes → cleaned text string.
+    Transcribe raw WAV audio bytes to a cleaned text string.
 
     Args:
         audio_bytes: Raw WAV file content as bytes.
-
-    Returns:
-        Transcribed text, stripped of leading/trailing whitespace.
+        language: ISO 639-1 code such as "en" or "hi"; None enables
+            Whisper auto-detection and is best for mixed Hindi-English.
+        model_size: Whisper model size, defaulting to CPU-friendly "small".
     """
-    model = _get_model()
+    model = _get_model(model_size)
 
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         tmp.write(audio_bytes)
         tmp_path = tmp.name
 
     try:
-        result = model.transcribe(tmp_path, language="en")
+        result = model.transcribe(
+            tmp_path,
+            language=language,
+            initial_prompt=_RECIPE_PROMPT,
+            temperature=0.0,
+            word_timestamps=True,
+        )
         return result["text"].strip()
     finally:
         os.unlink(tmp_path)

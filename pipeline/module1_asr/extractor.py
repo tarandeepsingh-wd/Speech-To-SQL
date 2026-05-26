@@ -908,15 +908,14 @@
 #         })
 
 #     return resolve_overlaps(raw_matches)
+import atexit
 import re
 from collections import defaultdict
 from pathlib import Path
 
-import spacy
 from metaphone import doublemetaphone
 from Levenshtein import distance as levenshtein_distance
 from rapidfuzz import process, fuzz
-from g2p_en import G2p
 
 from module1_asr.automaton import INGREDIENT_AUTOMATON, UTENSIL_AUTOMATON
 from module1_asr.data.db_loader import DB_INGREDIENTS, DB_UTENSILS
@@ -989,6 +988,7 @@ COMMON_WORDS_BLACKLIST = {
     "one", "two", "three", "four", "five", "six", "seven",
     "eight", "nine", "ten", "half", "quarter",
     "a", "an", "the", "this", "that", "these", "those",
+    "singh",
     "cups", "tbsp", "tsp",  "gram", "grams", "ounce", "pound",
     "piece", "pieces", "slice", "slices", "bunch", "pinch",
 }
@@ -1029,12 +1029,44 @@ PHONETIC_NEIGHBORS = {
 # MODELS & INDEXES
 # ─────────────────────────────────────────────────────────
 
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+_nlp = None
+_g2p_instance = None
+_SPACY_STOPS = None
+_BG_STOPS = None
 
 # ── g2p model (loaded once at import time) ────────────────
 # G2p() is expensive to initialise (~1-2 s). Loading it here
 # means the cost is paid once, not per query.
-_g2p = G2p()
+def _get_nlp():
+    """Lazy-load spaCy only when ingredient fuzzy extraction needs POS tags."""
+    global _nlp, _SPACY_STOPS, _BG_STOPS
+    if _nlp is None:
+        import spacy
+
+        _nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+        _SPACY_STOPS = _nlp.Defaults.stop_words
+        _BG_STOPS = _nlp.Defaults.stop_words | COMMON_WORDS_BLACKLIST
+    return _nlp
+
+
+def _get_spacy_stops() -> set:
+    _get_nlp()
+    return _SPACY_STOPS or set()
+
+
+def _get_bigram_stops() -> set:
+    _get_nlp()
+    return _BG_STOPS or COMMON_WORDS_BLACKLIST
+
+
+def _get_g2p():
+    """Lazy-load g2p only when phoneme re-ranking is actually reached."""
+    global _g2p_instance
+    if _g2p_instance is None:
+        from g2p_en import G2p
+
+        _g2p_instance = G2p()
+    return _g2p_instance
 
 ALL_KNOWN_TERMS = list(set(
     [x.lower().strip() for x in DB_INGREDIENTS] +
@@ -1047,9 +1079,6 @@ DB_INGREDIENTS_LOWER = set(x.lower().strip() for x in DB_INGREDIENTS)
 # Computing these inside extract_ingredients() on every call
 # created a new set object per query. Moved here so they are
 # built exactly once at import time.
-_SPACY_STOPS = nlp.Defaults.stop_words
-_BG_STOPS    = nlp.Defaults.stop_words | COMMON_WORDS_BLACKLIST
-
 PREFIX_INDEX: dict = defaultdict(list)
 for _term in ALL_KNOWN_TERMS:
     if _term:
@@ -1134,7 +1163,7 @@ def normalize_text(text: str) -> str:
 # ─────────────────────────────────────────────────────────
 
 def get_pos_filtered_tokens(text: str) -> list:
-    doc = nlp(text)
+    doc = _get_nlp()(text)
     return [
         {
             "text":  token.text.lower(),
@@ -1169,13 +1198,14 @@ def valid_candidate(token: str) -> bool:
 def _is_blocked_ingredient(text: str, canonical: str) -> bool:
     text = text.lower().strip()
     canonical = canonical.lower().strip()
+    spacy_stops = _get_spacy_stops()
     return (
         text.startswith("no ") or
         canonical.startswith("no ") or
         text in COMMON_WORDS_BLACKLIST or
         canonical in COMMON_WORDS_BLACKLIST or
-        text in _SPACY_STOPS or
-        canonical in _SPACY_STOPS
+        text in spacy_stops or
+        canonical in spacy_stops
     )
 
 
@@ -1217,7 +1247,7 @@ def add_exact_component_matches(exact_matches: list, raw_matches: list) -> list:
 
 
 def _should_decompose_exact_match(parent: dict, children: list[dict]) -> bool:
-    if len(children) < 2:
+    if not children:
         return False
 
     parent_meta = DB_INGREDIENTS.get(parent["canonical"])
@@ -1229,6 +1259,9 @@ def _should_decompose_exact_match(parent: dict, children: list[dict]) -> bool:
 
     if parent_meta["frequency"] <= 9:
         return True
+
+    if len(children) < 2:
+        return False
 
     return any(
         (DB_INGREDIENTS.get(child["canonical"], {}).get("category", "").lower() == "dish")
@@ -1376,7 +1409,7 @@ def word_to_phoneme_key(word: str) -> str:
     """
     if word in PHONEME_CACHE:
         return PHONEME_CACHE[word]
-    phonemes = _normalize_phonemes(_g2p(word))
+    phonemes = _normalize_phonemes(_get_g2p()(word))
     key = " ".join(phonemes)
     PHONEME_CACHE[word] = key
     return key
@@ -1409,6 +1442,7 @@ def _save_phoneme_cache():
 # Load from disk on startup. New entries are computed lazily inside
 # word_to_phoneme_key(); pre-warming the full DB makes demo startup hang.
 PHONEME_CACHE.update(_load_phoneme_cache())
+atexit.register(_save_phoneme_cache)
 
 
 # ─────────────────────────────────────────────────────────
@@ -1729,6 +1763,8 @@ def extract_ingredients(text: str) -> list:
         matched_positions |= set(range(d["span"][0], d["span"][1] + 1))
 
     pos_tokens = get_pos_filtered_tokens(text_lower)
+    spacy_stops = _get_spacy_stops()
+    bigram_stops = _get_bigram_stops()
 
     # ── Unigrams — two-pass ────────────────────────────────
 
@@ -1759,7 +1795,7 @@ def extract_ingredients(text: str) -> list:
             continue
         if clean in COMMON_WORDS_BLACKLIST:
             continue
-        if clean in _SPACY_STOPS:
+        if clean in spacy_stops:
             continue
         result = resolve_token(clean, UNIGRAM_THRESHOLD + 5, "unigram")
         if result:
@@ -1779,7 +1815,7 @@ def extract_ingredients(text: str) -> list:
         s, e   = t1["start"], t2["end"]
         phrase = f"{t1['text']} {t2['text']}"
         # Reject bigrams where either token is a stop/blacklist word
-        if t1["text"] in _BG_STOPS or t2["text"] in _BG_STOPS:
+        if t1["text"] in bigram_stops or t2["text"] in bigram_stops:
             continue
         if already_matched(s, e) or not valid_candidate(phrase):
             continue
@@ -1801,7 +1837,7 @@ def extract_ingredients(text: str) -> list:
         s, e   = t1["start"], t3["end"]
         phrase = f"{t1['text']} {t2['text']} {t3['text']}"
         # Reject trigrams where any token is a stop/blacklist word
-        if any(t["text"] in _BG_STOPS for t in [t1, t2, t3]):
+        if any(t["text"] in bigram_stops for t in [t1, t2, t3]):
             continue
         if already_matched(s, e) or not valid_candidate(phrase):
             continue

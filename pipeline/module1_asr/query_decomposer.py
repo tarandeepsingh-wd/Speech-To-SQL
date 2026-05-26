@@ -167,4 +167,5 @@ def decompose_ingredient_logic(text: str, ingredient_matches: list[dict]) -> dic
         "include_operator": include_operator,
         "exclude_operator": "AND",
         "connectors": connectors,
+        "ambiguous": include_operator == "MIXED",
     }

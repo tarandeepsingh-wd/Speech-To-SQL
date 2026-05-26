@@ -1,4 +1,5 @@
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from rapidfuzz import fuzz, process
 
 from module1_asr.extractor import extract_ingredients, extract_utensils
@@ -6,6 +7,7 @@ from module1_asr.data.db_loader import DB_ACTIONS
 from module1_asr.data.ingredient_synonyms import CATEGORY_SYNONYMS
 from module1_asr.intent_sql_mapper import build_sql_filter_plan
 from module1_asr.query_decomposer import decompose_ingredient_logic
+from module1_asr.sql_plan_builder import build_unified_sql_plan
 from module1_asr.sql_ops import extract_sql_operators
 
 
@@ -107,6 +109,8 @@ def _normalize_nutrient(term: str) -> str | None:
     term = term.lower().strip()
     if term in _NUTRIENT_MAP:
         return _NUTRIENT_MAP[term]
+    if len(term) < 4:
+        return None
 
     match = process.extractOne(
         term,
@@ -141,6 +145,7 @@ def _valid_nutrition_match(pattern, match) -> bool:
 def _detect_nutrition_filters(text: str) -> list:
     results = []
     seen_spans = set()
+    seen_semantic = set()
     for pattern in _NUTRITION_PATTERNS:
         for m in pattern.finditer(text.lower()):
             if not _valid_nutrition_match(pattern, m):
@@ -154,10 +159,15 @@ def _detect_nutrition_filters(text: str) -> list:
             operator = _OP_MAP.get(
                 m.group("op").lower() if m.group("op") else None, "="
             )
+            value = float(m.group("value"))
+            semantic_key = (nutrient, operator, value)
+            if semantic_key in seen_semantic:
+                continue
+            seen_semantic.add(semantic_key)
             results.append({
                 "nutrient": nutrient,
                 "operator": operator,
-                "value":    float(m.group("value")),
+                "value":    value,
             })
     return results
 
@@ -403,23 +413,43 @@ def tag_entities(text: str) -> dict:
 
     Returns:
         {
-            "ingredients":       list[str]
-            "utensils":          list[str]
-            "actions":           list[dict]
-            "dietary_styles":    list[str]
-            "categories":        list[dict]
-            "nutrition_filters": list[dict]
-            "raw_spans":         list[dict]
+            "ingredients":       list[str]   - canonical ingredient names
+            "utensils":          list[str]   - canonical utensil names
+            "actions":           list[dict]  - action/type/span matches
+            "dietary_styles":    list[str]   - e.g. ["vegan"]
+            "categories":        list[dict]  - category synonym matches
+            "nutrition_filters": list[dict]  - nutrient/operator/value filters
+            "sql_operators":     list[dict]  - SQL operator spans
+            "ingredient_logic":  dict        - include/exclude/connectors
+            "sql_filter_plan":   dict        - ingredient-only WHERE plan
+            "unified_sql_plan":  dict        - ingredients + nutrition + dietary
+            "raw_spans":         list[dict]  - matched ingredient/utensil spans
         }
+
+    Module 3 should prefer unified_sql_plan. For precise mixed AND/OR ingredient
+    logic, inspect ingredient_logic["connectors"] when sql_filter_plan is marked
+    ambiguous.
     """
-    # Run non-ingredient detectors first
-    dietary_matches   = _detect_dietary_style_matches(text)
-    dietary_styles    = list(dict.fromkeys(m["style"] for m in dietary_matches))
-    nutrition_filters = _detect_nutrition_filters(text)
-    sql_operators     = extract_sql_operators(text)
-    action_matches    = _detect_actions(text)
-    categories        = _detect_categories(text)
-    utensil_matches    = extract_utensils(text)
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        futures = {
+            executor.submit(_detect_dietary_style_matches, text): "dietary",
+            executor.submit(_detect_nutrition_filters, text): "nutrition",
+            executor.submit(extract_sql_operators, text): "sql_ops",
+            executor.submit(_detect_actions, text): "actions",
+            executor.submit(_detect_categories, text): "categories",
+            executor.submit(extract_utensils, text): "utensils",
+        }
+        detected = {}
+        for future in as_completed(futures):
+            detected[futures[future]] = future.result()
+
+    dietary_matches = detected["dietary"]
+    dietary_styles = list(dict.fromkeys(m["style"] for m in dietary_matches))
+    nutrition_filters = detected["nutrition"]
+    sql_operators = detected["sql_ops"]
+    action_matches = detected["actions"]
+    categories = detected["categories"]
+    utensil_matches = detected["utensils"]
 
     if _is_sql_structural_query(sql_operators):
         ingredient_matches = []
@@ -432,6 +462,11 @@ def tag_entities(text: str) -> dict:
         ingredient_matches = extract_ingredients(masked)
     ingredient_logic = decompose_ingredient_logic(text, ingredient_matches)
     sql_filter_plan = build_sql_filter_plan(ingredient_logic)
+    unified_sql_plan = build_unified_sql_plan(
+        sql_filter_plan,
+        nutrition_filters,
+        dietary_styles,
+    )
     if not _is_sql_structural_query(sql_operators):
         sql_operators = _filter_recipe_sql_operators(
             sql_operators,
@@ -452,5 +487,6 @@ def tag_entities(text: str) -> dict:
         "sql_operators":     sql_operators,
         "ingredient_logic":  ingredient_logic,
         "sql_filter_plan":   sql_filter_plan,
+        "unified_sql_plan":  unified_sql_plan,
         "raw_spans":         ingredient_matches + utensil_matches,
     }

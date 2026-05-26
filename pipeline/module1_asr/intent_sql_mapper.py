@@ -18,13 +18,19 @@ def build_sql_filter_plan(
     include = ingredient_logic.get("include", [])
     exclude = ingredient_logic.get("exclude", [])
     include_operator = ingredient_logic.get("include_operator", "AND")
+    if include_operator == "MIXED":
+        include_operator_used = "AND"
+        ambiguous = True
+    else:
+        include_operator_used = include_operator
+        ambiguous = False
 
     clauses = []
     params = []
 
     if include:
         placeholders = _placeholders(len(include))
-        if include_operator == "OR":
+        if include_operator_used == "OR":
             clauses.append(
                 f"{recipe_id_col} IN ("
                 f"SELECT {recipe_id_col} FROM {recipe_ingredient_table} "
@@ -59,6 +65,8 @@ def build_sql_filter_plan(
         "where_clause": where_clause,
         "params": params,
         "include_operator": include_operator,
+        "include_operator_used": include_operator_used,
+        "ambiguous": ambiguous,
         "include": include,
         "exclude": exclude,
     }

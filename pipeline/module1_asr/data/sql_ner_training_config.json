@@ -1,11 +1,11 @@
 {
   "model_name": "distilbert-base-uncased",
   "training": {
-    "epochs": 3,
+    "epochs": 6,
     "batch_size": 16,
-    "learning_rate": 0.00005,
+    "learning_rate": 0.00003,
     "max_length": 128,
-    "synthetic_limit": 1800,
+    "synthetic_limit": 5000,
     "train_split": 0.85,
     "random_seed": 42
   },
@@ -18,19 +18,32 @@
     "B-SET", "I-SET",
     "B-MODIFY", "I-MODIFY"
   ],
-  "tables": ["employees", "products", "orders", "users", "recipes", "students", "customers"],
-  "fields": ["salary", "age", "price", "department", "email", "city", "calories", "protein", "name"],
-  "values": ["30", "100", "500", "1000", "50000", "null", "active", "delhi", "sales"],
+  "tables": ["recipes", "dishes", "meals"],
+  "fields": [
+    "calories", "protein", "fat", "carbs", "fiber", "sodium", "sugar",
+    "prep_time", "cook_time", "servings", "rating", "review_count"
+  ],
+  "values": ["5", "10", "15", "30", "50", "60", "100", "200", "300", "500", "1000"],
   "templates": [
-    "show {table} where {field} {operator} {value}",
+    "show {table} where {field} is {operator} {value}",
     "find {table} with {field} {operator} {value}",
-    "get {table} whose {field} {operator} {value}",
-    "{agg} {table} grouped by {field}",
-    "show {table} sorted by {field}",
-    "select {field} from {table} where {field2} {operator} {value}",
-    "find {table} where {field} {operator} {value} and {field2} is not null",
-    "show {table} where {field} between {value} and {value2}",
-    "get {table} where {field} one of {value} {value2}",
-    "show {table} where {field} contains pattern {value}"
+    "recipes where {field} is less than {value}",
+    "recipes where {field} is more than {value}",
+    "give me meals with {field} under {value}",
+    "show recipes with {field} above {value}",
+    "find recipes where {field} is between {value} and {value2}",
+    "recipes sorted by {field}",
+    "show recipes ordered by {field}",
+    "count recipes where {field} {operator} {value}",
+    "how many recipes have {field} {operator} {value}",
+    "recipes with {field} at most {value}",
+    "recipes with {field} at least {value}",
+    "average {field} of all recipes",
+    "find recipes where {field} is not null",
+    "show me the top recipes by {field}",
+    "recipes grouped by {field}",
+    "find dishes where {field} equals {value}",
+    "get recipes with high {field}",
+    "get recipes with low {field}"
   ]
 }
