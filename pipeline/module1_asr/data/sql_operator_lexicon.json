@@ -10,7 +10,6 @@
   },
   "terms": {
     "select": {"canonical": "SELECT", "type": "CLAUSE"},
-    "from": {"canonical": "FROM", "type": "CLAUSE"},
     "where": {"canonical": "WHERE", "type": "CLAUSE"},
     "join": {"canonical": "JOIN", "type": "CLAUSE"},
     "group by": {"canonical": "GROUP BY", "type": "CLAUSE"},
@@ -22,7 +21,12 @@
     "or": {"canonical": "OR", "type": "LOGIC"},
     "not": {"canonical": "NOT", "type": "LOGIC"},
     "like": {"canonical": "LIKE", "type": "COMPARE"},
-    "in": {"canonical": "IN", "type": "SET"},
+    "in (":          {"canonical": "IN", "type": "SET"},
+    "not in (":      {"canonical": "NOT IN", "type": "SET"},
+    "one of":        {"canonical": "IN", "type": "SET"},
+    "any of":        {"canonical": "IN", "type": "SET"},
+    "not one of":    {"canonical": "NOT IN", "type": "SET"},
+    "none of":       {"canonical": "NOT IN", "type": "SET"},
     "between": {"canonical": "BETWEEN", "type": "COMPARE"},
     "is null": {"canonical": "IS NULL", "type": "SET"},
     "is not null": {"canonical": "IS NOT NULL", "type": "SET"},
@@ -54,7 +58,30 @@
     "contains pattern": {"canonical": "LIKE", "type": "COMPARE"},
     "one of": {"canonical": "IN", "type": "SET"},
     "number of": {"canonical": "COUNT", "type": "AGG"},
-    "total": {"canonical": "SUM", "type": "AGG"}
+    "total": {"canonical": "SUM", "type": "AGG"},
+    "how many": {"type": "AGG", "canonical": "COUNT"},
+    "how much": {"type": "AGG", "canonical": "COUNT"},
+    "total number": {"type": "AGG", "canonical": "COUNT"},
+    "count of": {"type": "AGG", "canonical": "COUNT"},
+    "from highest to lowest": {
+      "type": "CLAUSE",
+      "canonical": "ORDER BY DESC"
+    },
+
+    "from lowest to highest": {
+      "type": "CLAUSE",
+      "canonical": "ORDER BY ASC"
+    },
+
+    "from largest to smallest": {
+      "type": "CLAUSE",
+      "canonical": "ORDER BY DESC"
+    },
+
+    "from smallest to largest": {
+      "type": "CLAUSE",
+      "canonical": "ORDER BY ASC"
+    }
   },
   "fallback_terms": {
     "greater then": "greater than",
