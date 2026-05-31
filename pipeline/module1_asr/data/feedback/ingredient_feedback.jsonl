@@ -1,0 +1,23 @@
+{"created_at": "2026-05-31T17:39:19.626636+00:00", "source": "main.py", "query": "how me a list of recipe type from the least to the most", "predicted": ["type"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T17:55:43.250888+00:00", "source": "main.py", "query": "give me those food which can be prepared on time and has very less calories", "predicted": ["thyme"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:00+00:00", "source": "codex_hard_negative_batch", "query": "list recipes by cook time", "predicted": ["thyme"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:01+00:00", "source": "codex_hard_negative_batch", "query": "order recipes by prep time", "predicted": ["thyme"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:02+00:00", "source": "codex_hard_negative_batch", "query": "sort dishes by total time", "predicted": ["thyme"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:03+00:00", "source": "codex_hard_negative_batch", "query": "show recipes by preparation time", "predicted": ["thyme"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:04+00:00", "source": "codex_hard_negative_batch", "query": "show hot recipes ordered by popularity", "predicted": ["hot"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:05+00:00", "source": "codex_hard_negative_batch", "query": "list hot dishes by rating", "predicted": ["hot"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:06+00:00", "source": "codex_hard_negative_batch", "query": "find spicy recipes sorted by rating", "predicted": ["spicy"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:07+00:00", "source": "codex_hard_negative_batch", "query": "show spicy dishes by popularity", "predicted": ["spicy"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:08+00:00", "source": "codex_hard_negative_batch", "query": "show recipe type from least to most", "predicted": ["type"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:09+00:00", "source": "codex_hard_negative_batch", "query": "count recipes by type", "predicted": ["type"], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:10+00:00", "source": "codex_hard_negative_batch", "query": "show recipe category", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:11+00:00", "source": "codex_hard_negative_batch", "query": "count recipes by category", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:12+00:00", "source": "codex_hard_negative_batch", "query": "list recipes by course", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:13+00:00", "source": "codex_hard_negative_batch", "query": "show recipe style", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:14+00:00", "source": "codex_hard_negative_batch", "query": "give me dinner ideas", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:15+00:00", "source": "codex_hard_negative_batch", "query": "find quick dinner meals", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:16+00:00", "source": "codex_hard_negative_batch", "query": "suggest lunch recipes", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:17+00:00", "source": "codex_hard_negative_batch", "query": "recommend a meal for lunch", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:18+00:00", "source": "codex_hard_negative_batch", "query": "show breakfast recipes", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:10:19+00:00", "source": "codex_hard_negative_batch", "query": "list breakfast ideas", "predicted": [], "corrected_ingredients": []}
+{"created_at": "2026-05-31T18:09:33.529440+00:00", "source": "main.py", "query": "show me the recipies of hot dog", "predicted": ["sausage"], "corrected_ingredients": ["hot dog"]}
