@@ -6,7 +6,7 @@ import sounddevice as sd
 
 from module1_asr.transcriber import transcribe_audio
 from module1_asr.entity_tagger import tag_entities
-from module1_asr.feedback_logger import log_sql_clause_feedback
+from module1_asr.feedback_logger import log_ingredient_feedback, log_sql_clause_feedback
 from module1_asr.sql_ops.label_utils import normalize_sql_label
 from module1_asr.sql_ops import score_sql_clause_labels
 
@@ -143,6 +143,27 @@ def print_result(result: dict):
     print(f"  Unified SQL plan : {result.get('unified_sql_plan', {})}")
 
 
+def collect_ingredient_feedback(result: dict) -> None:
+    answer = input("\nAre the ingredients correct? [Enter=skip, y=yes, n=no]: ").strip().lower()
+    if answer not in {"n", "no"}:
+        return
+
+    corrected = input("Correct ingredients, comma-separated (empty if none): ").strip()
+    corrected_ingredients = []
+    for raw_item in corrected.split(","):
+        item = raw_item.strip().lower()
+        if item and item not in corrected_ingredients:
+            corrected_ingredients.append(item)
+
+    log_ingredient_feedback(
+        query=result["transcript"],
+        predicted=result.get("ingredients", []),
+        corrected_ingredients=corrected_ingredients,
+        source="main.py",
+    )
+    print("Saved ingredient feedback for the next reranker training run.")
+
+
 def collect_sql_clause_feedback(result: dict) -> None:
     clause_predictions = [
         op for op in result.get("sql_operators", [])
@@ -206,12 +227,14 @@ if __name__ == "__main__":
             print("\nTranscribing with Whisper...")
             result    = process_audio(wav_bytes)
             print_result(result)
+            collect_ingredient_feedback(result)
             collect_sql_clause_feedback(result)
 
         elif choice == "2":
             text   = input("Type your query: ").strip()
             result = process_text(text)
             print_result(result)
+            collect_ingredient_feedback(result)
             collect_sql_clause_feedback(result)
 
         else:

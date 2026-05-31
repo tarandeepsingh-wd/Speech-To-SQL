@@ -6,6 +6,7 @@ from module1_asr.extractor import extract_ingredients, extract_utensils
 from module1_asr.data.db_loader import DB_ACTIONS
 from module1_asr.data.ingredient_synonyms import CATEGORY_SYNONYMS
 from module1_asr.intent_sql_mapper import build_sql_filter_plan
+from module1_asr.ingredient_reranker import rerank_ingredient_matches
 from module1_asr.query_decomposer import decompose_ingredient_logic
 from module1_asr.sql_plan_builder import build_unified_sql_plan
 from module1_asr.sql_ops import extract_sql_operators
@@ -410,6 +411,7 @@ def tag_entities(text: str) -> dict:
     claimed_spans.extend(m["span"] for m in dietary_matches)
     masked = _mask_claimed_spans(text, claimed_spans)
     ingredient_matches = extract_ingredients(masked)
+    ingredient_matches = rerank_ingredient_matches(text, ingredient_matches)
     ingredient_logic = decompose_ingredient_logic(text, ingredient_matches)
     sql_filter_plan = build_sql_filter_plan(ingredient_logic)
     unified_sql_plan = build_unified_sql_plan(

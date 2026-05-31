@@ -12,14 +12,39 @@ Runtime flow:
 6. Phonetic neighbor fallback
 7. Optional semantic matcher
 8. Overlap resolution and deduplication
-9. Ingredient boolean logic: include, exclude, AND/OR connectors
-10. SQL filter-plan generation
+9. Logistic-regression candidate reranker to reject false positives
+10. Ingredient boolean logic: include, exclude, AND/OR connectors
+11. SQL filter-plan generation
 
-Important implementation file:
+Important implementation files:
 
 - `extractor.py`
+- `ingredient_reranker.py`
+- `train_ingredient_reranker.py`
 
 The current extractor keeps the architecture you wanted: exact layer first, fuzzy/phonetic rescue after, overlap resolution at the end. We do not pre-warm phonemes for the full DB at import time because it makes demos and API startup hang; phoneme keys are cached lazily.
+
+The ingredient reranker is a candidate-validation layer, not a replacement for
+the extractor. The extractor still generates high-recall candidates using
+RecipeDB, synonyms, fuzzy matching, and phonetic matching. The reranker then
+uses a trained `DictVectorizer + LogisticRegression` model to score whether each
+candidate is valid in the current query. Its features come from extractor
+metadata and generated training data: fuzzy score, metaphone overlap, extraction
+layer/source, surface/canonical length, candidate/canonical tokens, local
+context tokens, nearby numbers, and RecipeDB frequency. If no saved reranker
+model exists, runtime falls back to the original extractor output.
+
+The reranker is integrated in `entity_tagger.py` after `extract_ingredients()`
+and before ingredient boolean decomposition. This means false-positive
+ingredient candidates are removed before `ingredient_logic`, `sql_filter_plan`,
+and `unified_sql_plan` are built.
+
+Ingredient corrections can be logged from the local demo or from the API
+endpoint `/feedback/ingredients`. Those rows are stored in
+`data/feedback/ingredient_feedback.jsonl` and are automatically included by
+`train_ingredient_reranker.py` on the next training run. The runtime loader
+checks the saved model timestamp, so a newly trained `model.pkl` is picked up by
+future tagging calls without code changes.
 
 ## SQL Operator Extraction
 
@@ -87,11 +112,35 @@ Current model choice:
 - `distilbert-base-uncased`
 - token classification head
 - optional multi-label sequence classification head for implicit SQL labels
+- `DictVectorizer + LogisticRegression` for ingredient candidate validation
 - optimizer: AdamW
 - default learning rate: `5e-5`
 - default batch size: `16`
 - default max length: `128`
 - default epochs: `3`
+
+Train the ingredient false-positive reranker:
+
+```powershell
+cd C:\Users\wadhw\IP_Project\pipeline
+python -m module1_asr.train_ingredient_reranker --source all
+```
+
+The training script generates candidate-level data from the existing annotated
+Module 1 suites. Each extractor candidate becomes one row; candidates whose
+canonical ingredient is in the gold ingredient list are labeled `1`, and all
+other candidates are labeled `0`. The saved model is loaded from:
+
+```text
+module1_asr/models/ingredient_reranker/model.pkl
+```
+
+After ingredient feedback has been collected, retrain with:
+
+```powershell
+cd C:\Users\wadhw\IP_Project\pipeline
+python -m module1_asr.train_ingredient_reranker --source all --feedback-jsonl module1_asr\data\feedback\ingredient_feedback.jsonl
+```
 
 Export synthetic training data without training:
 

@@ -904,7 +904,7 @@ SYNONYMS = {
     "breakfast sausage": "sausage",
     "pork sausage": "sausage",
     "frankfurter": "sausage",
-    "hot dog": "sausage",
+    "hot dog": "hot dog",
     "salami": "salami",
 
     # Broth / Stock
