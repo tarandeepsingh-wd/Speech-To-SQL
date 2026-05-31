@@ -7,6 +7,7 @@ from pathlib import Path
 import ahocorasick
 from rapidfuzz import fuzz, process
 
+from module1_asr.sql_ops.clause_classifier import predict_sql_clause_labels
 from module1_asr.sql_ops.ner import extract_sql_operator_ner_spans
 
 
@@ -35,7 +36,8 @@ PRIORITY = {
     "rule_symbol": 0,
     "rule_keyword": 1,
     "ml_ner": 2,
-    "fallback_synonym": 3,
+    "ml_clause": 3,
+    "fallback_synonym": 4,
 }
 
 
@@ -199,6 +201,20 @@ def _extract_ml_ner(text: str) -> list[SqlOperator]:
     return results
 
 
+def _extract_clause_classifier(text: str) -> list[SqlOperator]:
+    results = []
+    for index, prediction in enumerate(predict_sql_clause_labels(text)):
+        results.append(SqlOperator(
+            text="",
+            canonical=prediction["canonical"],
+            type=prediction["type"],
+            span=(-index - 1, -index - 1),
+            layer="ml_clause",
+            confidence=prediction["confidence"],
+        ))
+    return results
+
+
 def resolve_sql_overlaps(operators: list[SqlOperator]) -> list[SqlOperator]:
     ranked = sorted(
         operators,
@@ -211,15 +227,34 @@ def resolve_sql_overlaps(operators: list[SqlOperator]) -> list[SqlOperator]:
     accepted = []
     used = set()
     for item in ranked:
+        if item.span[0] < 0 or item.span[1] < 0:
+            accepted.append(item)
+            continue
         positions = set(range(item.span[0], item.span[1] + 1))
         if positions & used:
             continue
         accepted.append(item)
         used |= positions
-    return sorted(accepted, key=lambda item: item.span[0])
+    return sorted(accepted, key=lambda item: (item.span[0] < 0, item.span[0], item.canonical))
+
+
+def _dedupe_implicit_clause_predictions(operators: list[SqlOperator]) -> list[SqlOperator]:
+    seen_implicit = set()
+    deduped = []
+    for item in operators:
+        if item.layer != "ml_clause":
+            deduped.append(item)
+            continue
+        if item.canonical in seen_implicit:
+            continue
+        deduped.append(item)
+        seen_implicit.add(item.canonical)
+    return deduped
 
 
 def _context_supports(operator: SqlOperator, all_ops: list[SqlOperator], text: str) -> bool:
+    if operator.layer == "ml_clause":
+        return True
     if operator.confidence < 0.60:
         return False
     if operator.layer.startswith("rule_symbol"):
@@ -253,8 +288,10 @@ def extract_sql_operators(text: str) -> list[dict]:
         not candidates or os.getenv("TADKA_FORCE_SQL_ML") == "1"
     ):
         candidates.extend(_extract_ml_ner(text))
+    if os.getenv("TADKA_ENABLE_SQL_CLAUSE_ML") == "1":
+        candidates.extend(_extract_clause_classifier(text))
 
-    fused = resolve_sql_overlaps(candidates)
+    fused = _dedupe_implicit_clause_predictions(resolve_sql_overlaps(candidates))
     validated = [
         item for item in fused
         if _context_supports(item, fused, text)

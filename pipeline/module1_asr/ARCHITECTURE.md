@@ -34,11 +34,24 @@ Runtime flow:
 7. Context validation
 8. API-friendly output schema
 
+This is intentionally separate from ingredient extraction. SQL extraction does
+not call the ingredient extractor, and ingredient extraction does not call the
+SQL extractor. They meet only inside `entity_tagger.py`, where the orchestrator
+combines independent outputs.
+
+Implicit WikiSQL-style clause predictions are emitted as `layer: "ml_clause"`.
+They can predict labels such as `SELECT`, `WHERE`, `COUNT`, and `=` even when no
+literal span exists in the sentence. Those implicit predictions do not suppress
+ingredient extraction in the full `/tag` pipeline; only explicit SQL syntax
+signals such as visible `where`, `select`, `group by`, or SQL symbols can mark a
+query as structural SQL.
+
 Important files:
 
 - `sql_ops/extractor.py`
 - `sql_ops/ner.py`
 - `sql_ops/train.py`
+- `sql_ops/train_clause_classifier.py`
 - `sql_ops/prepare_dataset.py`
 - `sql_ops/download_datasets.py`
 - `data/sql_operator_lexicon.json`
@@ -73,6 +86,7 @@ Current model choice:
 
 - `distilbert-base-uncased`
 - token classification head
+- optional multi-label sequence classification head for implicit SQL labels
 - optimizer: AdamW
 - default learning rate: `5e-5`
 - default batch size: `16`
@@ -98,6 +112,19 @@ Preferred packaged command:
 ```powershell
 cd C:\Users\wadhw\IP_Project\pipeline
 python -m module1_asr.sql_ops.train --dataset-jsonl module1_asr\datasets\processed\sql_operator_train.jsonl
+```
+
+Train WikiSQL-style implicit clause/operator labels:
+
+```powershell
+cd C:\Users\wadhw\IP_Project\pipeline
+python -m module1_asr.sql_ops.train_clause_classifier --dataset-csv module1_asr\datasets\raw\wikisql_labeled.csv
+```
+
+Enable those implicit classifier predictions inside `extract_sql_operators`:
+
+```powershell
+$env:TADKA_ENABLE_SQL_CLAUSE_ML="1"
 ```
 
 Dataset folders:
@@ -146,8 +173,11 @@ Feedback logging file:
 Corrected SQL operator examples are stored in:
 
 - `data/feedback/sql_operator_feedback.jsonl`
+- `data/feedback/sql_clause_feedback.jsonl`
 
-The training script automatically includes this file if it exists. This lets the model improve from failed/ambiguous cases.
+The NER and clause-classifier training scripts automatically include their
+matching feedback files if they exist. This lets the models improve from
+failed/ambiguous cases.
 
 ## Dataset Sources
 

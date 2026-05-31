@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 from pathlib import Path
 
@@ -34,6 +35,16 @@ def _read_rows(path: Path) -> list[dict]:
                 if isinstance(payload.get(key), list):
                     return payload[key]
             return [payload]
+
+    if path.suffix.lower() == ".csv":
+        rows = []
+        with open(path, "r", encoding="utf-8", newline="") as f:
+            for row in csv.DictReader(f):
+                spans = row.get("spans")
+                if spans and spans.strip():
+                    row["spans"] = json.loads(spans)
+                rows.append(row)
+        return rows
 
     raise ValueError(f"Unsupported dataset file: {path}")
 

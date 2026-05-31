@@ -304,11 +304,6 @@ def _detect_categories(text: str) -> list:
 # ─────────────────────────────────────────────────────────
 
 _STYLE_TERMS = sorted(DIETARY_STYLES.keys(), key=len, reverse=True)
-_SQL_STRUCTURAL_TOKENS = {
-    "SELECT", "FROM", "WHERE", "JOIN", "GROUP BY", "ORDER BY",
-}
-
-
 def _detect_dietary_style_matches(text: str) -> list:
     text_lower = text.lower()
     found      = []
@@ -361,48 +356,6 @@ def _detect_dietary_styles(text: str) -> list:
     ))
 
 
-def _is_sql_structural_query(sql_operators: list[dict]) -> bool:
-    return any(
-        op["canonical"] in _SQL_STRUCTURAL_TOKENS or op["layer"] == "rule_symbol"
-        for op in sql_operators
-    )
-
-
-def _filter_recipe_sql_operators(
-    sql_operators: list[dict],
-    ingredient_logic: dict,
-    ingredient_matches: list[dict],
-) -> list[dict]:
-    spans_by_canonical = {}
-    for match in ingredient_matches:
-        spans_by_canonical.setdefault(match["canonical"], []).append(match["span"])
-
-    filtered = []
-    for operator in sql_operators:
-        canonical = operator["canonical"]
-        op_start, op_end = operator["span"]
-
-        if canonical in {"AND", "OR"}:
-            for connector in ingredient_logic.get("connectors", []):
-                left_spans = spans_by_canonical.get(connector["left"], [])
-                right_spans = spans_by_canonical.get(connector["right"], [])
-                if connector["operator"] != canonical:
-                    continue
-                if any(left[1] < op_start < right[0] for left in left_spans for right in right_spans):
-                    filtered.append(operator)
-                    break
-
-        elif canonical == "NOT":
-            for match in ingredient_matches:
-                if match["canonical"] not in ingredient_logic.get("exclude", []):
-                    continue
-                if 0 <= match["span"][0] - op_end <= 64:
-                    filtered.append(operator)
-                    break
-
-    return filtered
-
-
 # ─────────────────────────────────────────────────────────
 # MAIN TAG FUNCTION
 # ─────────────────────────────────────────────────────────
@@ -451,15 +404,12 @@ def tag_entities(text: str) -> dict:
     categories = detected["categories"]
     utensil_matches = detected["utensils"]
 
-    if _is_sql_structural_query(sql_operators):
-        ingredient_matches = []
-    else:
-        # Mask nutrition, dietary, and utensil spans so ingredient extractor
-        # never processes words already claimed by other detectors
-        claimed_spans = [m["span"] for m in utensil_matches]
-        claimed_spans.extend(m["span"] for m in dietary_matches)
-        masked = _mask_claimed_spans(text, claimed_spans)
-        ingredient_matches = extract_ingredients(masked)
+    # Mask nutrition, dietary, and utensil spans so ingredient extraction stays
+    # independent from the SQL operator layer while avoiding known false hits.
+    claimed_spans = [m["span"] for m in utensil_matches]
+    claimed_spans.extend(m["span"] for m in dietary_matches)
+    masked = _mask_claimed_spans(text, claimed_spans)
+    ingredient_matches = extract_ingredients(masked)
     ingredient_logic = decompose_ingredient_logic(text, ingredient_matches)
     sql_filter_plan = build_sql_filter_plan(ingredient_logic)
     unified_sql_plan = build_unified_sql_plan(
@@ -467,12 +417,6 @@ def tag_entities(text: str) -> dict:
         nutrition_filters,
         dietary_styles,
     )
-    if not _is_sql_structural_query(sql_operators):
-        sql_operators = _filter_recipe_sql_operators(
-            sql_operators,
-            ingredient_logic,
-            ingredient_matches,
-        )
     ingredients = list(dict.fromkeys(
         ingredient_logic["include"] + ingredient_logic["exclude"]
     ))

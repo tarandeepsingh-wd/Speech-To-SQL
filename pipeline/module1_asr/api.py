@@ -4,7 +4,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from module1_asr.entity_tagger import tag_entities
-from module1_asr.sql_ops import extract_sql_operators
+from module1_asr.sql_ops import extract_sql_operators, predict_sql_clause_labels
 from module1_asr.transcriber import transcribe_audio
 
 
@@ -69,6 +69,12 @@ async def transcribe_and_tag(
 def extract_sql_operator_endpoint(payload: SqlOperatorRequest) -> dict:
     """Legacy endpoint kept for backward compatibility."""
     return {"operators": extract_sql_operators(payload.query)}
+
+
+@app.post("/extract_sql_clauses")
+def extract_sql_clause_endpoint(payload: SqlOperatorRequest) -> dict:
+    """Predict implicit SQL clauses/operators for a natural-language query."""
+    return {"clauses": predict_sql_clause_labels(payload.query)}
 
 
 @app.get("/health")
