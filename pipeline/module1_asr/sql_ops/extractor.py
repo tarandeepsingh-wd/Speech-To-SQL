@@ -10,11 +10,11 @@ from rapidfuzz import fuzz, process
 from module1_asr.sql_ops.clause_classifier import predict_sql_clause_labels
 from module1_asr.sql_ops.ner import extract_sql_operator_ner_spans
 
-
 WORD_BOUNDARIES = set(" ,.()\n\t!?;:'\"")
 
 _LEXICON_PATH = Path(__file__).parents[1] / "data" / "sql_operator_lexicon.json"
 
+_TOP_N_RE = re.compile(r"\b(top|first|limit)\s+\d+\b", re.IGNORECASE)
 
 def _load_lexicon() -> dict:
     with open(_LEXICON_PATH, "r", encoding="utf-8") as f:
@@ -239,11 +239,21 @@ def resolve_sql_overlaps(operators: list[SqlOperator]) -> list[SqlOperator]:
 
 
 def _dedupe_implicit_clause_predictions(operators: list[SqlOperator]) -> list[SqlOperator]:
+    # Collect all canonicals already found by rule/NER layers
+    rule_canonicals = {
+        op.canonical
+        for op in operators
+        if op.layer != "ml_clause"
+    }
+
     seen_implicit = set()
     deduped = []
     for item in operators:
         if item.layer != "ml_clause":
             deduped.append(item)
+            continue
+        # Drop if rules already found this operator — no need to duplicate
+        if item.canonical in rule_canonicals:
             continue
         if item.canonical in seen_implicit:
             continue
@@ -272,7 +282,7 @@ def _context_supports(operator: SqlOperator, all_ops: list[SqlOperator], text: s
         if operator.span[0] == 0:
             return True
         window = text[max(0, operator.span[0] - 16):operator.span[1] + 17].lower()
-        return bool(re.search(r"\b(of|by|where|select|show|get|find)\b", window))
+        return bool(re.search(r"\b(of|by|where|select|show|get|find|what|list|give|tell|which|fetch)\b", window))
     return operator.confidence >= 0.80
 
 
@@ -283,6 +293,15 @@ def extract_sql_operators(text: str) -> list[dict]:
     candidates = []
     candidates.extend(_extract_symbol_rules(text))
     candidates.extend(_extract_keyword_rules(text))
+    for m in _TOP_N_RE.finditer(text):
+        candidates.append(SqlOperator(
+            text=m.group(0),
+            canonical="LIMIT",
+            type="CLAUSE",
+            span=(m.start(), m.end() - 1),
+            layer="rule_keyword",
+            confidence=1.0,
+        ))
     candidates.extend(_extract_fallback_synonyms(text))
     if os.getenv("TADKA_ENABLE_SQL_ML") == "1" and (
         not candidates or os.getenv("TADKA_FORCE_SQL_ML") == "1"
