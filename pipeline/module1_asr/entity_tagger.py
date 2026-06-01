@@ -3,8 +3,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from rapidfuzz import fuzz, process
 
 from module1_asr.extractor import extract_ingredients, extract_utensils
-from module1_asr.data.db_loader import DB_ACTIONS
-from module1_asr.data.ingredient_synonyms import CATEGORY_SYNONYMS
+from module1_asr.data.db_loader import DB_ACTIONS, DB_INGREDIENTS
+from module1_asr.data.ingredient_synonyms import CATEGORY_SYNONYMS, canonicalize_ingredient
 from module1_asr.intent_sql_mapper import build_sql_filter_plan
 from module1_asr.ingredient_reranker import rerank_ingredient_matches
 from module1_asr.query_decomposer import decompose_ingredient_logic
@@ -305,6 +305,14 @@ def _detect_categories(text: str) -> list:
 # ─────────────────────────────────────────────────────────
 
 _STYLE_TERMS = sorted(DIETARY_STYLES.keys(), key=len, reverse=True)
+
+
+def _is_known_ingredient_term(text: str) -> bool:
+    term = text.lower().strip()
+    canonical = canonicalize_ingredient(term)
+    return term in DB_INGREDIENTS or canonical in DB_INGREDIENTS
+
+
 def _detect_dietary_style_matches(text: str) -> list:
     text_lower = text.lower()
     found      = []
@@ -333,6 +341,8 @@ def _detect_dietary_style_matches(text: str) -> list:
                 continue
             phrase = text_lower[start:end + 1]
             if len(phrase.replace(" ", "").replace("-", "")) < 4:
+                continue
+            if width == 1 and _is_known_ingredient_term(phrase):
                 continue
             match = process.extractOne(
                 phrase,

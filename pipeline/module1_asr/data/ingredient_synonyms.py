@@ -115,6 +115,7 @@ SYNONYMS = {
     "lahsun": "garlic",
     "lasun": "garlic",
     "lashun": "garlic",
+    "lehsoon": "garlic",
     "garlic cloves": "garlic clove",
     "clove of garlic": "garlic clove",
     "garlic pods": "garlic clove",
@@ -235,10 +236,10 @@ SYNONYMS = {
     # Turmeric alt names already above
 
     # Asafoetida
-    "hing": "hing",
-    "asafoetida": "hing",
-    "asafetida": "hing",
-    "heeng": "hing",
+    "hing": "asafoetida",
+    "asafoetida": "asafoetida",
+    "asafetida": "asafoetida",
+    "heeng": "asafoetida",
 
 
     # Ajwain
@@ -512,17 +513,17 @@ SYNONYMS = {
     # ─────────────────────────────────────────────
 
     # Yogurt / Curd
-    "dahi": "plain yogurt",
-    "curd": "plain yogurt",
-    "hung curd": "plain yogurt",
-    "yogurt": "plain yogurt",
-    "yoghurt": "plain yogurt",
+    "dahi": "yogurt",
+    "curd": "yogurt",
+    "hung curd": "yogurt",
+    "yogurt": "yogurt",
+    "yoghurt": "yogurt",
     "greek yogurt": "greek yogurt",
     "greek yoghurt": "greek yogurt",
     "strained yogurt": "greek yogurt",
-    "thick yogurt": "plain yogurt",
-    "sour cream yogurt": "plain yogurt",
-    "set yogurt": "plain yogurt",
+    "thick yogurt": "yogurt",
+    "sour cream yogurt": "yogurt",
+    "set yogurt": "yogurt",
 
     # Milk
     "doodh": "milk",
@@ -562,7 +563,7 @@ SYNONYMS = {
     "malai": "cream",
 
     # Cheese
-    "paneer": "cream cheese",  # closest canonical; note paneer is Indian cottage cheese
+    "paneer": "paneer",
     "cottage cheese": "cottage cheese",
     "ricotta": "ricotta cheese",
     "mozzarella": "mozzarella cheese",
@@ -594,7 +595,7 @@ SYNONYMS = {
     # ─────────────────────────────────────────────
 
     # All Purpose Flour
-    "maida": "maida flour",
+    "maida": "flour",
     "all purpose flour": "purpose flour",
     "plain flour": "plain flour",
     "refined flour": "purpose flour",
@@ -603,10 +604,10 @@ SYNONYMS = {
     "white flour": "white flour",
 
     # Wheat Flour / Atta
-    "atta": "wheat flour",
-    "whole wheat flour": "wheat flour",
-    "wholemeal flour": "wheat flour",
-    "chapati flour": "wheat flour",
+    "atta": "whole wheat flour",
+    "whole wheat flour": "whole wheat flour",
+    "wholemeal flour": "whole wheat flour",
+    "chapati flour": "whole wheat flour",
     "durum flour": "wheat flour",
     "bread flour": "bread flour",
     "self rising flour": "self rising flour",
@@ -614,11 +615,11 @@ SYNONYMS = {
     "cake flour": "cake flour",
 
     # Gram Flour
-    "besan": "besan",
+    "besan": "chickpea flour",
     "chickpea flour": "chickpea flour",
     "garbanzo flour": "chickpea flour",
-    "chana atta": "besan flour",
-    "senagapindi": "besan",
+    "chana atta": "chickpea flour",
+    "senagapindi": "chickpea flour",
 
     # Rice Flour
     "chawal ka atta": "rice flour",
@@ -701,9 +702,9 @@ SYNONYMS = {
     "urad": "urad dal",
     "black gram": "urad dal",
     "dhuli urad": "urad dal",
-    "moong dal": "lentil",
-    "moong": "lentil",
-    "mung beans": "bean sprout",
+    "moong dal": "mung bean",
+    "moong": "mung bean",
+    "mung beans": "mung bean",
     "green gram": "lentil",
     "toor dal": "lentil",
     "arhar dal": "lentil",
@@ -808,9 +809,9 @@ SYNONYMS = {
     "demerara sugar": "demerara sugar",
     "muscovado": "muscovado sugar",
     "palm sugar": "palm sugar",
-    "jaggery": "palm sugar",
+    "jaggery": "jaggery",
     "gur": "palm sugar",
-    "gud": "palm sugar",
+    "gud": "jaggery",
     "khandsari": "sugar",
 
     # Honey
@@ -861,7 +862,7 @@ SYNONYMS = {
     "egg whites": "egg white",
 
     # Beef
-    "gosht": "beef",
+    "gosht": "meat",
     "gai ka gosht": "beef",
     "ground beef": "beef",
     "minced beef": "beef",
@@ -944,6 +945,8 @@ SYNONYMS = {
     "canned tuna": "tuna water",
 
     # Cod / White Fish
+    "machli": "fish",
+    "machhli": "fish",
     "cod fillets": "cod fillet",
     "white fish": "white fish fillet",
     "haddock": "haddock fillet",
@@ -1013,6 +1016,14 @@ SYNONYMS = {
     # Banana
     "kela": "banana",
     "plantain": "banana",
+
+    # Tropical fruit spelling variants
+    "litchi": "lychee",
+    "lichee": "lychee",
+    "leechee": "lychee",
+    "guavas": "guava",
+    "jack fruit": "jackfruit",
+    "jackfruits": "jackfruit",
 
     # Coconut
     "nariyal": "coconut",

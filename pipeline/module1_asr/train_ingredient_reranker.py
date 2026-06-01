@@ -90,9 +90,12 @@ def load_feedback_cases(path: Path) -> list[tuple[str, list[str]]]:
 
 def build_training_rows(cases: list[tuple[str, list[str]]]) -> list[dict]:
     rows = []
+    candidate_cache: dict[str, list[dict]] = {}
     for query, gold_ingredients in cases:
         gold = {item.lower().strip() for item in gold_ingredients}
-        for match in extract_ingredients(query):
+        if query not in candidate_cache:
+            candidate_cache[query] = extract_ingredients(query)
+        for match in candidate_cache[query]:
             canonical = str(match.get("canonical", "")).lower().strip()
             rows.append({
                 "query": query,

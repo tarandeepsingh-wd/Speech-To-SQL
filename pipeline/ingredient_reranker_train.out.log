@@ -1,0 +1,18 @@
+cases=6179 feedback_cases=28 candidates=11900 labels={0: 2644, 1: 9256}
+candidate_dataset=C:\Users\wadhw\IP_Project\pipeline\module1_asr\datasets\processed\ingredient_reranker_candidates.jsonl
+saved=C:\Users\wadhw\IP_Project\pipeline\module1_asr\models\ingredient_reranker\model.pkl
+threshold=0.375
+confusion_matrix=
+[[ 654    7]
+ [   1 2313]]
+              precision    recall  f1-score   support
+
+           0      0.998     0.989     0.994       661
+           1      0.997     1.000     0.998      2314
+
+    accuracy                          0.997      2975
+   macro avg      0.998     0.994     0.996      2975
+weighted avg      0.997     0.997     0.997      2975
+
+top_positive_features=canonical_log_frequency:7.249, canonical=chicken:2.998, right=basmati:2.133, surface=beef:2.020, canonical=garlic:1.890, surface=pasta:1.887, right=rice:1.732, canonical=jackfruit:1.723
+top_negative_features=left=by:-2.958, canonical=hing:-2.576, surface=hing:-2.576, category=bakery:-2.022, left=list:-2.005, canonical=banana:-1.972, surface=banana:-1.972, surface=chick:-1.964

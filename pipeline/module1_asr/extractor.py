@@ -10,7 +10,6 @@ from rapidfuzz import process, fuzz
 from module1_asr.automaton import INGREDIENT_AUTOMATON, UTENSIL_AUTOMATON
 from module1_asr.data.db_loader import DB_INGREDIENTS, DB_UTENSILS
 from module1_asr.data.ingredient_synonyms import SYNONYMS, canonicalize_ingredient
-from module1_asr.ingredient_reranker import rerank_ingredient_matches
 
 # ─────────────────────────────────────────────────────────
 # CONSTANTS
@@ -719,12 +718,21 @@ def _metaphone_rerank(query: str):
     )
 
     best = ranked[0]
+    best_phoneme_ed = levenshtein_distance(
+        query_phoneme_key,
+        word_to_phoneme_key(best),
+    )
     best_consonant_ed = levenshtein_distance(query_stripped, _strip_vowels(best))
     raw_score = fuzz.WRatio(query, best)
 
     if best_consonant_ed > (1 if len(query) <= 4 else 2):
         return None
-    if raw_score < 70 and not passes_edit_distance(query, best):
+    phonetic_close = (
+        len(query) >= 5 and
+        best_phoneme_ed <= 1 and
+        best_consonant_ed <= 1
+    )
+    if raw_score < 70 and not passes_edit_distance(query, best) and not phonetic_close:
         return None
 
     return (best, raw_score, 0)
@@ -942,7 +950,6 @@ def extract_ingredients(text: str) -> list:
             })
 
     all_matches = deduplicate(exact_matches + fuzzy_matches)
-    all_matches = rerank_ingredient_matches(text, all_matches)   # ← add this
     return sorted(all_matches, key=lambda x: x["span"][0])
 
 

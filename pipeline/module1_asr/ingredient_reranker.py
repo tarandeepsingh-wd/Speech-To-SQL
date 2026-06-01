@@ -4,6 +4,7 @@ import pickle
 import re
 from pathlib import Path
 
+from Levenshtein import distance as levenshtein_distance
 from metaphone import doublemetaphone
 from rapidfuzz import fuzz
 
@@ -13,7 +14,7 @@ from module1_asr.data.db_loader import DB_INGREDIENTS
 MODEL_DIR = Path(__file__).parent / "models" / "ingredient_reranker"
 MODEL_FILE = MODEL_DIR / "model.pkl"
 DEFAULT_THRESHOLD = 0.50
-FEATURE_SCHEMA_VERSION = 2
+FEATURE_SCHEMA_VERSION = 3
 
 NUMERIC_FEATURE_NAMES = [
     "extractor_score",
@@ -32,6 +33,11 @@ NUMERIC_FEATURE_NAMES = [
     "is_semantic",
     "surface_canonical_wratio",
     "surface_canonical_ratio",
+    "edit_similarity",
+    "consonant_similarity",
+    "asr_form_similarity",
+    "phoneme_similarity",
+    "same_first_char",
     "metaphone_overlap",
     "near_number",
     "canonical_log_frequency",
@@ -63,6 +69,39 @@ def _metaphone_overlap(surface: str, canonical: str) -> float:
     if not surface_codes or not canonical_codes:
         return 0.0
     return float(bool(surface_codes & canonical_codes))
+
+
+def _normalized_edit_similarity(left: str, right: str) -> float:
+    if not left or not right:
+        return 0.0
+    return 1.0 - (
+        levenshtein_distance(left, right) /
+        max(len(left), len(right), 1)
+    )
+
+
+def _strip_vowels(text: str) -> str:
+    return re.sub(r"[aeiou]", "", text.lower())
+
+
+def _asr_form(text: str) -> str:
+    collapsed = re.sub(r"(.)\1+", r"\1", text.lower())
+    return re.sub(r"[aeiou]", "A", collapsed)
+
+
+def _phoneme_similarity(surface: str, canonical: str) -> float:
+    if not surface or not canonical:
+        return 0.0
+    if surface == canonical:
+        return 1.0
+    try:
+        from module1_asr.extractor import word_to_phoneme_key
+
+        surface_key = word_to_phoneme_key(surface)
+        canonical_key = word_to_phoneme_key(canonical)
+    except Exception:
+        return 0.0
+    return _normalized_edit_similarity(surface_key, canonical_key)
 
 
 def _context_text(text: str, start: int, end: int, window: int = 36) -> str:
@@ -130,6 +169,17 @@ def build_candidate_features(query: str, match: dict) -> dict[str, float]:
             fuzz.ratio(surface, canonical) / 100.0
             if surface and canonical else 0.0
         ),
+        "edit_similarity": _normalized_edit_similarity(surface, canonical),
+        "consonant_similarity": _normalized_edit_similarity(
+            _strip_vowels(surface),
+            _strip_vowels(canonical),
+        ),
+        "asr_form_similarity": (
+            fuzz.ratio(_asr_form(surface), _asr_form(canonical)) / 100.0
+            if surface and canonical else 0.0
+        ),
+        "phoneme_similarity": _phoneme_similarity(surface, canonical),
+        "same_first_char": float(bool(surface and canonical and surface[0] == canonical[0])),
         "metaphone_overlap": _metaphone_overlap(surface, canonical),
         "near_number": float(bool(re.search(r"\d+(?:\.\d+)?", context))),
         "canonical_log_frequency": _canonical_frequency(canonical),
@@ -138,6 +188,9 @@ def build_candidate_features(query: str, match: dict) -> dict[str, float]:
         _feature_key("layer", layer): 1.0,
         _feature_key("source", source): 1.0,
     }
+    category = DB_INGREDIENTS.get(canonical, {}).get("category", "")
+    if category:
+        features[_feature_key("category", str(category))] = 1.0
     for token in _tokens(left_context)[-4:]:
         features[_feature_key("left", token)] = 1.0
     for token in _tokens(right_context)[:4]:
