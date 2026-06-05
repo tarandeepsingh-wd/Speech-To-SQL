@@ -7,6 +7,10 @@ pipeline/module1_asr/models/
 # Feedback logs can contain user queries/corrections.
 pipeline/module1_asr/data/feedback/*.jsonl
 
+# API probing generates local virtual schema evidence.
+pipeline/module3/cache/*.json
+!pipeline/module3/cache/.gitkeep
+
 # Downloaded/converted datasets can be large.
 pipeline/module1_asr/datasets/raw/*
 pipeline/module1_asr/datasets/processed/*.jsonl

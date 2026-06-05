@@ -1,5 +1,7 @@
+import json
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from rapidfuzz import fuzz, process
 
 from module1_asr.extractor import extract_ingredients, extract_utensils
@@ -280,24 +282,52 @@ def _detect_actions(text: str) -> list:
 # CATEGORY DETECTION
 # ─────────────────────────────────────────────────────────
 
-_CATEGORY_TERMS = sorted(CATEGORY_SYNONYMS.keys(), key=len, reverse=True)
+_CUISINE_CATEGORY_CACHE: dict[str, str] | None = None
 
 
 def _detect_categories(text: str) -> list:
     text_lower = text.lower()
     found      = []
     used       = set()
+    category_synonyms = _category_synonyms()
 
-    for term in _CATEGORY_TERMS:
+    for term in sorted(category_synonyms.keys(), key=len, reverse=True):
         pattern = re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
         for m in pattern.finditer(text_lower):
             positions = set(range(m.start(), m.end()))
             if positions & used:
                 continue
             used |= positions
-            found.append({"term": term, "category": CATEGORY_SYNONYMS[term]})
+            found.append({"term": term, "category": category_synonyms[term]})
 
     return found
+
+
+def _category_synonyms() -> dict[str, str]:
+    synonyms = dict(CATEGORY_SYNONYMS)
+    synonyms.update(_load_cuisine_category_synonyms())
+    return synonyms
+
+
+def _load_cuisine_category_synonyms() -> dict[str, str]:
+    global _CUISINE_CATEGORY_CACHE
+    if _CUISINE_CATEGORY_CACHE is not None:
+        return _CUISINE_CATEGORY_CACHE
+
+    config_path = Path(__file__).resolve().parents[1] / "module3" / "config" / "recipe_db.json"
+    try:
+        payload = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        _CUISINE_CATEGORY_CACHE = {}
+        return _CUISINE_CATEGORY_CACHE
+
+    aliases = payload.get("cuisine_aliases", {})
+    _CUISINE_CATEGORY_CACHE = {
+        str(term).lower().strip(): "cuisine"
+        for term in aliases
+        if str(term).strip()
+    }
+    return _CUISINE_CATEGORY_CACHE
 
 
 # ─────────────────────────────────────────────────────────

@@ -9,10 +9,18 @@ from module1_asr.entity_tagger import tag_entities
 from module1_asr.feedback_logger import log_ingredient_feedback, log_sql_clause_feedback
 from module1_asr.sql_ops.label_utils import normalize_sql_label
 from module1_asr.sql_ops import score_sql_clause_labels
+from module3.sql_query_builder import build_sql_query
 
 
 SAMPLE_RATE = 16000
 CHANNELS    = 1
+
+
+def read_terminal_input(prompt: str, default: str = "") -> str:
+    try:
+        return input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        return default
 
 
 def record_until_enter() -> np.ndarray:
@@ -143,12 +151,75 @@ def print_result(result: dict):
     print(f"  Unified SQL plan : {result.get('unified_sql_plan', {})}")
 
 
+def print_module3_sql(result: dict) -> None:
+    sql_result = build_sql_query(result, transcript=result.get("transcript"))
+    validation = sql_result.get("validation") or {}
+    plan = sql_result.get("plan") or {}
+
+    print("\n  Module 3 SQL")
+    print(f"  Meaning         : {_plain_meaning(result)}")
+    if plan:
+        print(f"  Root table      : {plan.get('from_table')} AS {plan.get('from_alias')}")
+        print(f"  Strategy        : {_sql_strategy(plan, sql_result.get('query'))}")
+    print(f"  SQL             : {sql_result.get('query')}")
+    print(f"  Params          : {sql_result.get('params', [])}")
+    print(f"  Valid           : {validation.get('ok')}")
+    if validation.get("errors"):
+        print(f"  Errors          : {validation['errors']}")
+
+
+def _plain_meaning(result: dict) -> str:
+    parts = []
+    logic = result.get("ingredient_logic") or {}
+    include = logic.get("include") or result.get("ingredients") or []
+    exclude = logic.get("exclude") or []
+    if include:
+        connector = " OR " if logic.get("include_operator") == "OR" else " AND "
+        parts.append("contains " + connector.join(include))
+    if exclude:
+        parts.append("excludes " + ", ".join(exclude))
+    if result.get("dietary_styles"):
+        parts.append("diet " + ", ".join(result["dietary_styles"]))
+    if result.get("categories"):
+        parts.append("category " + ", ".join(
+            str(item.get("term") or item.get("category"))
+            for item in result["categories"]
+        ))
+    if result.get("nutrition_filters"):
+        parts.append("nutrition " + ", ".join(
+            f"{item.get('nutrient')} {item.get('operator')} {item.get('value')}"
+            for item in result["nutrition_filters"]
+        ))
+    return "; ".join(parts) if parts else "no filters"
+
+
+def _sql_strategy(plan: dict, query: str | None) -> str:
+    joins = plan.get("joins") or []
+    ingredient_joins = [
+        join for join in joins
+        if join.get("source") == "ingredients"
+    ]
+    if len(ingredient_joins) > 1 and query and "SELECT DISTINCT" in query and "ingredient_lower" in query:
+        return "filtered ingredient AND JOINs"
+    if len(ingredient_joins) > 1 and query and "ingredient_lower" in query:
+        return "ingredient AND JOINs"
+    if query and "GROUP BY" in query and "COUNT(DISTINCT" in query:
+        return "grouped ingredient JOIN"
+    if joins:
+        return "JOIN"
+    if query and "EXISTS" in query:
+        return "EXISTS"
+    return "base table filter"
+
+
 def collect_ingredient_feedback(result: dict) -> None:
-    answer = input("\nAre the ingredients correct? [Enter=skip, y=yes, n=no]: ").strip().lower()
+    answer = read_terminal_input(
+        "\nAre the ingredients correct? [Enter=skip, y=yes, n=no]: "
+    ).strip().lower()
     if answer not in {"n", "no"}:
         return
 
-    corrected = input("Correct ingredients, comma-separated (empty if none): ").strip()
+    corrected = read_terminal_input("Correct ingredients, comma-separated (empty if none): ").strip()
     corrected_ingredients = []
     for raw_item in corrected.split(","):
         item = raw_item.strip().lower()
@@ -172,11 +243,13 @@ def collect_sql_clause_feedback(result: dict) -> None:
     if not clause_predictions:
         return
 
-    answer = input("\nAre the SQL labels correct? [Enter=skip, y=yes, n=no]: ").strip().lower()
+    answer = read_terminal_input(
+        "\nAre the SQL labels correct? [Enter=skip, y=yes, n=no]: "
+    ).strip().lower()
     if answer not in {"n", "no"}:
         return
 
-    corrected = input("Correct SQL labels, comma-separated: ").strip()
+    corrected = read_terminal_input("Correct SQL labels, comma-separated: ").strip()
     corrected_labels = []
     for raw_label in corrected.split(","):
         label = normalize_sql_label(raw_label)
@@ -200,11 +273,11 @@ def collect_sql_clause_feedback(result: dict) -> None:
 # MAIN LOOP
 # ─────────────────────────────────────────────────────────
 
-if __name__ == "__main__":
+def main() -> None:
     os.environ.setdefault("TADKA_ENABLE_SQL_CLAUSE_ML", "1")
 
     print("=" * 55)
-    print("  TADKA - Module 1: ASR + Entity Tagger")
+    print("  TADKA - ASR + Entity Tagger + SQL Generator")
     print("=" * 55)
 
     while True:
@@ -212,7 +285,7 @@ if __name__ == "__main__":
         print("  [1] Speak a query (microphone)")
         print("  [2] Type a query  (text)")
         print("  [q] Quit")
-        choice = input("\nChoice: ").strip().lower()
+        choice = read_terminal_input("\nChoice: ", "q").strip().lower()
 
         if choice == "q":
             print("Bye!")
@@ -227,15 +300,24 @@ if __name__ == "__main__":
             print("\nTranscribing with Whisper...")
             result    = process_audio(wav_bytes)
             print_result(result)
+            print_module3_sql(result)
             collect_ingredient_feedback(result)
             collect_sql_clause_feedback(result)
 
         elif choice == "2":
-            text   = input("Type your query: ").strip()
+            text   = read_terminal_input("Type your query: ").strip()
+            if not text:
+                print("No text entered.")
+                continue
             result = process_text(text)
             print_result(result)
+            print_module3_sql(result)
             collect_ingredient_feedback(result)
             collect_sql_clause_feedback(result)
 
         else:
             print("Invalid choice.")
+
+
+if __name__ == "__main__":
+    main()
