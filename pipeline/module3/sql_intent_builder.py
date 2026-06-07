@@ -6,6 +6,7 @@ from typing import Any
 from module3.config import load_recipe_db_config, load_sql_schema_config
 from module3.intent_grounder import assert_grounded_intent
 from module3.intent_preparer import prepare_intent
+from module3.sort_resolver import resolve_sort_intent
 from module3.sql_ir import OrderBy, Predicate, QueryIR, SelectExpr
 from module3.time_resolver import resolve_time_filter
 
@@ -31,7 +32,7 @@ def build_query_ir(
     query = QueryIR(root=root, select=_select_exprs(tag_result, schema, root))
     query.predicates.extend(_ingredient_predicates(tag_result))
     query.predicates.extend(_nutrition_predicates(tag_result))
-    query.predicates.extend(_dietary_predicates(tag_result, recipe_config))
+    query.predicates.extend(_dietary_predicates(tag_result, text, recipe_config))
     query.predicates.extend(_time_predicates(tag_result, text, recipe_config))
     query.predicates.extend(_category_predicates(tag_result))
 
@@ -142,14 +143,28 @@ def _nutrition_predicates(tag_result: dict) -> list[Predicate]:
 
 def _dietary_predicates(
     tag_result: dict,
+    text: str,
     recipe_config: dict[str, Any],
 ) -> list[Predicate]:
     aliases = recipe_config["diet_aliases"]
-    predicates = []
+    styles = []
     for style in _unique_strings(tag_result.get("dietary_styles") or []):
         api_style = aliases.get(style, style if style in aliases.values() else None)
         if not api_style:
             continue
+        styles.append(api_style)
+
+    if len(styles) > 1 and _contains_config_term(text, recipe_config.get("logic_terms", {}).get("or", [])):
+        return [Predicate(
+            source="dietary",
+            field="dietary_tag",
+            operator="IN",
+            values=tuple(styles),
+            quantifier="or_exists",
+        )]
+
+    predicates = []
+    for api_style in styles:
         predicates.append(Predicate(
             source="dietary",
             field="dietary_tag",
@@ -208,29 +223,14 @@ def _order_by(
     if not order_ops and not _contains_config_term(text, recipe_config["sort_cues"]):
         return None
 
-    sort_field = None
-    for candidate, terms in recipe_config["sort_terms"].items():
-        if _contains_config_term(text, terms):
-            sort_field = candidate
-            break
+    sort_field, direction = resolve_sort_intent(
+        text,
+        recipe_config,
+        order_ops=order_ops,
+        default_direction="ASC",
+    )
     if not sort_field:
         return None
-
-    direction = "ASC"
-    cues = recipe_config["sort_direction_cues"]
-    if _contains_config_term(text, cues["desc"]):
-        direction = "DESC"
-    if _contains_config_term(text, cues["asc"]):
-        direction = "ASC"
-    if sort_field == "protein" and _contains_config_term(text, recipe_config["protein_desc_cues"]):
-        direction = "DESC"
-
-    if order_ops:
-        canonical = str(order_ops[0].get("canonical", ""))
-        if canonical.endswith("DESC"):
-            direction = "DESC"
-        elif canonical.endswith("ASC"):
-            direction = "ASC"
 
     return OrderBy(sort_field, direction)
 

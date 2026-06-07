@@ -102,6 +102,8 @@ def _root_source_condition(
     if not column:
         return None
     relation = registry.relation(predicate.source) or {}
+    if relation.get("fallback_value_column") or relation.get("strategy", {}).get("match_operator"):
+        return _relation_match_condition(plan.from_alias, predicate, registry, relation)
     filter_predicate = _normalized_predicate(predicate, relation)
     return _column_condition(
         registry.column_sql(plan.from_alias, column),
@@ -113,11 +115,14 @@ def _same_table_relation_condition(
     predicate: Predicate,
     registry: SchemaRegistry,
 ) -> SqlCondition | None:
+    relation = registry.relation(predicate.source) or {}
+    if predicate.source == "dietary" and predicate.quantifier == "or_exists":
+        return _dietary_or_condition(predicate, registry, relation)
+
     column = registry.predicate_column(predicate)
     if not column:
         return None
     column_sql = registry.column_sql(registry.base_alias, column)
-    relation = registry.relation(predicate.source) or {}
     if relation.get("predicate_mode") == "truthy_flag" or predicate.source == "dietary":
         values = tuple(registry.truthy_values(predicate.source))
         placeholders = ", ".join("?" for _ in values)
@@ -127,6 +132,31 @@ def _same_table_relation_condition(
             predicate.source,
         )
     return _column_condition(column_sql, predicate)
+
+
+def _dietary_or_condition(
+    predicate: Predicate,
+    registry: SchemaRegistry,
+    relation: dict[str, Any],
+) -> SqlCondition | None:
+    columns = relation.get("columns", {})
+    truthy_values = tuple(registry.truthy_values(predicate.source))
+    if not truthy_values:
+        return None
+
+    parts: list[str] = []
+    params: list[Any] = []
+    placeholders = ", ".join("?" for _ in truthy_values)
+    for value in predicate.values:
+        column = columns.get(str(value))
+        if not column:
+            return None
+        parts.append(f"{registry.column_sql(registry.base_alias, column)} IN ({placeholders})")
+        params.extend(truthy_values)
+
+    if not parts:
+        return None
+    return SqlCondition("(" + " OR ".join(parts) + ")", tuple(params), predicate.source)
 
 
 def _exists_relation_condition(
@@ -149,11 +179,7 @@ def _exists_relation_condition(
     if not column:
         return None, None
 
-    filter_predicate = _normalized_predicate(predicate, relation)
-    filter_condition = _column_condition(
-        registry.column_sql(alias, column),
-        filter_predicate,
-    )
+    filter_condition = _relation_match_condition(alias, predicate, registry, relation)
     if not filter_condition:
         return None, None
 
@@ -189,11 +215,7 @@ def _join_relation_condition(
     if not column:
         return None, None
 
-    filter_predicate = _normalized_predicate(predicate, relation)
-    filter_condition = _column_condition(
-        registry.column_sql(alias, column),
-        filter_predicate,
-    )
+    filter_condition = _relation_match_condition(alias, predicate, registry, relation)
     if not filter_condition:
         return None, None
 
@@ -347,6 +369,13 @@ def _add_grouped_join(
     column = registry.predicate_column(predicates[0])
     if not column:
         return None
+    strategy = registry.relation_strategy(source)
+    if (
+        strategy.get("grouped_match_mode") == "union_all"
+        or relation.get("fallback_value_column")
+        or strategy.get("match_operator")
+    ):
+        return _add_union_grouped_match_join(source, predicates, registry, plan)
 
     values = tuple(
         str(predicate.values[0]).lower()
@@ -381,6 +410,152 @@ def _add_grouped_join(
     return join.as_dict()
 
 
+def _add_union_grouped_match_join(
+    source: str,
+    predicates: list[Predicate],
+    registry: SchemaRegistry,
+    plan: SqlPlan,
+) -> dict[str, Any] | None:
+    relation = registry.relation(source)
+    join = registry.relationship_for_relation(source)
+    if not relation or not join:
+        return None
+    column = registry.predicate_column(predicates[0])
+    if not column:
+        return None
+
+    from_column = registry.quote_identifier(join.from_column)
+    table = registry.table_sql(relation["table"])
+    branch_sql: list[str] = []
+    params: list[Any] = []
+    for index, predicate in enumerate(predicates, start=1):
+        value = predicate.values[0]
+        alias = f"{relation['alias']}_u{index}"
+        match_condition = _relation_match_condition(alias, predicate, registry, relation)
+        if not match_condition:
+            return None
+        branch_sql.append(
+            f"SELECT DISTINCT {alias}.{from_column} "
+            f"FROM {table} AS {alias} "
+            f"WHERE {match_condition.sql}"
+        )
+        params.extend(match_condition.params)
+
+    table_alias = f"{relation['alias']}_match"
+    source_alias = f"{relation['alias']}_union"
+    subquery = (
+        f"(SELECT {source_alias}.{from_column} "
+        f"FROM ({' UNION ALL '.join(branch_sql)}) AS {source_alias} "
+        f"GROUP BY {source_alias}.{from_column} "
+        f"HAVING COUNT(*) = ?)"
+    )
+    plan.joins.append(SqlJoin(
+        table=subquery,
+        alias=table_alias,
+        on=(
+            f"{table_alias}.{from_column} = "
+            f"{registry.base_alias}.{registry.quote_identifier(join.to_column)}"
+        ),
+        join_type=str(registry.relation_strategy(source).get("join_type") or "JOIN"),
+        source=source,
+        params=tuple(params) + (len(predicates),),
+    ))
+    plan.distinct = bool(registry.relation_strategy(source).get("distinct", True))
+    return join.as_dict()
+
+
+def _relation_match_condition(
+    alias: str,
+    predicate: Predicate,
+    registry: SchemaRegistry,
+    relation: dict[str, Any],
+) -> SqlCondition | None:
+    operator = predicate.operator.upper()
+    if operator not in {"=", "IN", "LIKE"}:
+        filter_predicate = _normalized_predicate(predicate, relation)
+        column = registry.predicate_column(filter_predicate)
+        if not column:
+            return None
+        return _column_condition(
+            registry.column_sql(alias, column),
+            filter_predicate,
+        )
+
+    values = tuple(predicate.values)
+    if operator in {"=", "LIKE"} and len(values) != 1:
+        return None
+    if operator == "IN" and not values:
+        return None
+
+    parts: list[str] = []
+    params: list[Any] = []
+    for value in values:
+        value_parts, value_params = _relation_match_value_conditions(
+            alias,
+            value,
+            registry,
+            relation,
+            predicate_operator=operator,
+        )
+        if not value_parts:
+            return None
+        parts.append("(" + " OR ".join(value_parts) + ")")
+        params.extend(value_params)
+
+    if len(parts) == 1:
+        return SqlCondition(parts[0], tuple(params), predicate.source)
+    return SqlCondition("(" + " OR ".join(parts) + ")", tuple(params), predicate.source)
+
+
+def _relation_match_value_conditions(
+    alias: str,
+    value: Any,
+    registry: SchemaRegistry,
+    relation: dict[str, Any],
+    *,
+    predicate_operator: str,
+) -> tuple[list[str], list[Any]]:
+    strategy = relation.get("strategy") or {}
+    primary_column = relation.get("value_column")
+    primary_operator = str(strategy.get("match_operator") or predicate_operator).upper()
+    primary_transform = strategy.get("value_transform")
+    normalizes = bool(relation.get("normalizes_values"))
+
+    parts: list[str] = []
+    params: list[Any] = []
+    if primary_column:
+        parts.append(f"{registry.column_sql(alias, primary_column)} {primary_operator} ?")
+        params.append(_match_value(value, primary_operator, primary_transform, normalizes))
+
+    fallback_column = relation.get("fallback_value_column")
+    fallback_operator = str(strategy.get("fallback_match_operator") or "").upper()
+    if fallback_column and fallback_operator:
+        parts.append(f"{registry.column_sql(alias, fallback_column)} {fallback_operator} ?")
+        params.append(_match_value(
+            value,
+            fallback_operator,
+            strategy.get("fallback_value_transform"),
+            normalizes,
+        ))
+    return parts, params
+
+
+def _match_value(
+    value: Any,
+    operator: str,
+    transform: Any,
+    normalizes: bool,
+) -> Any:
+    text = str(value).lower() if normalizes else str(value)
+    if transform == "contains" or (operator == "LIKE" and transform is None):
+        return f"%{text}%"
+    if transform == "prefix":
+        return f"{text}%"
+    if transform == "suffix":
+        return f"%{text}"
+    return text
+
+
 def _normalized_predicate(predicate: Predicate, relation: dict[str, Any]) -> Predicate:
     if not relation.get("normalizes_values"):
         return predicate
@@ -401,6 +576,8 @@ def _column_condition(column_sql: str, predicate: Predicate) -> SqlCondition | N
     if operator == "IN" and values:
         placeholders = ", ".join("?" for _ in values)
         return SqlCondition(f"{column_sql} IN ({placeholders})", values, predicate.source)
+    if operator == "LIKE" and len(values) == 1:
+        return SqlCondition(f"{column_sql} LIKE ?", values, predicate.source)
     if operator in {"<", "<=", "=", ">=", ">"} and len(values) == 1:
         return SqlCondition(f"{column_sql} {operator} ?", values, predicate.source)
     return None

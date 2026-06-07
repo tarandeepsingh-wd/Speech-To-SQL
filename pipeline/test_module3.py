@@ -6,6 +6,7 @@ sys.path.insert(0, ".")
 from module3.query_planner import plan_queries
 from module3.api_verifier import verify_recipes_against_ir
 from module3.config import endpoint_path, load_recipe_db_config
+from module3.query_relaxer import relax_query_ir, relaxation_chain
 from module3.result_merger import dedupe_recipes, merge_api_results
 from module3.client import ApiResult
 from module3.query_planner import ApiQueryPlan
@@ -435,6 +436,34 @@ def test_query_ir_contract_rejects_hallucinated_fields_and_selects():
             pass
 
 
+def test_query_ir_contract_rejects_out_of_range_values_and_predicate_spam():
+    payloads = [
+        {
+            "predicates": [
+                {"source": "nutrition", "field": "calories", "operator": "<", "values": [-1]},
+            ],
+        },
+        {
+            "predicates": [
+                {"source": "nutrition", "field": "calories", "operator": "BETWEEN", "values": [500, 100]},
+            ],
+        },
+        {
+            "predicates": [
+                {"source": "ingredients", "field": "ingredient", "operator": "=", "values": [str(index)]}
+                for index in range(11)
+            ],
+        },
+    ]
+
+    for payload in payloads:
+        try:
+            query_ir_from_contract(payload)
+            assert False, "expected QueryIRContractError"
+        except QueryIRContractError:
+            pass
+
+
 def test_sql_compiler_is_plan_orchestrator_not_query_template():
     source = Path("module3/sql_compiler.py").read_text(encoding="utf-8")
 
@@ -480,9 +509,10 @@ def test_single_include_ingredient_uses_configured_join_strategy():
     assert sql["validation"]["ok"] is True
     assert sql["query"].startswith("SELECT DISTINCT r.*")
     assert " JOIN `RecipeDB_ingredient_phrase` AS ip ON " in sql["query"]
-    assert "ip.`ingredient_lower` = ?" in sql["query"]
+    assert "ip.`matching_values` = ?" in sql["query"]
+    assert "ip.`ingredient_lower` LIKE ?" in sql["query"]
     assert "EXISTS" not in sql["query"]
-    assert sql["params"] == ["paneer"]
+    assert sql["params"] == ["paneer", "%paneer%"]
     assert sql["plan"]["joins"][0]["source"] == "ingredients"
 
 
@@ -503,10 +533,21 @@ def test_complex_ingredient_filters_keep_exists_strategy():
 
     assert sql["validation"]["ok"] is True
     assert sql["query"].startswith("SELECT DISTINCT")
-    assert "GROUP BY ip_g.`recipe_no`" in sql["query"]
-    assert "HAVING COUNT(DISTINCT ip_g.`ingredient_lower`) = ?" in sql["query"]
+    assert "UNION ALL" in sql["query"]
+    assert "ip_u1.`matching_values` = ?" in sql["query"]
+    assert "ip_u1.`ingredient_lower` LIKE ?" in sql["query"]
+    assert "GROUP BY ip_union.`recipe_no`" in sql["query"]
+    assert "HAVING COUNT(*) = ?" in sql["query"]
     assert "NOT EXISTS" in sql["query"]
-    assert sql["params"] == ["paneer", "spinach", 2, "cream"]
+    assert sql["params"] == [
+        "paneer",
+        "%paneer%",
+        "spinach",
+        "%spinach%",
+        2,
+        "cream",
+        "%cream%",
+    ]
 
 
 def test_multi_include_ingredients_use_grouped_join_strategy():
@@ -525,10 +566,21 @@ def test_multi_include_ingredients_use_grouped_join_strategy():
     )
 
     assert sql["validation"]["ok"] is True
-    assert "GROUP BY ip_g.`recipe_no`" in sql["query"]
-    assert "HAVING COUNT(DISTINCT ip_g.`ingredient_lower`) = ?" in sql["query"]
+    assert "UNION ALL" in sql["query"]
+    assert "ip_u1.`matching_values` = ?" in sql["query"]
+    assert "ip_u1.`ingredient_lower` LIKE ?" in sql["query"]
+    assert "GROUP BY ip_union.`recipe_no`" in sql["query"]
+    assert "HAVING COUNT(*) = ?" in sql["query"]
     assert "JOIN `RecipeDB_ingredient_phrase` AS ip1" not in sql["query"]
-    assert sql["params"] == ["chicken", "tomato", "potato", 3]
+    assert sql["params"] == [
+        "chicken",
+        "%chicken%",
+        "tomato",
+        "%tomato%",
+        "potato",
+        "%potato%",
+        3,
+    ]
 
 
 def test_dynamic_root_can_start_from_ingredient_table():
@@ -608,7 +660,7 @@ def test_sql_builder_uses_enriched_low_carb_filter():
 
     assert "`RecipeDB_ingredient_phrase`" in sql["query"]
     assert "r.`carbohydrate, by difference (g)` <= ?" in sql["query"]
-    assert sql["params"] == ["paneer", 50.0]
+    assert sql["params"] == ["paneer", "%paneer%", 50.0]
     assert sql["join_assumptions"][0]["confidence"] == "index_supported"
 
 
@@ -643,7 +695,7 @@ def test_sql_builder_uses_enriched_between_minutes_filter():
     )
 
     assert "r.`total_time` BETWEEN ? AND ?" in sql["query"]
-    assert sql["params"] == ["garlic", 20.0, 40.0]
+    assert sql["params"] == ["garlic", "%garlic%", 20.0, 40.0]
 
 
 def test_api_verifier_confirms_matching_recipe_against_ir():
@@ -715,6 +767,72 @@ def test_top_limit_without_sort_cue_does_not_order_by_calories():
     assert sql["params"] == [300.0, 5]
 
 
+def test_prepared_time_from_most_to_least_orders_prep_time_desc():
+    tag_result = {
+        "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+        "nutrition_filters": [],
+        "dietary_styles": [],
+        "sql_operators": [{"canonical": "ORDER BY", "text": "from most to least"}],
+    }
+
+    sql = build_sql_query(
+        tag_result,
+        transcript="give those recipes which can be have prepared time from most to least",
+    )
+
+    assert sql["validation"]["ok"] is True
+    assert "ORDER BY r.`prep_time` DESC" in sql["query"]
+
+
+def test_prepared_time_from_least_to_most_orders_prep_time_asc():
+    tag_result = {
+        "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+        "nutrition_filters": [],
+        "dietary_styles": [],
+        "sql_operators": [{"canonical": "ORDER BY", "text": "from least to most"}],
+    }
+
+    sql = build_sql_query(
+        tag_result,
+        transcript="prepared time from least to most",
+    )
+
+    assert sql["validation"]["ok"] is True
+    assert "ORDER BY r.`prep_time` ASC" in sql["query"]
+
+
+def test_dietary_or_intent_uses_or_condition_not_and():
+    tag_result = {
+        "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+        "nutrition_filters": [],
+        "dietary_styles": ["vegan", "vegetarian"],
+        "sql_operators": [],
+    }
+
+    sql = build_sql_query(tag_result, transcript="show vegan or vegetarian recipes")
+
+    assert sql["validation"]["ok"] is True
+    assert sql["ir"]["predicates"][0]["quantifier"] == "or_exists"
+    assert "r.`vegan` IN" in sql["query"]
+    assert " OR r.`ovo_lacto_vegetarian` IN" in sql["query"]
+
+
+def test_ranker_uses_same_prepared_time_direction_rules():
+    recipes = [
+        {"Recipe_id": "1", "prep_time": "10"},
+        {"Recipe_id": "2", "prep_time": "50"},
+        {"Recipe_id": "3", "prep_time": "30"},
+    ]
+
+    ranked = rank_and_limit(
+        recipes,
+        {"sql_operators": [{"canonical": "ORDER BY", "text": "from most to least"}]},
+        transcript="prepared time from most to least",
+    )
+
+    assert [recipe["Recipe_id"] for recipe in ranked] == ["2", "3", "1"]
+
+
 def test_sql_validator_rejects_unknown_fields():
     query_ir = QueryIR(
         select=[SelectExpr("r.*")],
@@ -732,6 +850,26 @@ def test_sql_validator_rejects_unknown_fields():
 
     assert result.ok is False
     assert any("mystery_nutrient" in error for error in result.errors)
+
+
+def test_sql_builder_rejects_unproven_sugar_column():
+    sql = build_sql_query(
+        {
+            "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+            "nutrition_filters": [{"nutrient": "sugar", "operator": "<", "value": 10}],
+            "dietary_styles": [],
+            "categories": [],
+            "sql_operators": [],
+        },
+        transcript="low sugar recipes",
+    )
+
+    assert sql["validation"]["ok"] is False
+    assert any("Unknown nutrition field 'sugar'" in error for error in sql["validation"]["errors"])
+    assert any(
+        item["code"] == "unresolved_term"
+        for item in sql["validation"].get("error_details", [])
+    )
 
 
 def test_sql_validator_rejects_indirect_join_paths_until_supported():
@@ -770,6 +908,25 @@ def test_sql_validator_rejects_bad_operator_value_count():
 
     assert result.ok is False
     assert any("expects 2 value" in error for error in result.errors)
+
+
+def test_sql_validator_rejects_numeric_values_outside_schema_range():
+    query_ir = QueryIR(
+        select=[SelectExpr("r.*")],
+        predicates=[
+            Predicate(
+                source="nutrition",
+                field="calories",
+                operator="<",
+                values=(-10,),
+            )
+        ],
+    )
+
+    result = validate_query_ir(query_ir)
+
+    assert result.ok is False
+    assert any("below min" in error for error in result.errors)
 
 
 def test_sql_builder_returns_validation_errors_without_compiling_bad_ir():
@@ -818,6 +975,60 @@ def test_sql_validator_can_require_virtual_evidence():
 
     assert result.ok is False
     assert any("no virtual-schema evidence" in error for error in result.errors)
+
+
+def test_query_relaxer_uses_configured_progressive_policy():
+    query_ir = QueryIR(
+        select=[SelectExpr("r.*")],
+        predicates=[
+            Predicate("ingredients", "ingredient", "=", ("paneer",)),
+            Predicate("ingredients", "ingredient", "=", ("spinach",)),
+            Predicate("ingredients", "ingredient", "IN", ("cream",), quantifier="not_exists"),
+            Predicate("nutrition", "calories", "<", (300,)),
+        ],
+    )
+
+    chain = relaxation_chain(query_ir)
+
+    assert len(chain) == 1
+    assert all(predicate.quantifier != "not_exists" for predicate in chain[0].predicates)
+
+    full_chain = relaxation_chain(query_ir, max_steps=3)
+
+    assert len(full_chain) == 3
+    assert any(
+        predicate.source == "ingredients"
+        and predicate.operator == "IN"
+        and predicate.quantifier == "exists"
+        and predicate.values == ("paneer", "spinach")
+        for predicate in full_chain[1].predicates
+    )
+    assert all(predicate.source != "nutrition" for predicate in full_chain[2].predicates)
+
+
+def test_query_relaxer_can_drop_category_filters_from_schema_policy():
+    query_ir = QueryIR(
+        select=[SelectExpr("r.*")],
+        predicates=[
+            Predicate("base", "region", "=", ("Indian Subcontinent",)),
+            Predicate("nutrition", "calories", "<", (400,)),
+        ],
+    )
+
+    relaxed = relax_query_ir(query_ir)
+
+    assert relaxed is not None
+    assert all(predicate.field != "region" for predicate in relaxed.predicates)
+    assert any(predicate.source == "nutrition" for predicate in relaxed.predicates)
+
+
+def test_query_relaxer_returns_none_when_no_policy_can_apply():
+    query_ir = QueryIR(
+        select=[SelectExpr("r.*")],
+        predicates=[Predicate("ingredients", "ingredient", "IN", ("paneer",))],
+    )
+
+    assert relax_query_ir(query_ir) is None
 
 
 def test_dedupe_merges_empty_safe_values():

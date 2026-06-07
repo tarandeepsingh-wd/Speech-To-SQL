@@ -16,6 +16,7 @@ class JoinSpec:
     to_column: str
     confidence: str
     evidence: tuple[str, ...]
+    preferred: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -26,6 +27,7 @@ class JoinSpec:
             "to_column": self.to_column,
             "confidence": self.confidence,
             "evidence": list(self.evidence),
+            "preferred": self.preferred,
         }
 
 
@@ -124,6 +126,7 @@ class SchemaRegistry:
             to_column=item["to_column"],
             confidence=item["confidence"],
             evidence=tuple(item.get("evidence", [])),
+            preferred=bool(item.get("preferred")),
         )
 
     def join_condition(self, source: str, relation_alias: str) -> str | None:

@@ -135,6 +135,15 @@ CREATE INDEX `idx_ingredient_phrase_ingredient`
 CREATE INDEX `idx_ingredient_phrase_ingredient_lower`
   ON `RecipeDB_ingredient_phrase` (`ingredient_lower`);
 
+CREATE INDEX `idx_ingredient_phrase_matching_values`
+  ON `RecipeDB_ingredient_phrase` (`matching_values`);
+
+CREATE INDEX `idx_ingredient_phrase_matching_values_ingredient`
+  ON `RecipeDB_ingredient_phrase` (`matching_values`, `ingredient`);
+
+CREATE INDEX `idx_ingredient_phrase_ingredient_matching_values`
+  ON `RecipeDB_ingredient_phrase` (`ingredient`, `matching_values`);
+
 CREATE INDEX `idx_ingredient_phrase_recipe_no`
   ON `RecipeDB_ingredient_phrase` (`recipe_no`);
 
@@ -293,10 +302,21 @@ CREATE UNIQUE INDEX `idx_recipes_id`
 -- Relationship assumptions used by Module 3.
 --
 -- index_supported:
--- RecipeDB_ingredient_phrase.recipe_no -> RecipeDB_micronutrients_v1.Recipe_id
--- RecipeDB_ingredient_phrase.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id
+-- RecipeDB_ingredient_phrase.recipe_no -> RecipeDB_micronutrients_v1.Recipe_id (preferred)
+-- RecipeDB_ingredient_phrase.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id (fallback)
+-- RecipeDB_ingredient_nutrition.recipe_no -> RecipeDB_micronutrients_v1.Recipe_id (preferred)
+-- RecipeDB_ingredient_nutrition.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id (fallback)
 -- RecipeDB_instructions.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id
 -- RecipeDB_ingredient_phrase.ing_id -> RecipeDB_ingredient_flavor.IngID
 --
 -- inferred:
 -- RecipeDB_ingredient_phrase.ndb_id -> RecipeDB_ingredient_nutrition.ndb_id
+-- RecipeDB_ingredient_nutrition.(recipe_no, ingredient) -> RecipeDB_ingredient_phrase.(recipe_no, ingredient)
+--
+-- Units used by Module 3:
+-- prep_time, cook_time, total_time are treated as minutes.
+-- calories is treated as kcal.
+--
+-- Runtime safety constraints live in config/sql_schema.json:
+-- allowed operators/quantifiers, predicate-count limits, numeric value ranges,
+-- preferred/fallback joins, and relaxation policy priority.

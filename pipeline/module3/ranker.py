@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from module3.config import load_recipe_db_config
+from module3.sort_resolver import resolve_sort_intent
 
 
 def rank_and_limit(
@@ -43,32 +44,15 @@ def _sort_intent(
     if not order_ops and not sort_cue:
         return None, False
 
-    sort_key = None
-    for candidate, terms in config["sort_terms"].items():
-        if _contains_config_term(text, terms):
-            sort_key = candidate
-            break
-
+    sort_key, direction = resolve_sort_intent(
+        text,
+        config,
+        order_ops=order_ops,
+        default_direction="ASC",
+    )
     if not sort_key:
         return None, False
-
-    descending = False
-    direction_cues = config["sort_direction_cues"]
-    if _contains_config_term(text, direction_cues["desc"]):
-        descending = True
-    if _contains_config_term(text, direction_cues["asc"]):
-        descending = False
-    if sort_key == "protein" and _contains_config_term(text, config["protein_desc_cues"]):
-        descending = True
-
-    if order_ops:
-        canonical = str(order_ops[0].get("canonical", ""))
-        if canonical.endswith("DESC"):
-            descending = True
-        elif canonical.endswith("ASC"):
-            descending = False
-
-    return sort_key, descending
+    return sort_key, direction == "DESC"
 
 
 def _limit(tag_result: dict, transcript: str, default_limit: int | None) -> int | None:

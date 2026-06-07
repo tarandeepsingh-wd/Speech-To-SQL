@@ -2,7 +2,7 @@
   "dialect": "mongodb_sql",
   "paramstyle": "qmark",
   "identifier_quote": "`",
-  "allowed_operators": ["<", "<=", "=", ">=", ">", "BETWEEN", "IN"],
+  "allowed_operators": ["<", "<=", "=", ">=", ">", "BETWEEN", "IN", "LIKE"],
   "operator_value_counts": {
     "<": 1,
     "<=": 1,
@@ -10,10 +10,89 @@
     ">=": 1,
     ">": 1,
     "BETWEEN": 2,
-    "IN": {"min": 1}
+    "IN": {"min": 1},
+    "LIKE": 1
   },
-  "allowed_quantifiers": ["exists", "not_exists"],
+  "allowed_quantifiers": ["exists", "not_exists", "or_exists"],
   "max_limit": 500,
+  "predicate_limits": {
+    "max_total": 20,
+    "max_values_per_predicate": 20,
+    "max_per_source": {
+      "ingredients": 10,
+      "nutrition": 6,
+      "dietary": 5,
+      "base": 8,
+      "instructions": 3,
+      "ingredient_nutrition": 6
+    }
+  },
+  "value_constraints": {
+    "nutrition": {
+      "calories": {"min": 0, "max": 10000, "unit": "kcal"},
+      "protein": {"min": 0, "max": 500, "unit": "g"},
+      "fat": {"min": 0, "max": 1000, "unit": "g"},
+      "carbs": {"min": 0, "max": 1000, "unit": "g"},
+      "fiber": {"min": 0, "max": 300, "unit": "g"},
+      "sodium": {"min": 0, "max": 50000, "unit": "mg"},
+      "energy": {"min": 0, "max": 10000, "unit": "kcal"},
+      "cholesterol": {"min": 0, "max": 5000, "unit": "mg"},
+      "calcium": {"min": 0, "max": 10000, "unit": "mg"},
+      "iron": {"min": 0, "max": 500, "unit": "mg"},
+      "vitamin_c": {"min": 0, "max": 5000, "unit": "mg"},
+      "vitamin_d": {"min": 0, "max": 100000, "unit": "iu"},
+      "vitamin_e": {"min": 0, "max": 5000, "unit": "mg"},
+      "potassium": {"min": 0, "max": 20000, "unit": "mg"},
+      "magnesium": {"min": 0, "max": 5000, "unit": "mg"},
+      "zinc": {"min": 0, "max": 500, "unit": "mg"}
+    },
+    "base": {
+      "prep_time": {"min": 0, "max": 10000, "unit": "minutes"},
+      "cook_time": {"min": 0, "max": 10000, "unit": "minutes"},
+      "total_time": {"min": 0, "max": 10000, "unit": "minutes"},
+      "servings": {"min": 1, "max": 1000, "unit": "count"}
+    },
+    "ingredient_nutrition": {
+      "calories": {"min": 0, "max": 10000, "unit": "kcal"},
+      "protein": {"min": 0, "max": 500, "unit": "g"},
+      "fat": {"min": 0, "max": 1000, "unit": "g"},
+      "carbs": {"min": 0, "max": 1000, "unit": "g"},
+      "fiber": {"min": 0, "max": 300, "unit": "g"},
+      "sodium": {"min": 0, "max": 50000, "unit": "mg"}
+    }
+  },
+  "relaxation_settings": {
+    "max_chain_steps": 1,
+    "one_policy_per_step": true
+  },
+  "relaxation_policy": [
+    {
+      "name": "drop_excluded_ingredients",
+      "priority": 10,
+      "drop_quantifier": "not_exists"
+    },
+    {
+      "name": "required_ingredients_to_any",
+      "priority": 20,
+      "source": "ingredients",
+      "from_operator": "=",
+      "to_operator": "IN",
+      "quantifier": "exists"
+    },
+    {
+      "name": "drop_category_filters",
+      "priority": 25,
+      "drop_predicates": {
+        "source": "base",
+        "fields": ["region", "sub_region", "continent"]
+      }
+    },
+    {
+      "name": "drop_nutrition_filters",
+      "priority": 30,
+      "drop_source": "nutrition"
+    }
+  ],
   "semantic_aliases": {
     "nutrition": {
       "calorie": "calories",
@@ -33,8 +112,6 @@
       "lipids": "fat",
       "fiber": "fiber",
       "fibre": "fiber",
-      "sugar": "sugar",
-      "sugars": "sugar",
       "sodium": "sodium",
       "salt": "sodium",
       "energy": "energy",
@@ -367,6 +444,7 @@
       "from_column": "recipe_no",
       "to_table": "RecipeDB_micronutrients_v1",
       "to_column": "Recipe_id",
+      "preferred": true,
       "cardinality": "many_to_one",
       "confidence": "index_supported",
       "evidence": ["RecipeDB_ingredient_phrase.recipe_no_1", "RecipeDB_micronutrients_v1.Recipe_id_1 unique"]
@@ -377,9 +455,34 @@
       "from_column": "Recipe_id",
       "to_table": "RecipeDB_micronutrients_v1",
       "to_column": "Recipe_id",
+      "preferred": false,
+      "fallback_of": "recipe_to_ingredient_phrase_by_recipe_no",
       "cardinality": "many_to_one",
       "confidence": "index_supported",
       "evidence": ["RecipeDB_ingredient_phrase.Recipe_id_1", "RecipeDB_micronutrients_v1.Recipe_id_1 unique"]
+    },
+    {
+      "name": "recipe_to_ingredient_nutrition_by_recipe_no",
+      "from_table": "RecipeDB_ingredient_nutrition",
+      "from_column": "recipe_no",
+      "to_table": "RecipeDB_micronutrients_v1",
+      "to_column": "Recipe_id",
+      "preferred": true,
+      "cardinality": "many_to_one",
+      "confidence": "index_supported",
+      "evidence": ["RecipeDB_ingredient_nutrition.recipe_no_1", "RecipeDB_micronutrients_v1.Recipe_id_1 unique"]
+    },
+    {
+      "name": "recipe_to_ingredient_nutrition_by_recipe_id",
+      "from_table": "RecipeDB_ingredient_nutrition",
+      "from_column": "Recipe_id",
+      "to_table": "RecipeDB_micronutrients_v1",
+      "to_column": "Recipe_id",
+      "preferred": false,
+      "fallback_of": "recipe_to_ingredient_nutrition_by_recipe_no",
+      "cardinality": "many_to_one",
+      "confidence": "index_supported",
+      "evidence": ["RecipeDB_ingredient_nutrition.Recipe_id_1", "RecipeDB_micronutrients_v1.Recipe_id_1 unique"]
     },
     {
       "name": "recipe_to_instructions",
@@ -410,6 +513,25 @@
       "cardinality": "many_to_one",
       "confidence": "inferred",
       "evidence": ["Shared ndb_id field; ingredient_nutrition has ingredient and recipe indexes but ndb_id index not shown."]
+    },
+    {
+      "name": "ingredient_nutrition_to_ingredient_phrase_by_recipe_and_ingredient",
+      "from_table": "RecipeDB_ingredient_nutrition",
+      "from_column": "recipe_no",
+      "to_table": "RecipeDB_ingredient_phrase",
+      "to_column": "recipe_no",
+      "column_pairs": [
+        {"from_column": "recipe_no", "to_column": "recipe_no"},
+        {"from_column": "ingredient", "to_column": "ingredient"}
+      ],
+      "cardinality": "many_to_many",
+      "confidence": "inferred",
+      "evidence": [
+        "RecipeDB_ingredient_nutrition.recipe_no_1",
+        "RecipeDB_ingredient_nutrition.ingredient_1",
+        "RecipeDB_ingredient_phrase.recipe_no_1_ingredient_1",
+        "Shared recipe_no and ingredient fields"
+      ]
     }
   ],
   "base_columns": {
@@ -429,17 +551,28 @@
     "utensils": "utensils",
     "processes": "processes"
   },
+  "column_units": {
+    "prep_time": "minutes",
+    "cook_time": "minutes",
+    "total_time": "minutes",
+    "calories": "kcal",
+    "servings": "count"
+  },
   "relations": {
     "ingredients": {
       "table": "RecipeDB_ingredient_phrase",
       "alias": "ip",
       "join": "recipe_to_ingredient_phrase_by_recipe_no",
-      "value_column": "ingredient_lower",
-      "fallback_value_column": "ingredient",
+      "value_column": "matching_values",
+      "fallback_value_column": "ingredient_lower",
       "normalizes_values": true,
       "strategy": {
         "simple_include": "join",
         "multi_include": "grouped_join",
+        "grouped_match_mode": "union_all",
+        "match_operator": "=",
+        "fallback_match_operator": "LIKE",
+        "fallback_value_transform": "contains",
         "default": "exists",
         "max_join_predicates": 1,
         "operator": "=",
@@ -459,7 +592,6 @@
         "fat": "total lipid (fat) (g)",
         "carbs": "carbohydrate, by difference (g)",
         "fiber": "fiber, total dietary (g)",
-        "sugar": "sugars, total (g)",
         "sodium": "sodium, na (mg)",
         "energy": "energy (kcal)",
         "cholesterol": "cholesterol (mg)",
@@ -504,6 +636,29 @@
         "dietrx_category": "Dietrx_Category",
         "generic_name": "generic_name",
         "flavordb_category": "flavordb_category"
+      }
+    },
+    "ingredient_nutrition": {
+      "table": "RecipeDB_ingredient_nutrition",
+      "alias": "inut",
+      "join": "recipe_to_ingredient_nutrition_by_recipe_no",
+      "columns": {
+        "ingredient": "ingredient",
+        "calories": "calories",
+        "protein": "protein (g)",
+        "fat": "total lipid (fat) (g)",
+        "carbs": "carbohydrate, by difference (g)",
+        "fiber": "fiber, total dietary (g)",
+        "sodium": "sodium, na (mg)",
+        "cholesterol": "cholesterol (mg)",
+        "calcium": "calcium, ca (mg)",
+        "iron": "iron, fe (mg)",
+        "vitamin_c": "vitamin c, total ascorbic acid (mg)",
+        "vitamin_d": "vitamin d (iu)",
+        "vitamin_e": "vitamin e (alpha-tocopherol) (mg)",
+        "potassium": "potassium, k (mg)",
+        "magnesium": "magnesium, mg (mg)",
+        "zinc": "zinc, zn (mg)"
       }
     }
   },

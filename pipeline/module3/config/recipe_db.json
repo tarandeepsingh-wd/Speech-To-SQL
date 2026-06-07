@@ -189,6 +189,10 @@
     "pescatarian": "pescetarian",
     "pescetarian": "pescetarian"
   },
+  "logic_terms": {
+    "or": ["or", "either", "any of"],
+    "and": ["and", "with", "plus", "all of"]
+  },
   "cuisine_aliases": {
     "african": {"region": "African"},
     "american": {"region": "American"},
@@ -272,7 +276,10 @@
     "calories": ["calorie", "calories", "kcal"],
     "carbs": ["carb", "carbs", "carbohydrate"],
     "fat": ["fat"],
-    "time": ["time", "quick", "fast", "cook", "prep"]
+    "prep_time": ["prep time", "prepare time", "prepared time", "preparation time", "prep", "prepare", "prepared", "preparation"],
+    "cook_time": ["cook time", "cooking time", "cook", "cooking"],
+    "total_time": ["total time", "overall time"],
+    "time": ["time", "quick", "fast"]
   },
   "sort_cues": [
     "highest",
@@ -295,6 +302,10 @@
   "sort_direction_cues": {
     "desc": ["highest", "most", "maximum", "max", "descending", "top", "high"],
     "asc": ["lowest", "least", "minimum", "min", "ascending", "low", "quick", "fast", "shortest"]
+  },
+  "sort_direction_phrases": {
+    "desc": ["from most to least", "from highest to lowest", "from greatest to least", "most to least", "highest to lowest", "greatest to least"],
+    "asc": ["from least to most", "from lowest to highest", "from least to greatest", "least to most", "lowest to highest", "least to greatest"]
   },
   "protein_desc_cues": ["high protein", "most protein", "highest protein"],
   "sql_order_columns": {

@@ -32,10 +32,12 @@ class IntentGroundingError(ValueError):
         self,
         errors: list[str],
         grounding: list[dict[str, str]] | None = None,
+        error_details: list[dict[str, str]] | None = None,
     ) -> None:
         super().__init__("Intent grounding failed: " + "; ".join(errors))
         self.errors = errors
         self.grounding = grounding or []
+        self.error_details = error_details or []
 
 
 def ground_intent(
@@ -69,13 +71,21 @@ def ground_intent(
     grounded["_schema_grounded"] = True
     grounded["_grounding"] = [item.as_dict() for item in evidence]
     grounded["_grounding_errors"] = _unique_errors(errors)
+    grounded["_grounding_error_details"] = [
+        _classify_grounding_error(error)
+        for error in grounded["_grounding_errors"]
+    ]
     return grounded
 
 
 def assert_grounded_intent(tag_result: dict[str, Any]) -> None:
     errors = list(tag_result.get("_grounding_errors") or [])
     if errors:
-        raise IntentGroundingError(errors, tag_result.get("_grounding") or [])
+        raise IntentGroundingError(
+            errors,
+            tag_result.get("_grounding") or [],
+            tag_result.get("_grounding_error_details") or [],
+        )
 
 
 def _ground_ingredients(
@@ -260,3 +270,32 @@ def _unique_errors(errors: list[str]) -> list[str]:
         seen.add(error)
         result.append(error)
     return result
+
+
+def _classify_grounding_error(error: str) -> dict[str, str]:
+    lowered = error.lower()
+    if lowered.startswith("unresolved "):
+        code = "unresolved_term"
+    elif "unsupported operator" in lowered or "unsupported aggregate" in lowered:
+        code = "unsupported_operator"
+    elif "non-numeric" in lowered or "invalid value" in lowered or "must be an object" in lowered:
+        code = "invalid_value"
+    elif "missing" in lowered:
+        code = "missing_required_field"
+    elif lowered.startswith("unknown nutrition field"):
+        code = "unknown_nutrition_field"
+    elif lowered.startswith("unknown dietary style"):
+        code = "unknown_dietary_style"
+    elif lowered.startswith("unknown base time field"):
+        code = "unknown_base_field"
+    elif lowered.startswith("unknown category field"):
+        code = "unknown_category_field"
+    else:
+        code = "grounding_error"
+
+    source = "schema"
+    for candidate in ("nutrition", "dietary", "category", "ingredient", "time", "sql"):
+        if candidate in lowered:
+            source = candidate
+            break
+    return {"code": code, "source": source, "message": error}

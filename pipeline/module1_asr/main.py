@@ -203,7 +203,7 @@ def _sql_strategy(plan: dict, query: str | None) -> str:
         return "filtered ingredient AND JOINs"
     if len(ingredient_joins) > 1 and query and "ingredient_lower" in query:
         return "ingredient AND JOINs"
-    if query and "GROUP BY" in query and "COUNT(DISTINCT" in query:
+    if query and "GROUP BY" in query and ("COUNT(DISTINCT" in query or "COUNT(*)" in query):
         return "grouped ingredient JOIN"
     if joins:
         return "JOIN"

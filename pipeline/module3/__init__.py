@@ -11,6 +11,7 @@ from module3.query_ir_contract import (
 from module3.schema_linker import link_tag_result
 from module3.sql_query_builder import build_sql_query
 from module3.api_verifier import verify_recipes_against_ir
+from module3.query_relaxer import relax_query_ir, relaxation_chain
 
 __all__ = [
     "ApiQueryPlan",
@@ -25,6 +26,8 @@ __all__ = [
     "query_ir_from_contract",
     "query_ir_from_payload",
     "query_ir_to_payload",
+    "relax_query_ir",
+    "relaxation_chain",
     "search_recipes",
     "search_text",
     "verify_recipes_against_ir",

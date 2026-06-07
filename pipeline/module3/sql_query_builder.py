@@ -35,6 +35,7 @@ def build_sql_query(
                 "ok": False,
                 "errors": error.errors,
                 "warnings": [],
+                "error_details": error.error_details,
             },
         }
     validation = validate_query_ir(
