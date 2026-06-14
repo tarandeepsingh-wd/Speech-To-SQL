@@ -131,6 +131,20 @@ def _ground_nutrition_filters(
         if not isinstance(item, dict):
             errors.append(f"nutrition_filters[{index}] must be an object")
             continue
+        group = str(item.get("nutrient_group") or "").strip()
+        if group:
+            group_config = registry.nutrition_group(group)
+            if not group_config:
+                errors.append(f"Unknown nutrition group {group!r}")
+                continue
+            evidence.append(GroundingEvidence(
+                "nutrition",
+                group,
+                relation.get("table", registry.base_table["name"]),
+                ",".join(str(field) for field in group_config.get("fields", [])),
+                "sql_schema.nutrition_groups",
+            ))
+            continue
         nutrient = str(item.get("nutrient") or "").strip()
         operator = str(item.get("operator") or "").strip().upper()
         if not nutrient:

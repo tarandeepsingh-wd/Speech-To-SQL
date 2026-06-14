@@ -47,9 +47,12 @@ def validate_query_ir(
 
     _validate_schema_relationships(schema, errors)
     _validate_predicate_limits(query_ir, schema, errors)
+    _validate_semantic_guards(query_ir, schema, errors, warnings)
 
     if not query_ir.select:
         errors.append("select must contain at least one expression")
+    else:
+        _validate_select_expressions(query_ir, schema, errors)
 
     if not registry.root_exists(query_ir.root):
         errors.append(f"unknown query root {query_ir.root!r}")
@@ -125,8 +128,12 @@ def _validate_predicate(
     if operator not in schema.get("allowed_operators", []):
         errors.append(f"predicates[{index}] uses unsupported operator {predicate.operator!r}")
     else:
+        _validate_operator_field_compatibility(predicate, index, registry, errors)
         _validate_value_count(predicate, index, schema, errors)
         _validate_value_constraints(predicate, index, schema, errors)
+
+    if _validate_nutrition_group_predicate(predicate, index, registry, errors):
+        return
 
     if not registry.predicate_field_exists(predicate):
         errors.append(
@@ -144,7 +151,7 @@ def _validate_predicate(
         return
 
     relation = registry.relation(predicate.source)
-    if relation and not registry.relation_is_base(predicate.source) and not registry.relationship_is_direct_to_base(predicate.source):
+    if relation and not _relation_has_renderable_path(predicate.source, registry):
         errors.append(
             f"predicates[{index}] source {predicate.source!r} needs a multi-hop join path "
             "that the SQL planner cannot render yet"
@@ -179,6 +186,89 @@ def _validate_value_count(
         errors.append(
             f"predicates[{index}] operator {predicate.operator!r} expects at least {rule['min']} value(s), got {count}"
         )
+
+
+def _validate_select_expressions(
+    query_ir: QueryIR,
+    schema: dict[str, Any],
+    errors: list[str],
+) -> None:
+    allowed = _allowed_select_expressions(schema, query_ir.root)
+    for index, select in enumerate(query_ir.select):
+        expression = select.expression.strip()
+        if expression not in allowed:
+            errors.append(
+                f"select[{index}] expression {expression!r} is not allowed by sql_schema"
+            )
+
+
+def _allowed_select_expressions(schema: dict[str, Any], root: str) -> set[str]:
+    allowed: set[str] = set()
+
+    def add_items(items: Any) -> None:
+        for item in items or []:
+            if isinstance(item, dict) and isinstance(item.get("expression"), str):
+                allowed.add(item["expression"].strip())
+
+    if root == schema.get("default_root", "recipe"):
+        add_items(schema.get("default_select", []))
+    root_config = schema.get("roots", {}).get(root, {})
+    if isinstance(root_config, dict):
+        add_items(root_config.get("select", []))
+    add_items(schema.get("selectable_expressions", {}).get(root, []))
+    for aggregate in schema.get("aggregates", {}).values():
+        if isinstance(aggregate, dict) and isinstance(aggregate.get("expression"), str):
+            allowed.add(aggregate["expression"].strip())
+    return allowed
+
+
+def _validate_operator_field_compatibility(
+    predicate: Predicate,
+    index: int,
+    registry: SchemaRegistry,
+    errors: list[str],
+) -> None:
+    catalog = registry.predicate_catalog_item(predicate)
+    if not catalog:
+        return
+    operators = {str(item).upper() for item in catalog.get("operators", [])}
+    if not operators:
+        return
+    operator = predicate.operator.upper()
+    if operator not in operators:
+        errors.append(
+            f"predicates[{index}] operator {predicate.operator!r} is not valid for "
+            f"{predicate.source}.{predicate.field} ({catalog.get('operator_profile', 'unknown')} field)"
+        )
+
+
+def _validate_nutrition_group_predicate(
+    predicate: Predicate,
+    index: int,
+    registry: SchemaRegistry,
+    errors: list[str],
+) -> bool:
+    if predicate.source != "nutrition":
+        return False
+    group = registry.nutrition_group(predicate.field)
+    if not group:
+        return False
+
+    relation = registry.relation("nutrition") or {}
+    columns = relation.get("columns", {})
+    missing = [
+        str(field)
+        for field in group.get("fields", [])
+        if str(field) not in columns
+    ]
+    if missing:
+        errors.append(
+            f"predicates[{index}] nutrition group {predicate.field!r} references "
+            f"unknown fields {missing}"
+        )
+    if not group.get("fields"):
+        errors.append(f"predicates[{index}] nutrition group {predicate.field!r} has no fields")
+    return True
 
 
 def _validate_predicate_limits(
@@ -268,6 +358,106 @@ def _validate_value_constraints(
             )
 
 
+def _validate_semantic_guards(
+    query_ir: QueryIR,
+    schema: dict[str, Any],
+    errors: list[str],
+    warnings: list[str],
+) -> None:
+    guards = schema.get("semantic_guards") or {}
+    _validate_dietary_ingredient_category_conflicts(
+        query_ir,
+        guards.get("dietary_ingredient_category_conflicts") or {},
+        errors,
+        warnings,
+    )
+
+
+def _validate_dietary_ingredient_category_conflicts(
+    query_ir: QueryIR,
+    rules: dict[str, Any],
+    errors: list[str],
+    warnings: list[str],
+) -> None:
+    if not rules:
+        return
+
+    dietary_styles = _dietary_styles_from_ir(query_ir)
+    ingredient_values = _included_ingredients_from_ir(query_ir)
+    if not dietary_styles or not ingredient_values:
+        return
+
+    emitted: set[str] = set()
+    for style in dietary_styles:
+        rule = rules.get(style)
+        if not isinstance(rule, dict):
+            continue
+        blocked = {
+            str(category).casefold()
+            for category in rule.get("blocked_categories", [])
+        }
+        if not blocked:
+            continue
+        severity = str(rule.get("severity") or "warning").lower()
+        for ingredient in ingredient_values:
+            category = _ingredient_category(ingredient)
+            if not category or category.casefold() not in blocked:
+                continue
+            message = (
+                f"semantic conflict: dietary style {style!r} usually excludes "
+                f"ingredient {ingredient!r} from category {category!r}"
+            )
+            if message in emitted:
+                continue
+            emitted.add(message)
+            if severity == "error":
+                errors.append(message)
+            else:
+                warnings.append(message)
+
+
+def _dietary_styles_from_ir(query_ir: QueryIR) -> set[str]:
+    styles: set[str] = set()
+    for predicate in query_ir.predicates:
+        if predicate.source != "dietary" or predicate.quantifier == "not_exists":
+            continue
+        styles.update(str(value) for value in predicate.values)
+    return styles
+
+
+def _included_ingredients_from_ir(query_ir: QueryIR) -> list[str]:
+    values: list[str] = []
+    seen: set[str] = set()
+    for predicate in query_ir.predicates:
+        if predicate.source != "ingredients" or predicate.quantifier == "not_exists":
+            continue
+        if predicate.operator.upper() not in {"=", "IN", "LIKE"}:
+            continue
+        for value in predicate.values:
+            text = str(value).strip().lower()
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            values.append(text)
+    return values
+
+
+def _ingredient_category(ingredient: str) -> str | None:
+    try:
+        from module1_asr.data.db_loader import DB_INGREDIENTS
+        from module1_asr.data.ingredient_synonyms import canonicalize_ingredient
+    except Exception:
+        return None
+
+    key = str(ingredient).strip().lower()
+    canonical = canonicalize_ingredient(key)
+    payload = DB_INGREDIENTS.get(canonical) or DB_INGREDIENTS.get(key)
+    if not isinstance(payload, dict):
+        return None
+    category = payload.get("category")
+    return str(category).strip() if category else None
+
+
 def _has_virtual_evidence(predicate: Predicate, virtual_schema: dict[str, Any]) -> bool:
     tables = virtual_schema.get("virtual_tables", {})
     if predicate.source == "base":
@@ -282,6 +472,32 @@ def _has_virtual_evidence(predicate: Predicate, virtual_schema: dict[str, Any]) 
         recipes = tables.get("recipes", {}).get("fields", {})
         return "ingredients" in recipes or bool(tables.get("recipe_ingredients", {}).get("fields"))
     return False
+
+
+def _relation_has_renderable_path(source: str, registry: SchemaRegistry) -> bool:
+    if source == "base":
+        return True
+    if registry.relation_is_base(source) or registry.relationship_is_direct_to_base(source):
+        return True
+
+    relation = registry.relation(source) or {}
+    parent_source = relation.get("requires")
+    if not parent_source:
+        return False
+    parent_relation = registry.relation(str(parent_source))
+    if not parent_relation or not registry.relationship_is_direct_to_base(str(parent_source)):
+        return False
+
+    child_join = registry.relationship_for_relation(source)
+    if not child_join:
+        return False
+    return {
+        child_join.from_table,
+        child_join.to_table,
+    } == {
+        str(parent_relation.get("table")),
+        str(relation.get("table")),
+    }
 
 
 def _validate_schema_relationships(schema: dict[str, Any], errors: list[str]) -> None:

@@ -85,8 +85,20 @@ class SchemaRegistry:
         relation = self.relation(source) or {}
         return dict(relation.get("strategy") or {})
 
+    def nutrition_group(self, field: str) -> dict[str, Any] | None:
+        group = self.schema.get("nutrition_groups", {}).get(field)
+        return group if isinstance(group, dict) else None
+
     def order_field(self, field: str) -> dict[str, str] | None:
         return self.schema.get("order_fields", {}).get(field)
+
+    def field_catalog_item(self, source: str, field: str) -> dict[str, Any] | None:
+        return self.schema.get("field_catalog", {}).get(f"{source}.{field}")
+
+    def predicate_catalog_item(self, predicate: Predicate) -> dict[str, Any] | None:
+        if predicate.source == "dietary" and predicate.field == "dietary_tag":
+            return self.field_catalog_item("dietary", "dietary_tag")
+        return self.field_catalog_item(predicate.source, predicate.field)
 
     def predicate_column(self, predicate: Predicate) -> str | None:
         if predicate.source == "base":
@@ -95,7 +107,7 @@ class SchemaRegistry:
         relation = self.relation(predicate.source)
         if not relation:
             return None
-        if predicate.source == "ingredients":
+        if predicate.source == "ingredients" and self.is_relation_match_predicate(predicate, relation):
             return relation.get("value_column")
         if predicate.source == "dietary":
             value = str(predicate.values[0]) if predicate.values else ""
@@ -105,7 +117,18 @@ class SchemaRegistry:
         return relation.get("columns", {}).get(predicate.field)
 
     def predicate_field_exists(self, predicate: Predicate) -> bool:
+        if predicate.source == "nutrition" and self.nutrition_group(predicate.field):
+            return True
         return self.predicate_column(predicate) is not None
+
+    def is_relation_match_predicate(
+        self,
+        predicate: Predicate,
+        relation: dict[str, Any] | None = None,
+    ) -> bool:
+        relation = relation or self.relation(predicate.source) or {}
+        match_field = relation.get("match_field")
+        return bool(match_field and predicate.field == match_field)
 
     def relation_is_base(self, source: str) -> bool:
         relation = self.relation(source)
@@ -115,7 +138,10 @@ class SchemaRegistry:
         relation = self.relation(source)
         if not relation or not relation.get("join"):
             return None
-        item = self._relationships.get(relation["join"])
+        return self.relationship(str(relation["join"]))
+
+    def relationship(self, name: str) -> JoinSpec | None:
+        item = self._relationships.get(name)
         if not item:
             return None
         return JoinSpec(

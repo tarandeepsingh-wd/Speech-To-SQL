@@ -1,6 +1,7 @@
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
 from pathlib import Path
 from rapidfuzz import fuzz, process
 
@@ -72,6 +73,122 @@ _NUTRIENT_MAP = {
     "sodium": "sodium", "salt": "sodium",
 }
 
+
+@lru_cache(maxsize=1)
+def _schema_nutrient_map() -> dict[str, str]:
+    try:
+        from module3.config import load_sql_schema_config
+    except Exception:
+        return {}
+
+    try:
+        schema = load_sql_schema_config()
+    except Exception:
+        return {}
+
+    relation_columns = schema.get("relations", {}).get("nutrition", {}).get("columns", {})
+    aliases = schema.get("semantic_aliases", {}).get("nutrition", {})
+    result = {
+        _normalize_schema_key(key): str(key)
+        for key in relation_columns
+        if str(key).strip()
+    }
+    result.update({
+        _normalize_schema_key(alias): str(target)
+        for alias, target in aliases.items()
+        if str(alias).strip() and str(target).strip()
+    })
+    return result
+
+
+def _nutrient_map() -> dict[str, str]:
+    result = dict(_NUTRIENT_MAP)
+    result.update(_schema_nutrient_map())
+    return result
+
+
+@lru_cache(maxsize=1)
+def _schema_nutrition_groups() -> dict[str, dict]:
+    try:
+        from module3.config import load_sql_schema_config
+    except Exception:
+        return {}
+
+    try:
+        schema = load_sql_schema_config()
+    except Exception:
+        return {}
+
+    groups = {}
+    for name, config in schema.get("nutrition_groups", {}).items():
+        if not isinstance(config, dict):
+            continue
+        aliases = [
+            str(alias)
+            for alias in config.get("aliases", [])
+            if str(alias).strip()
+        ]
+        aliases.append(str(name).replace("_", " "))
+        groups[str(name)] = {
+            "aliases": aliases,
+            "operator": config.get("presence_operator") or schema.get("nutrition_presence", {}).get("default_operator", "ANY_GT"),
+            "value": config.get("presence_value", schema.get("nutrition_presence", {}).get("default_value", 0)),
+            "negation_cues": schema.get("nutrition_presence", {}).get("negation_cues", []),
+        }
+    return groups
+
+
+@lru_cache(maxsize=1)
+def _schema_nutrition_presence_config() -> dict:
+    try:
+        from module3.config import load_sql_schema_config
+    except Exception:
+        return {}
+
+    try:
+        schema = load_sql_schema_config()
+    except Exception:
+        return {}
+
+    config = schema.get("nutrition_presence", {})
+    if not isinstance(config, dict):
+        return {}
+    cues = [
+        str(cue).lower().strip()
+        for cue in config.get("cues", [])
+        if str(cue).strip()
+    ]
+    broad_cues = [
+        str(cue).lower().strip()
+        for cue in config.get("broad_alias_cues", cues)
+        if str(cue).strip()
+    ]
+    return {
+        "cues": cues,
+        "broad_cues": broad_cues,
+        "negation_cues": [
+            str(cue).lower().strip()
+            for cue in config.get("negation_cues", [])
+            if str(cue).strip()
+        ],
+        "required_terms": [
+            _normalize_schema_key(str(term))
+            for term in config.get("presence_alias_required_terms", [])
+            if str(term).strip()
+        ],
+        "suffix_terms": [
+            _normalize_schema_key(str(term))
+            for term in config.get("implicit_presence_suffix_terms", [])
+            if str(term).strip()
+        ],
+        "operator": str(config.get("individual_operator", ">")),
+        "value": float(config.get("individual_value", 0)),
+    }
+
+
+def _normalize_schema_key(value: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^a-zA-Z0-9]+", " ", value.lower())).strip()
+
 _NUTRITION_PATTERN = re.compile(
     r"(?P<op>under|below|less than|at most|"
     r"over|above|more than|at least|"
@@ -106,24 +223,237 @@ _OP_MAP = {
     "around": "~", "about": "~", "approximately": "~",
     None: "=",
 }
+_OPERATOR_WORD_PATTERN = (
+    r"under|below|less\s+than|at\s+most|"
+    r"over|above|more\s+than|at\s+least|"
+    r"around|about|approximately"
+)
 
 
 def _normalize_nutrient(term: str) -> str | None:
     term = term.lower().strip()
-    if term in _NUTRIENT_MAP:
-        return _NUTRIENT_MAP[term]
+    nutrient_map = _nutrient_map()
+    normalized_term = _normalize_schema_key(term)
+    if normalized_term in nutrient_map:
+        return nutrient_map[normalized_term]
     if len(term) < 4:
         return None
 
     match = process.extractOne(
-        term,
-        list(_NUTRIENT_MAP.keys()),
+        normalized_term,
+        list(nutrient_map.keys()),
         scorer=fuzz.WRatio,
         score_cutoff=84,
     )
     if not match:
         return None
-    return _NUTRIENT_MAP[match[0]]
+    return nutrient_map[match[0]]
+
+
+@lru_cache(maxsize=1)
+def _dynamic_nutrient_patterns() -> tuple[tuple[str, str, re.Pattern, re.Pattern], ...]:
+    patterns = []
+    nutrient_map = _nutrient_map()
+    for alias, nutrient in sorted(nutrient_map.items(), key=lambda item: len(item[0]), reverse=True):
+        tokens = re.findall(r"[a-z0-9]+", alias.lower())
+        if not tokens:
+            continue
+        alias_pattern = r"\b" + r"[\s,()+-]+".join(re.escape(token) for token in tokens) + r"\b"
+        nutrient_first = re.compile(
+            rf"(?P<nutrient>{alias_pattern})\s+"
+            rf"(?P<op>{_OPERATOR_WORD_PATTERN})\s+"
+            rf"(?P<value>\d+(?:\.\d+)?)\s*"
+            rf"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
+            re.IGNORECASE,
+        )
+        value_first = re.compile(
+            rf"(?P<op>{_OPERATOR_WORD_PATTERN})\s+"
+            rf"(?P<value>\d+(?:\.\d+)?)\s*"
+            rf"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?\s+"
+            rf"(?P<nutrient>{alias_pattern})",
+            re.IGNORECASE,
+        )
+        patterns.append((alias, nutrient, nutrient_first, value_first))
+    return tuple(patterns)
+
+
+def _dynamic_nutrition_matches(text: str) -> list[dict]:
+    found = []
+    used_positions: set[int] = set()
+    for _alias, nutrient, *patterns in _dynamic_nutrient_patterns():
+        for pattern in patterns:
+            for match in pattern.finditer(text.lower()):
+                positions = set(range(match.start(), match.end()))
+                if positions & used_positions:
+                    continue
+                op_text = re.sub(r"\s+", " ", (match.group("op") or "").lower()).strip()
+                operator = _OP_MAP.get(op_text, "=")
+                try:
+                    value = float(match.group("value"))
+                except (TypeError, ValueError):
+                    continue
+                used_positions |= positions
+                found.append({
+                    "span": match.span(),
+                    "nutrient": nutrient,
+                    "operator": operator,
+                    "value": value,
+                })
+    found.sort(key=lambda item: item["span"])
+    return found
+
+
+@lru_cache(maxsize=1)
+def _dynamic_nutrition_group_patterns() -> tuple[tuple[str, dict, re.Pattern], ...]:
+    patterns = []
+    for group, config in _schema_nutrition_groups().items():
+        for alias in config.get("aliases", []):
+            tokens = re.findall(r"[a-z0-9]+", alias.lower())
+            if not tokens:
+                continue
+            alias_pattern = r"\b" + r"[\s,()+-]+".join(re.escape(token) for token in tokens) + r"\b"
+            patterns.append((alias, group, config, re.compile(alias_pattern, re.IGNORECASE)))
+    patterns.sort(key=lambda item: len(item[0]), reverse=True)
+    return tuple(
+        (group, config, pattern)
+        for _alias, group, config, pattern in patterns
+    )
+
+
+def _dynamic_nutrition_group_matches(text: str) -> list[dict]:
+    found = []
+    text_lower = text.lower()
+    used_positions: set[int] = set()
+    for group, config, pattern in _dynamic_nutrition_group_patterns():
+        for match in pattern.finditer(text_lower):
+            positions = set(range(match.start(), match.end()))
+            if positions & used_positions:
+                continue
+            if _has_recent_negation(text_lower, match.start(), config.get("negation_cues", [])):
+                continue
+            used_positions |= positions
+            found.append({
+                "span": match.span(),
+                "nutrient_group": group,
+                "operator": str(config.get("operator") or "ANY_GT"),
+                "value": float(config.get("value", 0)),
+            })
+    found.sort(key=lambda item: item["span"])
+    return found
+
+
+def _alias_contains_required_term(alias: str, required_terms: list[str]) -> bool:
+    if not required_terms:
+        return False
+    normalized_alias = _normalize_schema_key(alias)
+    return any(
+        re.search(rf"\b{re.escape(term)}\b", normalized_alias)
+        for term in required_terms
+    )
+
+
+@lru_cache(maxsize=1)
+def _dynamic_nutrient_presence_patterns() -> tuple[tuple[str, str, re.Pattern, bool], ...]:
+    config = _schema_nutrition_presence_config()
+    required_terms = config.get("required_terms", [])
+    patterns = []
+    for alias, nutrient in _nutrient_map().items():
+        required_alias = _alias_contains_required_term(alias, required_terms)
+        requires_broad_cue = (
+            bool(required_terms)
+            and not required_alias
+            and _is_known_ingredient_term(alias)
+        )
+        tokens = re.findall(r"[a-z0-9]+", alias.lower())
+        if not tokens:
+            continue
+        alias_pattern = r"\b" + r"[\s,()+-]*".join(re.escape(token) for token in tokens) + r"\b"
+        patterns.append((alias, nutrient, re.compile(alias_pattern, re.IGNORECASE), requires_broad_cue))
+    patterns.sort(key=lambda item: len(item[0]), reverse=True)
+    return tuple(patterns)
+
+
+def _cue_in_prefix(prefix: str, cues: list[str]) -> bool:
+    for cue in cues:
+        tokens = re.findall(r"[a-z0-9]+", cue)
+        if not tokens:
+            continue
+        cue_pattern = r"\s+".join(re.escape(token) for token in tokens)
+        if re.search(rf"\b{cue_pattern}\b(?:\s+\w+){{0,4}}\s*$", prefix):
+            return True
+    return False
+
+
+def _suffix_mentions_presence_context(suffix: str, suffix_terms: list[str]) -> bool:
+    if not suffix_terms:
+        return False
+    first_terms = " ".join(re.findall(r"[a-z0-9]+", suffix)[:4])
+    return any(
+        re.search(rf"\b{re.escape(term)}\b", first_terms)
+        for term in suffix_terms
+    )
+
+
+def _dynamic_nutrient_presence_matches(text: str) -> list[dict]:
+    config = _schema_nutrition_presence_config()
+    if not config:
+        return []
+
+    found = []
+    text_lower = text.lower()
+    used_positions: set[int] = set()
+    saw_presence = False
+    cues = config.get("cues", [])
+    broad_cues = config.get("broad_cues", cues)
+    suffix_terms = config.get("suffix_terms", [])
+    negation_cues = config.get("negation_cues", [])
+
+    candidates = []
+    for alias, nutrient, pattern, requires_broad_cue in _dynamic_nutrient_presence_patterns():
+        for match in pattern.finditer(text_lower):
+            candidates.append((match.start(), match.end(), len(alias), nutrient, requires_broad_cue))
+
+    candidates.sort(key=lambda item: (item[0], -item[2]))
+    for start, end, _alias_len, nutrient, requires_broad_cue in candidates:
+        positions = set(range(start, end))
+        if positions & used_positions:
+            continue
+        if _has_recent_negation(text_lower, start, negation_cues):
+            continue
+
+        prefix = text_lower[max(0, start - 64):start]
+        suffix = text_lower[end:end + 40]
+        connector_context = saw_presence and re.search(r"(?:\band\b|\bor\b|,)\s*$", prefix)
+        if requires_broad_cue:
+            if not (_cue_in_prefix(prefix, broad_cues) or connector_context):
+                continue
+        elif not (
+            _cue_in_prefix(prefix, cues)
+            or connector_context
+            or _suffix_mentions_presence_context(suffix, suffix_terms)
+        ):
+            continue
+
+        used_positions |= positions
+        saw_presence = True
+        found.append({
+            "span": (start, end),
+            "nutrient": nutrient,
+            "operator": config.get("operator", ">"),
+            "value": float(config.get("value", 0)),
+        })
+
+    found.sort(key=lambda item: item["span"])
+    return found
+
+
+def _has_recent_negation(text: str, start: int, negation_cues: list) -> bool:
+    prefix = text[max(0, start - 24):start]
+    return any(
+        re.search(rf"\b{re.escape(str(cue).lower())}\b\s*$", prefix)
+        for cue in negation_cues
+        if str(cue).strip()
+    )
 
 
 def _valid_nutrition_match(pattern, match) -> bool:
@@ -149,9 +479,29 @@ def _detect_nutrition_filters(text: str) -> list:
     results = []
     seen_spans = set()
     seen_semantic = set()
+    used_positions: set[int] = set()
+
+    for item in _dynamic_nutrition_matches(text):
+        nutrient = item["nutrient"]
+        operator = item["operator"]
+        value = item["value"]
+        semantic_key = (nutrient, operator, value)
+        if semantic_key in seen_semantic:
+            continue
+        seen_semantic.add(semantic_key)
+        seen_spans.add(item["span"])
+        used_positions.update(range(item["span"][0], item["span"][1]))
+        results.append({
+            "nutrient": nutrient,
+            "operator": operator,
+            "value": value,
+        })
+
     for pattern in _NUTRITION_PATTERNS:
         for m in pattern.finditer(text.lower()):
             if not _valid_nutrition_match(pattern, m):
+                continue
+            if set(range(m.start(), m.end())) & used_positions:
                 continue
             if m.span() in seen_spans:
                 continue
@@ -172,6 +522,34 @@ def _detect_nutrition_filters(text: str) -> list:
                 "operator": operator,
                 "value":    value,
             })
+
+    for item in _dynamic_nutrient_presence_matches(text):
+        if set(range(item["span"][0], item["span"][1])) & used_positions:
+            continue
+        semantic_key = (item["nutrient"], item["operator"], item["value"])
+        if semantic_key in seen_semantic:
+            continue
+        seen_semantic.add(semantic_key)
+        used_positions.update(range(item["span"][0], item["span"][1]))
+        results.append({
+            "nutrient": item["nutrient"],
+            "operator": item["operator"],
+            "value": item["value"],
+        })
+
+    for item in _dynamic_nutrition_group_matches(text):
+        if set(range(item["span"][0], item["span"][1])) & used_positions:
+            continue
+        semantic_key = (item["nutrient_group"], item["operator"], item["value"])
+        if semantic_key in seen_semantic:
+            continue
+        seen_semantic.add(semantic_key)
+        used_positions.update(range(item["span"][0], item["span"][1]))
+        results.append({
+            "nutrient_group": item["nutrient_group"],
+            "operator": item["operator"],
+            "value": item["value"],
+        })
     return results
 
 
@@ -217,6 +595,21 @@ def _mask_claimed_spans(text: str, extra_spans: list | None = None) -> str:
     that have already been extracted by other detectors.
     """
     chars = list(text)
+    for item in _dynamic_nutrition_matches(text):
+        start, end = item["span"]
+        for i in range(start, end):
+            if i < len(chars):
+                chars[i] = " "
+    for item in _dynamic_nutrition_group_matches(text):
+        start, end = item["span"]
+        for i in range(start, end):
+            if i < len(chars):
+                chars[i] = " "
+    for item in _dynamic_nutrient_presence_matches(text):
+        start, end = item["span"]
+        for i in range(start, end):
+            if i < len(chars):
+                chars[i] = " "
     for pattern in [*_NUTRITION_PATTERNS, _DIETARY_REGEX]:
         for m in pattern.finditer(text.lower()):
             if pattern in _NUTRITION_PATTERNS and not _valid_nutrition_match(pattern, m):
@@ -236,7 +629,6 @@ def _mask_claimed_spans(text: str, extra_spans: list | None = None) -> str:
 # ─────────────────────────────────────────────────────────
 
 _ACTION_TERMS = sorted(DB_ACTIONS.keys(), key=len, reverse=True)
-_ING_SUFFIX   = re.compile(r"^(\w+)ing$")
 
 
 def _detect_actions(text: str) -> list:
@@ -257,25 +649,49 @@ def _detect_actions(text: str) -> list:
                 "span":   (m.start(), m.end() - 1),
             })
 
-    for token_m in re.finditer(r"\b\w+\b", text_lower):
+    for token_m in re.finditer(r"\b[\w-]+\b", text_lower):
         token = token_m.group()
         if token in DB_ACTIONS:
             continue
-        ing_m = _ING_SUFFIX.match(token)
-        if ing_m:
-            base = ing_m.group(1)
+        for base in _action_base_candidates(token):
             if base in DB_ACTIONS:
                 positions = set(range(token_m.start(), token_m.end()))
                 if positions & used_positions:
-                    continue
+                    break
                 used_positions |= positions
                 found.append({
                     "action": base,
                     "type":   DB_ACTIONS[base]["type"],
                     "span":   (token_m.start(), token_m.end() - 1),
                 })
+                break
 
     return found
+
+
+def _action_base_candidates(token: str) -> list[str]:
+    candidates: list[str] = []
+
+    def add(value: str) -> None:
+        if value and value not in candidates:
+            candidates.append(value)
+
+    add(token)
+    if token.endswith("ing") and len(token) > 4:
+        root = token[:-3]
+        add(root)
+        add(root + "e")
+        if len(root) > 2 and root[-1] == root[-2]:
+            add(root[:-1])
+    if token.endswith("ied") and len(token) > 4:
+        add(token[:-3] + "y")
+    if token.endswith("ed") and len(token) > 3:
+        root = token[:-2]
+        add(root)
+        add(root + "e")
+        if len(root) > 2 and root[-1] == root[-2]:
+            add(root[:-1])
+    return candidates
 
 
 # ─────────────────────────────────────────────────────────

@@ -197,6 +197,8 @@ def _link_categories(
         if not isinstance(item, dict):
             continue
         original = item.get("term") or item.get("value") or item.get("text")
+        if _resolve_alias(original, _nutrition_alias_index(recipe_config, schema)):
+            continue
         resolved = _resolve_cuisine_alias(original, alias_index)
         if not resolved:
             if original:
@@ -218,10 +220,20 @@ def _link_categories(
 
 def _normalize_ingredient_logic(tag_result: dict[str, Any]) -> dict[str, Any]:
     logic = dict(tag_result.get("ingredient_logic") or {})
+    consumed = {
+        _normalize_key(term)
+        for term in tag_result.get("_consumed_nutrition_terms") or []
+    }
     include = logic.get("include") or tag_result.get("ingredients") or []
     exclude = logic.get("exclude") or []
-    logic["include"] = _unique_strings(include)
-    logic["exclude"] = _unique_strings(exclude)
+    logic["include"] = [
+        item for item in _unique_strings(include)
+        if _normalize_key(item) not in consumed
+    ]
+    logic["exclude"] = [
+        item for item in _unique_strings(exclude)
+        if _normalize_key(item) not in consumed
+    ]
     logic["include_operator"] = str(logic.get("include_operator") or "AND").upper()
     return logic
 

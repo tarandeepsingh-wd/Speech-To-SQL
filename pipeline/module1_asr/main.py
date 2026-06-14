@@ -164,6 +164,8 @@ def print_module3_sql(result: dict) -> None:
     print(f"  SQL             : {sql_result.get('query')}")
     print(f"  Params          : {sql_result.get('params', [])}")
     print(f"  Valid           : {validation.get('ok')}")
+    if validation.get("warnings"):
+        print(f"  Warnings        : {validation['warnings']}")
     if validation.get("errors"):
         print(f"  Errors          : {validation['errors']}")
 
@@ -187,10 +189,16 @@ def _plain_meaning(result: dict) -> str:
         ))
     if result.get("nutrition_filters"):
         parts.append("nutrition " + ", ".join(
-            f"{item.get('nutrient')} {item.get('operator')} {item.get('value')}"
+            _nutrition_filter_meaning(item)
             for item in result["nutrition_filters"]
         ))
     return "; ".join(parts) if parts else "no filters"
+
+
+def _nutrition_filter_meaning(item: dict) -> str:
+    if item.get("nutrient_group"):
+        return f"group {item.get('nutrient_group')} present"
+    return f"{item.get('nutrient')} {item.get('operator')} {item.get('value')}"
 
 
 def _sql_strategy(plan: dict, query: str | None) -> str:

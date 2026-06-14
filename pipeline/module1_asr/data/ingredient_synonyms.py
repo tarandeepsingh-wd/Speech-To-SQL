@@ -1,3 +1,6 @@
+from functools import lru_cache
+
+
 SYNONYMS = {
 
     # ─────────────────────────────────────────────
@@ -1333,10 +1336,35 @@ SYNONYMS = {
 # Dietrx_Category labels in RecipeDB.
 # ─────────────────────────────────────────────────────────
 
+@lru_cache(maxsize=1)
+def _known_canonical_terms() -> set[str]:
+    terms = set(SYNONYMS.keys()) | set(SYNONYMS.values())
+    try:
+        from module1_asr.data.db_loader import DB_INGREDIENTS
+
+        terms.update(DB_INGREDIENTS.keys())
+    except Exception:
+        pass
+    return {str(term).lower().strip() for term in terms if str(term).strip()}
+
+
+def _drop_extra_trailing_e(key: str) -> str | None:
+    candidate = key[:-1]
+    if len(key) > 4 and key.endswith("e") and candidate in _known_canonical_terms():
+        return candidate
+    return None
+
+
 def canonicalize_ingredient(name: str) -> str:
     """Return the configured canonical ingredient name."""
     key = str(name).lower().strip()
-    return SYNONYMS.get(key, key)
+    canonical = SYNONYMS.get(key)
+    if canonical:
+        return canonical
+    spelling_fix = _drop_extra_trailing_e(key)
+    if spelling_fix:
+        return SYNONYMS.get(spelling_fix, spelling_fix)
+    return key
 
 
 CATEGORY_SYNONYMS = {

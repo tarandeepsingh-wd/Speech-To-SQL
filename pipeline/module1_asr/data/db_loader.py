@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 from pathlib import Path
 
@@ -6,6 +7,7 @@ DATA_DIR = Path(__file__).parent
 INGREDIENT_CSV = DATA_DIR / "RecipeDB_Ingredient_Category.csv"
 UTENSIL_CSV   = DATA_DIR / "utensils.csv"
 ACTION_CSV    = DATA_DIR / "actions.csv"
+DATA_RULES_JSON = DATA_DIR / "data_rules.json"
 
 # ─────────────────────────────────────────────────────────
 # DIRTY DATA FIXES
@@ -13,10 +15,17 @@ ACTION_CSV    = DATA_DIR / "actions.csv"
 # "salt pepper"  → parsing artifact; "and" was stripped
 # "purpose flour" → prefix "all-" was cut during export
 # ─────────────────────────────────────────────────────────
-INGREDIENT_DIRTY_FIXES = {
-    "salt pepper":   "salt and pepper",
-    "purpose flour": "all-purpose flour",
-}
+def load_data_rules() -> dict:
+    try:
+        with DATA_RULES_JSON.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+DATA_RULES = load_data_rules()
+INGREDIENT_DIRTY_FIXES = DATA_RULES.get("ingredient_dirty_fixes", {})
+STATE_CHANGE_ACTIONS = set(DATA_RULES.get("state_change_actions", []))
 
 
 def load_ingredients() -> dict:
@@ -115,12 +124,16 @@ def load_actions() -> dict:
     for row in df.to_dict("records"):
         name = row[name_col]
         freq = int(row[freq_col])
-        action_type = (
-            str(row[type_col]).strip()
-            if type_col and str(row[type_col]) != "nan"
-            else "procedural"
-        )
+        if type_col and str(row[type_col]) != "nan":
+            action_type = str(row[type_col]).strip()
+        elif name in STATE_CHANGE_ACTIONS:
+            action_type = "state_change"
+        else:
+            action_type = "procedural"
         result[name] = {"frequency": freq, "type": action_type}
+
+    for name in STATE_CHANGE_ACTIONS:
+        result.setdefault(name, {"frequency": 0, "type": "state_change"})
     return result
 
 

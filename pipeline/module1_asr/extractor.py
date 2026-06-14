@@ -36,6 +36,7 @@ ENABLE_SEMANTIC_FALLBACK = False
 LAYER_PRIORITY = {
     "exact_aho":              0,
     "exact_direct":           1,
+    "exact_morphology":       2,
     "metaphone_fuzzy":        2,
     "metaphone_edit":         3,
     "neighbor_fuzzy":         4,
@@ -45,6 +46,7 @@ LAYER_PRIORITY = {
     "neighbor_fuzzy_rescue":  8,
     "semantic_rescue":        9,
     "exact_direct_rescue":    10,
+    "exact_morphology_rescue": 10,
 }
 
 COMMON_WORDS_BLACKLIST = {
@@ -161,6 +163,7 @@ ALL_KNOWN_TERMS = list(set(
     [x.lower().strip() for x in DB_INGREDIENTS] +
     [x.lower().strip() for x in SYNONYMS.keys()]
 ))
+ALL_KNOWN_TERMS_SET = set(ALL_KNOWN_TERMS)
 
 DB_INGREDIENTS_LOWER = set(x.lower().strip() for x in DB_INGREDIENTS)
 
@@ -592,6 +595,41 @@ def _asr_form(word: str) -> str:
     return _vowel_normalize(_double_consonant_normalize(word.lower()))
 
 
+def _last_token_variants(term: str) -> list[str]:
+    parts = term.split()
+    if not parts:
+        return []
+
+    token = parts[-1]
+    variants = []
+
+    def add_last(value: str) -> None:
+        if not value or value == token:
+            return
+        candidate = " ".join([*parts[:-1], value])
+        if candidate not in variants:
+            variants.append(candidate)
+
+    if token.endswith("ies") and len(token) > 4:
+        add_last(token[:-3] + "y")
+    if re.search(r"(oes|ches|shes|xes|zes|ses)$", token) and len(token) > 4:
+        add_last(token[:-2])
+    if token.endswith("ves") and len(token) > 4:
+        add_last(token[:-3] + "f")
+        add_last(token[:-3] + "fe")
+    if token.endswith("s") and not token.endswith("ss") and len(token) > 3:
+        add_last(token[:-1])
+
+    return variants
+
+
+def _known_morphology_match(query: str) -> str | None:
+    for candidate in _last_token_variants(query):
+        if candidate in ALL_KNOWN_TERMS_SET:
+            return candidate
+    return None
+
+
 # ─────────────────────────────────────────────────────────
 # FUZZY SEARCH (strict pass + grey-zone pass + ASR rescue)
 # ─────────────────────────────────────────────────────────
@@ -748,10 +786,18 @@ def resolve_token(query: str, threshold: int, mode: str = "unigram"):
         return None
 
     # ── Stage 0 — Exact direct match ──────────────────────
-    if query in ALL_KNOWN_TERMS:
+    if query in ALL_KNOWN_TERMS_SET:
         return {
             "canonical": canonicalize_ingredient(query),
             "layer":     "exact_direct",
+            "score":     100,
+        }
+
+    morphology_match = _known_morphology_match(query)
+    if morphology_match:
+        return {
+            "canonical": canonicalize_ingredient(morphology_match),
+            "layer":     "exact_morphology",
             "score":     100,
         }
 

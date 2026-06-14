@@ -102,7 +102,7 @@ def _root_source_condition(
     if not column:
         return None
     relation = registry.relation(predicate.source) or {}
-    if relation.get("fallback_value_column") or relation.get("strategy", {}).get("match_operator"):
+    if _uses_relation_match_strategy(predicate, registry, relation):
         return _relation_match_condition(plan.from_alias, predicate, registry, relation)
     filter_predicate = _normalized_predicate(predicate, relation)
     return _column_condition(
@@ -116,6 +116,8 @@ def _same_table_relation_condition(
     registry: SchemaRegistry,
 ) -> SqlCondition | None:
     relation = registry.relation(predicate.source) or {}
+    if predicate.source == "nutrition" and registry.nutrition_group(predicate.field):
+        return _nutrition_group_condition(predicate, registry, relation)
     if predicate.source == "dietary" and predicate.quantifier == "or_exists":
         return _dietary_or_condition(predicate, registry, relation)
 
@@ -132,6 +134,33 @@ def _same_table_relation_condition(
             predicate.source,
         )
     return _column_condition(column_sql, predicate)
+
+
+def _nutrition_group_condition(
+    predicate: Predicate,
+    registry: SchemaRegistry,
+    relation: dict[str, Any],
+) -> SqlCondition | None:
+    group = registry.nutrition_group(predicate.field)
+    if not group:
+        return None
+    operator = predicate.operator.upper()
+    values = tuple(predicate.values)
+    if operator != "ANY_GT" or len(values) != 1:
+        return None
+
+    columns = relation.get("columns", {})
+    parts: list[str] = []
+    params: list[Any] = []
+    for field in group.get("fields", []):
+        column = columns.get(str(field))
+        if not column:
+            return None
+        parts.append(f"{registry.column_sql(registry.base_alias, column)} > ?")
+        params.append(values[0])
+    if not parts:
+        return None
+    return SqlCondition("(" + " OR ".join(parts) + ")", tuple(params), predicate.source)
 
 
 def _dietary_or_condition(
@@ -187,6 +216,15 @@ def _exists_relation_condition(
     join = registry.relationship_for_relation(predicate.source)
     join_assumption = join.as_dict() if join else None
     if not join_condition:
+        chained = _chained_exists_relation_condition(
+            predicate,
+            registry,
+            relation,
+            alias,
+            filter_condition,
+        )
+        if chained:
+            return chained
         return None, join_assumption
 
     exists_sql = (
@@ -199,6 +237,87 @@ def _exists_relation_condition(
         else f"EXISTS ({exists_sql})"
     )
     return SqlCondition(condition_sql, filter_condition.params, predicate.source), join_assumption
+
+
+def _chained_exists_relation_condition(
+    predicate: Predicate,
+    registry: SchemaRegistry,
+    relation: dict[str, Any],
+    alias: str,
+    filter_condition: SqlCondition,
+) -> tuple[SqlCondition, dict[str, Any]] | None:
+    parent_source = relation.get("requires")
+    if not parent_source:
+        return None
+    parent_relation = registry.relation(str(parent_source))
+    parent_join = registry.relationship_for_relation(str(parent_source))
+    child_join = registry.relationship_for_relation(predicate.source)
+    if not parent_relation or not parent_join or not child_join:
+        return None
+    if not registry.relationship_is_direct_to_base(str(parent_source)):
+        return None
+
+    parent_alias = f"{parent_relation['alias']}_chain"
+    chain_condition = _relationship_condition_between_aliases(
+        child_join,
+        parent_relation["table"],
+        parent_alias,
+        relation["table"],
+        alias,
+        registry,
+    )
+    if not chain_condition:
+        return None
+
+    parent_base_condition = (
+        f"{parent_alias}.{registry.quote_identifier(parent_join.from_column)} = "
+        f"{registry.base_alias}.{registry.quote_identifier(parent_join.to_column)}"
+    )
+    exists_sql = (
+        f"SELECT 1 FROM {registry.table_sql(parent_relation['table'])} AS {parent_alias} "
+        f"JOIN {registry.table_sql(relation['table'])} AS {alias} "
+        f"ON {chain_condition} "
+        f"WHERE {parent_base_condition} AND {filter_condition.sql}"
+    )
+    condition_sql = (
+        f"NOT EXISTS ({exists_sql})"
+        if predicate.quantifier == "not_exists"
+        else f"EXISTS ({exists_sql})"
+    )
+    return SqlCondition(condition_sql, filter_condition.params, predicate.source), {
+        "name": f"{parent_join.name}->{child_join.name}",
+        "path": [parent_join.as_dict(), child_join.as_dict()],
+        "confidence": _path_confidence(parent_join.confidence, child_join.confidence),
+    }
+
+
+def _relationship_condition_between_aliases(
+    join: Any,
+    left_table: str,
+    left_alias: str,
+    right_table: str,
+    right_alias: str,
+    registry: SchemaRegistry,
+) -> str | None:
+    if join.from_table == left_table and join.to_table == right_table:
+        return (
+            f"{left_alias}.{registry.quote_identifier(join.from_column)} = "
+            f"{right_alias}.{registry.quote_identifier(join.to_column)}"
+        )
+    if join.from_table == right_table and join.to_table == left_table:
+        return (
+            f"{right_alias}.{registry.quote_identifier(join.from_column)} = "
+            f"{left_alias}.{registry.quote_identifier(join.to_column)}"
+        )
+    return None
+
+
+def _path_confidence(*values: str) -> str:
+    if any(value == "inferred" for value in values):
+        return "inferred"
+    if any(value == "index_supported" for value in values):
+        return "index_supported"
+    return values[0] if values else "unknown"
 
 
 def _join_relation_condition(
@@ -262,6 +381,9 @@ def _join_strategy_sources(
             continue
         if len(predicate.values) != int(strategy.get("value_count", 1)):
             continue
+        relation = registry.relation(source) or {}
+        if not _uses_relation_match_strategy(predicate, registry, relation):
+            continue
         sources.add(source)
     return sources
 
@@ -280,11 +402,13 @@ def _add_multi_join_strategies(
 
     for source, predicates in by_source.items():
         strategy = registry.relation_strategy(source)
+        relation = registry.relation(source) or {}
         include_predicates = [
             predicate for predicate in predicates
             if predicate.quantifier == "exists"
             and predicate.operator.upper() == strategy.get("operator", "=")
             and len(predicate.values) == int(strategy.get("value_count", 1))
+            and _uses_relation_match_strategy(predicate, registry, relation)
         ]
         if len(include_predicates) < 2:
             continue
@@ -470,6 +594,16 @@ def _relation_match_condition(
     registry: SchemaRegistry,
     relation: dict[str, Any],
 ) -> SqlCondition | None:
+    if not _uses_relation_match_strategy(predicate, registry, relation):
+        filter_predicate = _normalized_predicate(predicate, relation)
+        column = registry.predicate_column(filter_predicate)
+        if not column:
+            return None
+        return _column_condition(
+            registry.column_sql(alias, column),
+            filter_predicate,
+        )
+
     operator = predicate.operator.upper()
     if operator not in {"=", "IN", "LIKE"}:
         filter_predicate = _normalized_predicate(predicate, relation)
@@ -554,6 +688,20 @@ def _match_value(
     if transform == "suffix":
         return f"%{text}"
     return text
+
+
+def _uses_relation_match_strategy(
+    predicate: Predicate,
+    registry: SchemaRegistry,
+    relation: dict[str, Any],
+) -> bool:
+    return (
+        registry.is_relation_match_predicate(predicate, relation)
+        and bool(
+            relation.get("fallback_value_column")
+            or relation.get("strategy", {}).get("match_operator")
+        )
+    )
 
 
 def _normalized_predicate(predicate: Predicate, relation: dict[str, Any]) -> Predicate:

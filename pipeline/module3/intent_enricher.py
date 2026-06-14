@@ -66,9 +66,11 @@ def _enrich_nutrition_filters(
         link_nutrition_field(item.get("nutrient"), recipe_config=recipe_config, schema=schema)
         for item in filters
     }
+    consumed_terms = list(tag_result.get("_consumed_nutrition_terms") or [])
 
     for rule in recipe_config["intent_enrichment"]["nutrition_qualifiers"]:
-        if not _contains_any_term(text, rule["terms"]):
+        matched_terms = _matched_terms(text, rule["terms"])
+        if not matched_terms:
             continue
         nutrient = link_nutrition_field(
             rule["nutrient"],
@@ -85,6 +87,8 @@ def _enrich_nutrition_filters(
         }
         filters.append(added)
         existing.add(nutrient)
+        consumed_terms.extend(matched_terms)
+        consumed_terms.append(str(rule["nutrient"]))
         enrichments.append(IntentEnrichment(
             target="nutrition_filters",
             added=added,
@@ -92,6 +96,7 @@ def _enrich_nutrition_filters(
         ))
 
     tag_result["nutrition_filters"] = filters
+    tag_result["_consumed_nutrition_terms"] = _unique_terms(consumed_terms)
 
 
 def _enrich_time_filters(
@@ -168,7 +173,27 @@ def _normalize_minutes(value: float, transcript: str, recipe_config: dict[str, A
 
 
 def _contains_any_term(text: str, terms: list[str]) -> bool:
-    return any(re.search(rf"\b{re.escape(_normalize_text(term))}\b", text) for term in terms)
+    return bool(_matched_terms(text, terms))
+
+
+def _matched_terms(text: str, terms: list[str]) -> list[str]:
+    return [
+        _normalize_text(term)
+        for term in terms
+        if re.search(rf"\b{re.escape(_normalize_text(term))}\b", text)
+    ]
+
+
+def _unique_terms(terms: list[str]) -> list[str]:
+    result = []
+    seen = set()
+    for term in terms:
+        normalized = _normalize_text(term)
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        result.append(normalized)
+    return result
 
 
 def _normalize_text(text: str) -> str:

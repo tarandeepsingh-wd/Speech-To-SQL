@@ -34,6 +34,7 @@ def build_query_ir(
     query.predicates.extend(_nutrition_predicates(tag_result))
     query.predicates.extend(_dietary_predicates(tag_result, text, recipe_config))
     query.predicates.extend(_time_predicates(tag_result, text, recipe_config))
+    query.predicates.extend(_semantic_filter_predicates(tag_result, schema))
     query.predicates.extend(_category_predicates(tag_result))
 
     order = _order_by(tag_result, text, recipe_config)
@@ -78,7 +79,12 @@ def _root_name(text: str, schema: dict[str, Any]) -> str:
 
 def _ingredient_predicates(tag_result: dict) -> list[Predicate]:
     logic = tag_result.get("ingredient_logic") or {}
-    include = _unique_strings(logic.get("include") or tag_result.get("ingredients") or [])
+    include_source = (
+        logic.get("include")
+        if "include" in logic
+        else tag_result.get("ingredients")
+    )
+    include = _unique_strings(include_source or [])
     exclude = _unique_strings(logic.get("exclude") or [])
     include_operator = logic.get("include_operator") or "AND"
     predicates: list[Predicate] = []
@@ -116,6 +122,20 @@ def _ingredient_predicates(tag_result: dict) -> list[Predicate]:
 def _nutrition_predicates(tag_result: dict) -> list[Predicate]:
     predicates: list[Predicate] = []
     for nf in tag_result.get("nutrition_filters", []) or []:
+        nutrient_group = nf.get("nutrient_group")
+        if nutrient_group:
+            op = nf.get("operator") or "ANY_GT"
+            try:
+                value = float(nf.get("value", 0))
+            except (TypeError, ValueError):
+                value = 0.0
+            predicates.append(Predicate(
+                source="nutrition",
+                field=str(nutrient_group),
+                operator=str(op),
+                values=(value,),
+            ))
+            continue
         nutrient = nf.get("nutrient")
         op = nf.get("operator")
         if not nutrient or not op:
@@ -209,6 +229,75 @@ def _category_predicates(tag_result: dict) -> list[Predicate]:
             values=(value,),
         ))
     return predicates
+
+
+def _semantic_filter_predicates(
+    tag_result: dict,
+    schema: dict[str, Any],
+) -> list[Predicate]:
+    filters = schema.get("semantic_filters", {})
+    predicates: list[Predicate] = []
+
+    utensil_config = filters.get("utensils") or {}
+    predicates.extend(_text_filter_predicates(
+        tag_result.get("utensils") or [],
+        utensil_config,
+    ))
+
+    action_config = filters.get("cooking_actions") or {}
+    allowed_action_types = {
+        str(item)
+        for item in action_config.get("allowed_action_types", [])
+    }
+    actions = [
+        item.get("action")
+        for item in tag_result.get("actions") or []
+        if isinstance(item, dict)
+        and item.get("action")
+        and (
+            not allowed_action_types
+            or str(item.get("type")) in allowed_action_types
+        )
+    ]
+    predicates.extend(_text_filter_predicates(actions, action_config))
+    return predicates
+
+
+def _text_filter_predicates(
+    values: list[Any],
+    config: dict[str, Any],
+) -> list[Predicate]:
+    source = config.get("source")
+    field = config.get("field")
+    operator = str(config.get("operator") or "LIKE").upper()
+    if not source or not field:
+        return []
+
+    predicates = []
+    for value in _unique_strings(values):
+        predicates.append(Predicate(
+            source=str(source),
+            field=str(field),
+            operator=operator,
+            values=(_transform_filter_value(value, operator, config),),
+        ))
+    return predicates
+
+
+def _transform_filter_value(
+    value: Any,
+    operator: str,
+    config: dict[str, Any],
+) -> str:
+    text = str(value).strip().lower()
+    transform = config.get("value_transform")
+    if transform == "contains" or (operator == "LIKE" and transform is None):
+        return f"%{text}%"
+    if transform == "prefix":
+        return f"{text}%"
+    if transform == "suffix":
+        return f"%{text}"
+    return text
 
 
 def _order_by(

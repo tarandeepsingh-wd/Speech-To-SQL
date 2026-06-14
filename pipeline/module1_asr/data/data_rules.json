@@ -1,0 +1,36 @@
+{
+  "ingredient_dirty_fixes": {
+    "salt pepper": "salt and pepper",
+    "purpose flour": "all-purpose flour"
+  },
+  "state_change_actions": [
+    "air-fry",
+    "bake",
+    "barbecue",
+    "bbq",
+    "blanch",
+    "boil",
+    "braise",
+    "broil",
+    "char",
+    "chargrill",
+    "deep-fry",
+    "fry",
+    "griddle",
+    "grill",
+    "microwave",
+    "pan-fry",
+    "poach",
+    "pressure-cook",
+    "roast",
+    "saute",
+    "sear",
+    "simmer",
+    "slow-cook",
+    "smoke",
+    "steam",
+    "stew",
+    "stir-fry",
+    "toast"
+  ]
+}

@@ -91,7 +91,7 @@ def _parse_select(value: Any, schema: dict[str, Any], root: str) -> list[SelectE
     items = value if value is not None else root_select or schema.get("default_select", [])
     if not isinstance(items, list):
         raise QueryIRContractError("select must be a list")
-    configured_select_aliases = _configured_select_aliases(schema)
+    configured_select_aliases = _configured_select_aliases(schema, root)
     aggregate_aliases = _aggregate_aliases(schema)
     allowed_expressions = set(configured_select_aliases) | set(aggregate_aliases)
     result: list[SelectExpr] = []
@@ -217,14 +217,15 @@ def _find_forbidden_sql_keys(value: Any, path: str = "") -> set[str]:
     return found
 
 
-def _configured_select_aliases(schema: dict[str, Any]) -> dict[str, str | None]:
+def _configured_select_aliases(schema: dict[str, Any], root: str) -> dict[str, str | None]:
     aliases: dict[str, str | None] = {}
-    select_sources = [schema.get("default_select", [])]
-    select_sources.extend(
-        root.get("select", [])
-        for root in schema.get("roots", {}).values()
-        if isinstance(root, dict)
-    )
+    select_sources = []
+    if root == schema.get("default_root", "recipe"):
+        select_sources.append(schema.get("default_select", []))
+    root_config = schema.get("roots", {}).get(root, {})
+    if isinstance(root_config, dict):
+        select_sources.append(root_config.get("select", []))
+    select_sources.append(schema.get("selectable_expressions", {}).get(root, []))
     for items in select_sources:
         for item in items:
             if not isinstance(item, dict) or not isinstance(item.get("expression"), str):

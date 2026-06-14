@@ -189,6 +189,82 @@ def test_sql_query_builder_adds_where_order_and_limit():
     assert sql["validation"]["ok"] is True
 
 
+def test_sql_query_builder_warns_on_dietary_ingredient_conflict():
+    tag_result = {
+        "ingredients": ["chicken", "milk"],
+        "ingredient_logic": {
+            "include": ["chicken", "milk"],
+            "exclude": [],
+            "include_operator": "AND",
+        },
+        "dietary_styles": ["vegan"],
+        "nutrition_filters": [],
+        "sql_operators": [],
+    }
+
+    sql = build_sql_query(tag_result, transcript="vegan recipes with chicken and milk")
+
+    assert sql["validation"]["ok"] is True
+    warnings = " ".join(sql["validation"]["warnings"])
+    assert "vegan" in warnings
+    assert "chicken" in warnings
+    assert "milk" in warnings
+
+
+def test_sql_query_builder_uses_schema_driven_utensil_and_action_filters():
+    tag_result = {
+        "ingredients": [],
+        "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+        "utensils": ["skillet"],
+        "actions": [{"action": "fry", "type": "state_change"}],
+        "dietary_styles": [],
+        "nutrition_filters": [],
+        "sql_operators": [],
+    }
+
+    sql = build_sql_query(tag_result, transcript="fried recipes made in skillet")
+
+    assert sql["validation"]["ok"] is True
+    assert "r.`utensils` LIKE ?" in sql["query"]
+    assert "r.`processes` LIKE ?" in sql["query"]
+    assert "%skillet%" in sql["params"]
+    assert "%fry%" in sql["params"]
+
+
+def test_text_to_sql_uses_extracted_utensil_and_action_filters():
+    tags = tag_entities("fried recipes made in skillet")
+    sql = build_sql_query(tags, transcript="fried recipes made in skillet")
+
+    assert {"action": "fry", "type": "state_change", "span": (0, 4)} in tags["actions"]
+    assert tags["utensils"] == ["skillet"]
+    assert "r.`utensils` LIKE ?" in sql["query"]
+    assert "r.`processes` LIKE ?" in sql["query"]
+    assert "%skillet%" in sql["params"]
+    assert "%fry%" in sql["params"]
+
+
+def test_text_to_sql_uses_pdf_enriched_nutrition_columns():
+    tags = tag_entities("recipes with folate over 50")
+    sql = build_sql_query(tags, transcript="recipes with folate over 50")
+
+    assert tags["nutrition_filters"] == [
+        {"nutrient": "folate_total", "operator": ">", "value": 50.0}
+    ]
+    assert "r.`folate, total (g)` > ?" in sql["query"]
+    assert sql["params"] == [50.0]
+    assert sql["validation"]["ok"] is True
+
+
+def test_text_to_sql_uses_low_sugar_enrichment_without_category_conflict():
+    tags = tag_entities("low sugar recipes")
+    sql = build_sql_query(tags, transcript="low sugar recipes")
+
+    assert tags["categories"]
+    assert "r.`sugars, total (g)` <= ?" in sql["query"]
+    assert sql["params"] == [10]
+    assert sql["validation"]["ok"] is True
+
+
 def test_schema_linker_resolves_aliases_without_code_field_names():
     config = load_recipe_db_config()
     tag_result = {
@@ -852,7 +928,7 @@ def test_sql_validator_rejects_unknown_fields():
     assert any("mystery_nutrient" in error for error in result.errors)
 
 
-def test_sql_builder_rejects_unproven_sugar_column():
+def test_sql_builder_accepts_pdf_proven_sugar_column():
     sql = build_sql_query(
         {
             "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
@@ -864,12 +940,9 @@ def test_sql_builder_rejects_unproven_sugar_column():
         transcript="low sugar recipes",
     )
 
-    assert sql["validation"]["ok"] is False
-    assert any("Unknown nutrition field 'sugar'" in error for error in sql["validation"]["errors"])
-    assert any(
-        item["code"] == "unresolved_term"
-        for item in sql["validation"].get("error_details", [])
-    )
+    assert sql["validation"]["ok"] is True
+    assert "r.`sugars, total (g)` < ?" in sql["query"]
+    assert sql["params"] == [10.0]
 
 
 def test_sql_validator_rejects_indirect_join_paths_until_supported():

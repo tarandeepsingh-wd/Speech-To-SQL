@@ -238,7 +238,8 @@
     "nutrition_qualifiers": [
       {"terms": ["low carb", "low carbohydrate"], "nutrient": "carbs", "operator": "<=", "value": 50},
       {"terms": ["low calorie", "low calories", "low kcal"], "nutrient": "calories", "operator": "<=", "value": 500},
-      {"terms": ["high protein", "protein rich"], "nutrient": "protein", "operator": ">=", "value": 20}
+      {"terms": ["high protein", "protein rich"], "nutrient": "protein", "operator": ">=", "value": 20},
+      {"terms": ["low sugar", "low sugars", "sugar free", "sugar-free"], "nutrient": "sugar", "operator": "<=", "value": 10}
     ],
     "time_patterns": {
       "between": "\\bbetween\\s+(\\d+(?:\\.\\d+)?)\\s+(?:and|to)\\s+(\\d+(?:\\.\\d+)?)\\s*(?:minutes?|mins?|min|hours?|hrs?|hr)\\b",
