@@ -1,0 +1,510 @@
+-- RecipeDB 2.0 SQL schema contract for Speech-to-SQL.
+--
+-- Source evidence:
+-- - Recipe_db2.0 schema PDF shared by the user.
+-- - MongoDB Atlas index screenshots shared by the user.
+--
+-- Important:
+-- - This is a logical SQL contract over MongoDB collections.
+-- - MongoDB does not declare foreign keys here.
+-- - Relationship lines below are index-supported/inferred assumptions, not
+--   guaranteed FK constraints.
+-- - Do not treat this as a production migration until sample-data join checks
+--   verify the relationships.
+-- - Runtime safety, KG metadata, allowed operators, and join policy live in
+--   config/sql_schema.json.
+
+CREATE TABLE `RecipeDB_ingredient_flavor` (
+  `_id` TEXT,
+  `IngID` TEXT,
+  `ingid` TEXT,
+  `ingredient` TEXT,
+  `frequency` TEXT,
+  `generic_name` TEXT,
+  `wikilink` TEXT,
+  `wikiimage` TEXT,
+  `Dietrx_Category` TEXT,
+  `dietrx_category` TEXT,
+  `flavor_db_link` TEXT,
+  `flavordb_id` TEXT,
+  `flavordb_category` TEXT,
+  `diet_rx_link` TEXT
+);
+
+CREATE UNIQUE INDEX `idx_RecipeDB_ingredient_flavor_id`
+  ON `RecipeDB_ingredient_flavor` (`_id`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_flavor_IngID_1`
+  ON `RecipeDB_ingredient_flavor` (`IngID`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_flavor_Dietrx_Category_1_IngID_1`
+  ON `RecipeDB_ingredient_flavor` (`Dietrx_Category`, `IngID`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_flavor_Dietrx_Category_1`
+  ON `RecipeDB_ingredient_flavor` (`Dietrx_Category`);
+
+CREATE TABLE `RecipeDB_ingredient_nutrition` (
+  `_id` TEXT,
+  `Recipe_id` BIGINT,
+  `recipe_no` BIGINT,
+  `ndb_id` BIGINT,
+  `ingredient` TEXT,
+  `calories` DOUBLE,
+  `ash (g)` DOUBLE,
+  `calcium, ca (mg)` DOUBLE,
+  `carbohydrate, by difference (g)` DOUBLE,
+  `cholesterol (mg)` DOUBLE,
+  `copper, cu (mg)` DOUBLE,
+  `energy (kj)` DOUBLE,
+  `energy (kcal)` DOUBLE,
+  `fatty acids, total monounsaturated (g)` DOUBLE,
+  `fatty acids, total polyunsaturated (g)` DOUBLE,
+  `fatty acids, total saturated (g)` DOUBLE,
+  `fiber, total dietary (g)` DOUBLE,
+  `folate, dfe (g)` DOUBLE,
+  `folate, food (g)` DOUBLE,
+  `folate, total (g)` DOUBLE,
+  `folic acid (g)` DOUBLE,
+  `iron, fe (mg)` DOUBLE,
+  `magnesium, mg (mg)` DOUBLE,
+  `manganese, mn (mg)` DOUBLE,
+  `niacin (mg)` DOUBLE,
+  `phosphorus, p (mg)` DOUBLE,
+  `potassium, k (mg)` DOUBLE,
+  `protein (g)` DOUBLE,
+  `riboflavin (mg)` DOUBLE,
+  `selenium, se (g)` DOUBLE,
+  `sodium, na (mg)` DOUBLE,
+  `thiamin (mg)` DOUBLE,
+  `total lipid (fat) (g)` DOUBLE,
+  `vitamin a, iu (iu)` DOUBLE,
+  `vitamin b-12 (g)` DOUBLE,
+  `vitamin b-6 (mg)` DOUBLE,
+  `vitamin c, total ascorbic acid (mg)` DOUBLE,
+  `vitamin d (iu)` DOUBLE,
+  `vitamin e (alpha-tocopherol) (mg)` DOUBLE,
+  `vitamin k (phylloquinone) (g)` DOUBLE,
+  `water (g)` DOUBLE,
+  `zinc, zn (mg)` DOUBLE,
+  `fatty acids, total saturated 14:0 (g)` DOUBLE,
+  `fatty acids, total saturated 16:0 (g)` DOUBLE,
+  `fatty acids, total saturated 16:1 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:0 (g)` DOUBLE,
+  `fatty acids, total saturated 18:1 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:2 undifferentiated (g)` DOUBLE,
+  `phytosterols (mg)` DOUBLE,
+  `retinol (g)` DOUBLE,
+  `vitamin a, rae (g)` DOUBLE,
+  `vitamin d (d2 + d3) (g)` DOUBLE,
+  `alcohol, ethyl (g)` DOUBLE,
+  `caffeine (mg)` DOUBLE,
+  `carotene, alpha (g)` DOUBLE,
+  `carotene, beta (g)` DOUBLE,
+  `choline, total (mg)` DOUBLE,
+  `cryptoxanthin, beta (g)` DOUBLE,
+  `fatty acids, total saturated 10:0 (g)` DOUBLE,
+  `fatty acids, total saturated 12:0 (g)` DOUBLE,
+  `fatty acids, total saturated 18:3 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:4 (g)` DOUBLE,
+  `fatty acids, total saturated 20:1 (g)` DOUBLE,
+  `fatty acids, total saturated 20:4 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 20:5 n-3 (epa) (g)` DOUBLE,
+  `fatty acids, total saturated 22:1 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 22:5 n-3 (dpa) (g)` DOUBLE,
+  `fatty acids, total saturated 22:6 n-3 (dha) (g)` DOUBLE,
+  `fatty acids, total saturated 4:0 (g)` DOUBLE,
+  `fatty acids, total saturated 6:0 (g)` DOUBLE,
+  `fatty acids, total saturated 8:0 (g)` DOUBLE,
+  `lutein + zeaxanthin (g)` DOUBLE,
+  `lycopene (g)` DOUBLE,
+  `sugars, total (g)` DOUBLE,
+  `theobromine (mg)` DOUBLE,
+  `vitamin b-12, added (g)` DOUBLE,
+  `vitamin e, added (mg)` DOUBLE,
+  `alanine (g)` DOUBLE,
+  `arginine (g)` DOUBLE,
+  `aspartic acid (g)` DOUBLE,
+  `betaine (mg)` DOUBLE,
+  `cystine (g)` DOUBLE,
+  `dihydrophylloquinone (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 15:0 (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 17:0 (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 17:1 (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:1 c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:1 t (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:3 n-6 c,c,c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 20:2 n-6 c,c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 20:3 undifferentiated (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 24:0 (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 24:1 c (g)` DOUBLE,
+  `fatty acids, total saturated 14:1 (g)` DOUBLE,
+  `fatty acids, total saturated 20:0 (g)` DOUBLE,
+  `fatty acids, total saturated 22:0 (g)` DOUBLE,
+  `fatty acids, total trans (g)` DOUBLE,
+  `fatty acids, total trans-monoenoic (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 13:0 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 15:1 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 18:3 n-3 c,c,c (ala) (g)` DOUBLE,
+  `fluoride, f (g)` DOUBLE,
+  `fructose (g)` DOUBLE,
+  `galactose (g)` DOUBLE,
+  `glucose (dextrose) (g)` DOUBLE,
+  `glutamic acid (g)` DOUBLE,
+  `glycine (g)` DOUBLE,
+  `histidine (g)` DOUBLE,
+  `hydroxyproline (g)` DOUBLE,
+  `isoleucine (g)` DOUBLE,
+  `lactose (g)` DOUBLE,
+  `leucine (g)` DOUBLE,
+  `lysine (g)` DOUBLE,
+  `maltose (g)` DOUBLE,
+  `methionine (g)` DOUBLE,
+  `pantothenic acid (mg)` DOUBLE,
+  `phenylalanine (g)` DOUBLE,
+  `proline (g)` DOUBLE,
+  `serine (g)` DOUBLE,
+  `sucrose (g)` DOUBLE,
+  `threonine (g)` DOUBLE,
+  `tocopherol, beta (mg)` DOUBLE,
+  `tocopherol, delta (mg)` DOUBLE,
+  `tocopherol, gamma (mg)` DOUBLE,
+  `tocotrienol, alpha (mg)` DOUBLE,
+  `tocotrienol, beta (mg)` DOUBLE,
+  `tocotrienol, delta (mg)` DOUBLE,
+  `tocotrienol, gamma (mg)` DOUBLE,
+  `tryptophan (g)` DOUBLE,
+  `tyrosine (g)` DOUBLE,
+  `valine (g)` DOUBLE,
+  `starch (g)` DOUBLE,
+  `beta-sitosterol (mg)` DOUBLE,
+  `campesterol (mg)` DOUBLE,
+  `stigmasterol (mg)` DOUBLE,
+  `fatty acids, total polyunsaturated 16:1 c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 16:1 t (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 clas (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 n-6 c,c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 t,t (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 22:1 c (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 20:3 n-3 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 20:3 n-6 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 20:4 n-6 (g)` DOUBLE,
+  `vitamin d3 (cholecalciferol) (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 t not further defined (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 18:1-11 t (18:1t n-7) (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 22:4 (g)` DOUBLE,
+  `menaquinone-4 (g)` DOUBLE,
+  `vitamin d2 (ergocalciferol) (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 22:1 t (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 18:3i (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 i (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 21:5 (g)` DOUBLE,
+  `adjusted protein (g)` TEXT
+);
+
+CREATE UNIQUE INDEX `idx_RecipeDB_ingredient_nutrition_id`
+  ON `RecipeDB_ingredient_nutrition` (`_id`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_nutrition_Recipe_id_1`
+  ON `RecipeDB_ingredient_nutrition` (`Recipe_id`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_nutrition_recipe_no_1`
+  ON `RecipeDB_ingredient_nutrition` (`recipe_no`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_nutrition_ingredient_1`
+  ON `RecipeDB_ingredient_nutrition` (`ingredient`);
+
+CREATE TABLE `RecipeDB_ingredient_phrase` (
+  `_id` TEXT,
+  `recipe_no` TEXT,
+  `Recipe_id` TEXT,
+  `ingredient_phrase` TEXT,
+  `ingredient` TEXT,
+  `ingredient_lower` TEXT,
+  `matching_values` TEXT,
+  `quantity` TEXT,
+  `unit` TEXT,
+  `ing_id` TEXT,
+  `ndb_id` TEXT,
+  `m_or_a` TEXT,
+  `state` TEXT,
+  `size` TEXT,
+  `temp` TEXT,
+  `df` TEXT
+);
+
+CREATE UNIQUE INDEX `idx_RecipeDB_ingredient_phrase_id`
+  ON `RecipeDB_ingredient_phrase` (`_id`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_ingredient_1`
+  ON `RecipeDB_ingredient_phrase` (`ingredient`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_recipe_no_1`
+  ON `RecipeDB_ingredient_phrase` (`recipe_no`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_recipe_no_1_ingredient_1`
+  ON `RecipeDB_ingredient_phrase` (`recipe_no`, `ingredient`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_Recipe_id_1`
+  ON `RecipeDB_ingredient_phrase` (`Recipe_id`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_matching_values_1`
+  ON `RecipeDB_ingredient_phrase` (`matching_values`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_matching_values_1_ingredient_1`
+  ON `RecipeDB_ingredient_phrase` (`matching_values`, `ingredient`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_ingredient_1_matching_values_1`
+  ON `RecipeDB_ingredient_phrase` (`ingredient`, `matching_values`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_ing_id_1_recipe_no_1`
+  ON `RecipeDB_ingredient_phrase` (`ing_id`, `recipe_no`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_ingredient_1_recipe_no_1`
+  ON `RecipeDB_ingredient_phrase` (`ingredient`, `recipe_no`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_ing_id_1`
+  ON `RecipeDB_ingredient_phrase` (`ing_id`);
+
+CREATE INDEX `idx_RecipeDB_ingredient_phrase_ingredient_lower_1`
+  ON `RecipeDB_ingredient_phrase` (`ingredient_lower`);
+
+CREATE TABLE `RecipeDB_instructions` (
+  `_id` TEXT,
+  `Recipe_id` TEXT,
+  `recipe_id` TEXT,
+  `steps` TEXT
+);
+
+CREATE UNIQUE INDEX `idx_RecipeDB_instructions_id`
+  ON `RecipeDB_instructions` (`_id`);
+
+CREATE INDEX `idx_RecipeDB_instructions_Recipe_id_1`
+  ON `RecipeDB_instructions` (`Recipe_id`);
+
+CREATE TABLE `RecipeDB_micronutrients_v1` (
+  `_id` TEXT,
+  `Recipe_id` BIGINT,
+  `recipe_index` BIGINT,
+  `calories` DOUBLE,
+  `cook_time` BIGINT,
+  `prep_time` BIGINT,
+  `servings` BIGINT,
+  `recipe_title` TEXT,
+  `total_time` BIGINT,
+  `url` TEXT,
+  `region` TEXT,
+  `sub_region` TEXT,
+  `continent` TEXT,
+  `source` TEXT,
+  `img_url` TEXT,
+  `processes` TEXT,
+  `utensils` TEXT,
+  `vegan` TEXT,
+  `pescetarian` TEXT,
+  `ovo_vegetarian` TEXT,
+  `lacto_vegetarian` TEXT,
+  `ovo_lacto_vegetarian` TEXT,
+  `adjusted protein (g)` DOUBLE,
+  `alanine (g)` DOUBLE,
+  `alcohol, ethyl (g)` DOUBLE,
+  `arginine (g)` DOUBLE,
+  `ash (g)` DOUBLE,
+  `aspartic acid (g)` DOUBLE,
+  `beta-sitosterol (mg)` DOUBLE,
+  `betaine (mg)` DOUBLE,
+  `caffeine (mg)` DOUBLE,
+  `calcium, ca (mg)` DOUBLE,
+  `campesterol (mg)` DOUBLE,
+  `carbohydrate, by difference (g)` DOUBLE,
+  `carotene, alpha (g)` DOUBLE,
+  `carotene, beta (g)` DOUBLE,
+  `cholesterol (mg)` DOUBLE,
+  `choline, total (mg)` DOUBLE,
+  `copper, cu (mg)` DOUBLE,
+  `cryptoxanthin, beta (g)` DOUBLE,
+  `cystine (g)` DOUBLE,
+  `dihydrophylloquinone (g)` DOUBLE,
+  `energy (kj)` DOUBLE,
+  `energy (kcal)` DOUBLE,
+  `fatty acids, total monounsaturated (g)` DOUBLE,
+  `fatty acids, total polyunsaturated (g)` DOUBLE,
+  `fatty acids, total saturated (g)` DOUBLE,
+  `fatty acids, total trans (g)` DOUBLE,
+  `fiber, total dietary (g)` DOUBLE,
+  `folate, dfe (g)` DOUBLE,
+  `folate, food (g)` DOUBLE,
+  `folate, total (g)` DOUBLE,
+  `folic acid (g)` DOUBLE,
+  `iron, fe (mg)` DOUBLE,
+  `leucine (g)` DOUBLE,
+  `lysine (g)` DOUBLE,
+  `magnesium, mg (mg)` DOUBLE,
+  `manganese, mn (mg)` DOUBLE,
+  `methionine (g)` DOUBLE,
+  `niacin (mg)` DOUBLE,
+  `pantothenic acid (mg)` DOUBLE,
+  `phenylalanine (g)` DOUBLE,
+  `phosphorus, p (mg)` DOUBLE,
+  `potassium, k (mg)` DOUBLE,
+  `proline (g)` DOUBLE,
+  `protein (g)` DOUBLE,
+  `retinol (g)` DOUBLE,
+  `riboflavin (mg)` DOUBLE,
+  `selenium, se (g)` DOUBLE,
+  `sodium, na (mg)` DOUBLE,
+  `thiamin (mg)` DOUBLE,
+  `total lipid (fat) (g)` DOUBLE,
+  `tryptophan (g)` DOUBLE,
+  `tyrosine (g)` DOUBLE,
+  `valine (g)` DOUBLE,
+  `vitamin a, iu (iu)` DOUBLE,
+  `vitamin b-12 (g)` DOUBLE,
+  `vitamin b-6 (mg)` DOUBLE,
+  `vitamin c, total ascorbic acid (mg)` DOUBLE,
+  `vitamin d (d2 + d3) (g)` DOUBLE,
+  `vitamin d (iu)` DOUBLE,
+  `vitamin e (alpha-tocopherol) (mg)` DOUBLE,
+  `vitamin k (phylloquinone) (g)` DOUBLE,
+  `water (g)` DOUBLE,
+  `zinc, zn (mg)` DOUBLE,
+  `fatty acids, total polyunsaturated 15:0 (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 16:1 c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 16:1 t (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 17:0 (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 17:1 (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:1 c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:1 t (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 clas (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 i (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 n-6 c,c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 t not further defined (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:2 t,t (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 18:3 n-6 c,c,c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 20:2 n-6 c,c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 20:3 undifferentiated (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 22:1 c (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 22:1 t (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 24:0 (g)` DOUBLE,
+  `fatty acids, total polyunsaturated 24:1 c (g)` DOUBLE,
+  `fatty acids, total saturated 10:0 (g)` DOUBLE,
+  `fatty acids, total saturated 12:0 (g)` DOUBLE,
+  `fatty acids, total saturated 14:0 (g)` DOUBLE,
+  `fatty acids, total saturated 14:1 (g)` DOUBLE,
+  `fatty acids, total saturated 16:0 (g)` DOUBLE,
+  `fatty acids, total saturated 16:1 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:0 (g)` DOUBLE,
+  `fatty acids, total saturated 18:1 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:2 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:3 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:4 (g)` DOUBLE,
+  `fatty acids, total saturated 20:0 (g)` DOUBLE,
+  `fatty acids, total saturated 20:1 (g)` DOUBLE,
+  `fatty acids, total saturated 20:4 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 20:5 n-3 (epa) (g)` DOUBLE,
+  `fatty acids, total saturated 22:0 (g)` DOUBLE,
+  `fatty acids, total saturated 22:1 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 22:5 n-3 (dpa) (g)` DOUBLE,
+  `fatty acids, total saturated 22:6 n-3 (dha) (g)` DOUBLE,
+  `fatty acids, total saturated 4:0 (g)` DOUBLE,
+  `fatty acids, total saturated 6:0 (g)` DOUBLE,
+  `fatty acids, total saturated 8:0 (g)` DOUBLE,
+  `fatty acids, total trans-monoenoic (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 13:0 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 15:1 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 18:1-11 t (18:1t n-7) (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 18:3 n-3 c,c,c (ala) (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 18:3i (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 20:3 n-3 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 20:3 n-6 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 20:4 n-6 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 21:5 (g)` DOUBLE,
+  `fatty acids, total trans-polyenoic 22:4 (g)` DOUBLE,
+  `fluoride, f (g)` DOUBLE,
+  `fructose (g)` DOUBLE,
+  `galactose (g)` DOUBLE,
+  `glucose (dextrose) (g)` DOUBLE,
+  `glutamic acid (g)` DOUBLE,
+  `glycine (g)` DOUBLE,
+  `histidine (g)` DOUBLE,
+  `hydroxyproline (g)` DOUBLE,
+  `isoleucine (g)` DOUBLE,
+  `lactose (g)` DOUBLE,
+  `lutein + zeaxanthin (g)` DOUBLE,
+  `lycopene (g)` DOUBLE,
+  `maltose (g)` DOUBLE,
+  `menaquinone-4 (g)` DOUBLE,
+  `phytosterols (mg)` DOUBLE,
+  `serine (g)` DOUBLE,
+  `starch (g)` DOUBLE,
+  `stigmasterol (mg)` DOUBLE,
+  `sucrose (g)` DOUBLE,
+  `sugars, total (g)` DOUBLE,
+  `theobromine (mg)` DOUBLE,
+  `threonine (g)` DOUBLE,
+  `tocopherol, beta (mg)` DOUBLE,
+  `tocopherol, delta (mg)` DOUBLE,
+  `tocopherol, gamma (mg)` DOUBLE,
+  `tocotrienol, alpha (mg)` DOUBLE,
+  `tocotrienol, beta (mg)` DOUBLE,
+  `tocotrienol, delta (mg)` DOUBLE,
+  `tocotrienol, gamma (mg)` DOUBLE,
+  `vitamin a, rae (g)` DOUBLE,
+  `vitamin b-12, added (g)` DOUBLE,
+  `vitamin d2 (ergocalciferol) (g)` DOUBLE,
+  `vitamin d3 (cholecalciferol) (g)` DOUBLE,
+  `vitamin e, added (mg)` DOUBLE
+);
+
+CREATE UNIQUE INDEX `idx_RecipeDB_micronutrients_v1_id`
+  ON `RecipeDB_micronutrients_v1` (`_id`);
+
+CREATE UNIQUE INDEX `idx_RecipeDB_micronutrients_v1_Recipe_id_1`
+  ON `RecipeDB_micronutrients_v1` (`Recipe_id`);
+
+CREATE TABLE `recipes` (
+  `_id` TEXT,
+  `recipe_id` TEXT,
+  `calories` TEXT,
+  `cook_time` TEXT,
+  `prep_time` TEXT,
+  `servings` TEXT,
+  `recipe_title` TEXT,
+  `total_time` TEXT,
+  `url` TEXT,
+  `region` TEXT,
+  `sub_region` TEXT,
+  `continent` TEXT,
+  `source` TEXT,
+  `img_url` TEXT,
+  `carbohydrate by difference (g)` TEXT,
+  `energy (kcal)` TEXT,
+  `protein (g)` TEXT,
+  `total lipid (fat) (g)` TEXT,
+  `processes` TEXT,
+  `vegan` TEXT,
+  `pescetarian` TEXT,
+  `ovo_vegetarian` TEXT,
+  `lacto_vegetarian` TEXT,
+  `ovo_lacto_vegetarian` TEXT,
+  `utensils` TEXT
+);
+
+CREATE UNIQUE INDEX `idx_recipes_id`
+  ON `recipes` (`_id`);
+
+-- Relationship contract used by config/sql_schema.json
+-- recipe_to_ingredient_phrase_by_recipe_no: RecipeDB_ingredient_phrase.recipe_no -> RecipeDB_micronutrients_v1.Recipe_id [many_to_one, index_supported]
+-- recipe_to_ingredient_phrase_by_recipe_id: RecipeDB_ingredient_phrase.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id [many_to_one, index_supported]
+-- recipe_to_ingredient_nutrition_by_recipe_no: RecipeDB_ingredient_nutrition.recipe_no -> RecipeDB_micronutrients_v1.Recipe_id [many_to_one, index_supported]
+-- recipe_to_ingredient_nutrition_by_recipe_id: RecipeDB_ingredient_nutrition.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id [many_to_one, index_supported]
+-- recipe_to_instructions: RecipeDB_instructions.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id [one_or_many_to_one, index_supported]
+-- ingredient_phrase_to_flavor: RecipeDB_ingredient_phrase.ing_id -> RecipeDB_ingredient_flavor.IngID [many_to_one, index_supported]
+-- ingredient_phrase_to_ingredient_nutrition: RecipeDB_ingredient_phrase.ndb_id -> RecipeDB_ingredient_nutrition.ndb_id [many_to_one, inferred]
+-- ingredient_nutrition_to_ingredient_phrase_by_recipe_and_ingredient: RecipeDB_ingredient_nutrition.recipe_no -> RecipeDB_ingredient_phrase.recipe_no [many_to_many, inferred]
+
+-- Runtime safety constraints live in config/sql_schema.json:
+-- allowed operators/quantifiers, predicate-count limits, numeric value ranges,
+-- preferred/fallback joins, semantic conflict guards, schema-driven action/
+-- utensil filters, field_catalog, knowledge_graph, and relaxation policy priority.

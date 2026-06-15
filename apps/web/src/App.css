@@ -1,0 +1,243 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1c2430;
+  --muted: #687386;
+  --line: #d9dee7;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --danger: #b42318;
+  --danger-bg: #fff1f0;
+  --code: #111827;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
+}
+
+.query-panel,
+.result-panel {
+  padding: 28px;
+}
+
+.query-panel {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+
+.brand-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+h3 {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 16px 0 8px;
+  text-transform: uppercase;
+}
+
+.status-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+.query-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+  padding: 12px;
+}
+
+textarea:focus {
+  border-color: var(--accent);
+  outline: 3px solid rgba(37, 99, 235, 0.14);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 10px 12px;
+}
+
+button[type="submit"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button[type="submit"]:hover {
+  background: var(--accent-dark);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.examples {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.examples button {
+  text-align: left;
+}
+
+.result-panel {
+  overflow: auto;
+}
+
+.empty-state,
+.error-box,
+.detail-block,
+.summary-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.empty-state,
+.error-box {
+  color: var(--muted);
+  padding: 22px;
+}
+
+.error-box {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summary-card {
+  padding: 14px;
+}
+
+.summary-card span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.summary-card strong {
+  display: block;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.detail-block {
+  margin-bottom: 16px;
+  padding: 18px;
+}
+
+pre {
+  background: var(--code);
+  border-radius: 8px;
+  color: #f8fafc;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+  overflow: auto;
+  padding: 14px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .query-panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
