@@ -205,7 +205,7 @@ def _normalize_schema_key(value: str) -> str:
 
 _NUTRITION_PATTERN = re.compile(
     r"(?P<op>under|below|less than|at most|"
-    r"over|above|more than|at least|"
+    r"over|above|more than|greater than|higher than|larger than|at least|"
     r"around|about|approximately)?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
     r"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?\s*"
@@ -215,9 +215,9 @@ _NUTRITION_PATTERN = re.compile(
 
 _NUTRITION_NUTRIENT_FIRST_PATTERN = re.compile(
     r"(?P<nutrient>[a-z][a-z-]*)\s*"
-    r"(?:se\s+)?"
+    r"(?:se\s+)?(?:is|are|was|were|has|have|contains?|with|of)?\s*"
     r"(?P<op>under|below|less than|at most|"
-    r"over|above|more than|at least|"
+    r"over|above|more than|greater than|higher than|larger than|at least|"
     r"around|about|approximately)?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
     r"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
@@ -233,13 +233,14 @@ _NUTRIENT_AFTER_PATTERN = re.compile(
 
 _OP_MAP = {
     "under": "<", "below": "<", "less than": "<", "at most": "<=",
-    "over": ">",  "above": ">", "more than": ">", "at least": ">=",
+    "over": ">",  "above": ">", "more than": ">", "greater than": ">",
+    "higher than": ">", "larger than": ">", "at least": ">=",
     "around": "~", "about": "~", "approximately": "~",
     None: "=",
 }
 _OPERATOR_WORD_PATTERN = (
     r"under|below|less\s+than|at\s+most|"
-    r"over|above|more\s+than|at\s+least|"
+    r"over|above|more\s+than|greater\s+than|higher\s+than|larger\s+than|at\s+least|"
     r"around|about|approximately"
 )
 
@@ -275,6 +276,7 @@ def _dynamic_nutrient_patterns() -> tuple[tuple[str, str, re.Pattern, re.Pattern
         alias_pattern = r"\b" + r"[\s,()+-]+".join(re.escape(token) for token in tokens) + r"\b"
         nutrient_first = re.compile(
             rf"(?P<nutrient>{alias_pattern})\s+"
+            rf"(?:(?:is|are|was|were|has|have|contains?|with|of)\s+)?"
             rf"(?P<op>{_OPERATOR_WORD_PATTERN})\s+"
             rf"(?P<value>\d+(?:\.\d+)?)\s*"
             rf"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
@@ -284,6 +286,7 @@ def _dynamic_nutrient_patterns() -> tuple[tuple[str, str, re.Pattern, re.Pattern
             rf"(?P<op>{_OPERATOR_WORD_PATTERN})\s+"
             rf"(?P<value>\d+(?:\.\d+)?)\s*"
             rf"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?\s+"
+            rf"(?:of\s+)?"
             rf"(?P<nutrient>{alias_pattern})",
             re.IGNORECASE,
         )
@@ -500,7 +503,7 @@ def _detect_nutrition_filters(text: str) -> list:
         nutrient = item["nutrient"]
         operator = item["operator"]
         value = item["value"]
-        semantic_key = (nutrient, operator, value)
+        semantic_key = (nutrient, operator, value, item["span"])
         if semantic_key in seen_semantic:
             continue
         seen_semantic.add(semantic_key)
@@ -524,11 +527,14 @@ def _detect_nutrition_filters(text: str) -> list:
             nutrient = _normalize_nutrient(m.group("nutrient"))
             if not nutrient:
                 continue
-            operator = _OP_MAP.get(
-                m.group("op").lower() if m.group("op") else None, "="
+            op_text = (
+                re.sub(r"\s+", " ", m.group("op").lower()).strip()
+                if m.group("op")
+                else None
             )
+            operator = _OP_MAP.get(op_text, "=")
             value = float(m.group("value"))
-            semantic_key = (nutrient, operator, value)
+            semantic_key = (nutrient, operator, value, m.span())
             if semantic_key in seen_semantic:
                 continue
             seen_semantic.add(semantic_key)
@@ -541,7 +547,7 @@ def _detect_nutrition_filters(text: str) -> list:
     for item in _dynamic_nutrient_presence_matches(text):
         if set(range(item["span"][0], item["span"][1])) & used_positions:
             continue
-        semantic_key = (item["nutrient"], item["operator"], item["value"])
+        semantic_key = (item["nutrient"], item["operator"], item["value"], item["span"])
         if semantic_key in seen_semantic:
             continue
         seen_semantic.add(semantic_key)
@@ -555,7 +561,7 @@ def _detect_nutrition_filters(text: str) -> list:
     for item in _dynamic_nutrition_group_matches(text):
         if set(range(item["span"][0], item["span"][1])) & used_positions:
             continue
-        semantic_key = (item["nutrient_group"], item["operator"], item["value"])
+        semantic_key = (item["nutrient_group"], item["operator"], item["value"], item["span"])
         if semantic_key in seen_semantic:
             continue
         seen_semantic.add(semantic_key)
@@ -736,6 +742,26 @@ def _detect_categories(text: str) -> list:
             found.append({"term": term, "category": category_synonyms[term]})
 
     return found
+
+
+def _category_claimed_spans(text: str, categories: list[dict]) -> list[tuple[int, int]]:
+    text_lower = text.lower()
+    spans: list[tuple[int, int]] = []
+    used: set[int] = set()
+    for item in categories:
+        term = str(item.get("term") or "").strip().lower()
+        if not term:
+            continue
+        if len(re.findall(r"[a-z0-9]+", term)) < 2:
+            continue
+        pattern = re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
+        for match in pattern.finditer(text_lower):
+            positions = set(range(match.start(), match.end()))
+            if positions & used:
+                continue
+            used |= positions
+            spans.append((match.start(), match.end() - 1))
+    return spans
 
 
 def _category_synonyms() -> dict[str, str]:
@@ -926,6 +952,7 @@ def tag_entities(text: str) -> dict:
     # Mask nutrition, dietary, and utensil spans so ingredient extraction stays
     # independent from the SQL operator layer while avoiding known false hits.
     claimed_spans = [m["span"] for m in utensil_matches]
+    claimed_spans.extend(_category_claimed_spans(text, categories))
     claimed_spans.extend(m["span"] for m in dietary_matches)
     claimed_spans.extend(
         m["span"]

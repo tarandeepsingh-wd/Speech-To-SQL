@@ -15,6 +15,15 @@ WORD_BOUNDARIES = set(" ,.()\n\t!?;:'\"")
 _LEXICON_PATH = Path(__file__).parents[1] / "data" / "sql_operator_lexicon.json"
 
 _TOP_N_RE = re.compile(r"\b(top|first|limit)\s+\d+\b", re.IGNORECASE)
+_TOTAL_SCOPE_PATTERN = re.compile(
+    r"^\s+(?:"
+    r"recipe(?:[-\s]+level)?|full\s+recipe|whole\s+recipe|per\s+recipe|"
+    r"calor(?:y|ies)|kcal|energy|protein|carbs?|carbohydrates?|fat|"
+    r"fiber|fibre|sodium|salt|sugar|cholesterol|magnesium|folate|"
+    r"thiamin|vitamin(?:\s+[a-z0-9]+)?|time|total\s+time|cook\s+time|prep\s+time"
+    r")\b",
+    re.IGNORECASE,
+)
 
 def _load_lexicon() -> dict:
     with open(_LEXICON_PATH, "r", encoding="utf-8") as f:
@@ -279,11 +288,22 @@ def _context_supports(operator: SqlOperator, all_ops: list[SqlOperator], text: s
         window = text[max(0, operator.span[0] - 16):operator.span[1] + 17].lower()
         return bool(re.search(r"\b(one of|not in|where|with|whose)\b", window))
     if operator.type == "AGG":
+        if _is_total_scope_phrase(operator, text):
+            return False
         if operator.span[0] == 0:
             return True
         window = text[max(0, operator.span[0] - 16):operator.span[1] + 17].lower()
         return bool(re.search(r"\b(of|by|where|select|show|get|find|what|list|give|tell|which|fetch)\b", window))
     return operator.confidence >= 0.80
+
+
+def _is_total_scope_phrase(operator: SqlOperator, text: str) -> bool:
+    if operator.canonical != "SUM":
+        return False
+    if operator.text.strip().lower() != "total":
+        return False
+    suffix = text[operator.span[1] + 1:operator.span[1] + 80]
+    return bool(_TOTAL_SCOPE_PATTERN.match(suffix))
 
 
 def extract_sql_operators(text: str) -> list[dict]:

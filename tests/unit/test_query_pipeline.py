@@ -398,6 +398,97 @@ def test_seafood_category_and_ingredient_level_cholesterol_use_correct_sources()
     assert "`RecipeDB_ingredient_flavor`" in sql["query"]
 
 
+def test_ingredient_level_numeric_nutrition_with_copula_uses_ingredient_table():
+    query = "Show recipes with salmon where the ingredient-level protein is above 20g."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert nutrition["protein"]["table_source"] == "ingredient_nutrition"
+    assert nutrition["protein"]["operator"] == ">"
+    assert nutrition["protein"]["value"] == 20.0
+    assert sql["validation"]["ok"] is True
+    assert "`RecipeDB_ingredient_phrase`" in sql["query"]
+    assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
+    assert "inut1.`protein (g)` > ?" in sql["query"]
+
+
+def test_greater_than_copula_numeric_nutrition_keeps_threshold():
+    query = "Show recipes with lentil where ingredient-level thiamin is greater than 0.2 mg."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert nutrition["thiamin"]["table_source"] == "ingredient_nutrition"
+    assert nutrition["thiamin"]["operator"] == ">"
+    assert nutrition["thiamin"]["value"] == 0.2
+    assert sql["validation"]["ok"] is True
+    assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
+    assert "inut1.`thiamin (mg)` > ?" in sql["query"]
+
+
+def test_total_recipe_vitamin_c_with_copula_stays_recipe_level():
+    query = "Show recipes with tomato where the instructions mention saute and total recipe vitamin C is above 10 mg."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert nutrition["vitamin_c"]["table_source"] == "nutrition"
+    assert nutrition["vitamin_c"]["operator"] == ">"
+    assert nutrition["vitamin_c"]["value"] == 10.0
+    assert sql["validation"]["ok"] is True
+    assert "r.`vitamin c, total ascorbic acid (mg)` > ?" in sql["query"]
+    assert "`RecipeDB_instructions`" in sql["query"]
+    assert "ins1.`steps` LIKE ?" in sql["query"]
+
+
+def test_total_recipe_scope_does_not_become_sum_aggregate():
+    query = "Show recipes with salmon where total recipe calories are under 500 and ingredient-level protein is above 20g."
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert all(item.get("canonical") != "SUM" for item in tags["sql_operators"])
+    assert nutrition["calories"]["table_source"] == "nutrition"
+    assert nutrition["protein"]["table_source"] == "ingredient_nutrition"
+    assert sql["validation"]["ok"] is True
+    assert "r.`calories` < ?" in sql["query"]
+    assert "inut1.`protein (g)` > ?" in sql["query"]
+
+
+def test_same_nutrient_threshold_can_exist_at_recipe_and_ingredient_level():
+    query = "Find recipes with lemon juice where total recipe vitamin C is above 10 mg and ingredient-level vitamin C is above 10 mg."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["lemon juice"]
+    vitamin_c_filters = [
+        item for item in prepared["nutrition_filters"]
+        if item["nutrient"] == "vitamin_c"
+    ]
+    assert [item["table_source"] for item in vitamin_c_filters] == [
+        "nutrition",
+        "ingredient_nutrition",
+    ]
+    assert sql["validation"]["ok"] is True
+    assert "r.`vitamin c, total ascorbic acid (mg)` > ?" in sql["query"]
+    assert "inut1.`vitamin c, total ascorbic acid (mg)` > ?" in sql["query"]
+
+
+def test_leafy_green_category_does_not_create_grain_ingredient():
+    query = "Find recipes with spinach where spinach is leafy green and steps mention chop."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["spinach"]
+    assert prepared["category_filters"][0]["value"] == "leafy green"
+    assert sql["validation"]["ok"] is True
+    assert "%grain%" not in sql["params"]
+    assert "`RecipeDB_ingredient_flavor`" in sql["query"]
+    assert "`RecipeDB_instructions`" in sql["query"]
+
+
 def test_flavor_category_and_instruction_mentions_use_joined_tables():
     query = "Show recipes that use garlic, where garlic is categorized as an allium, and the instructions mention saute."
     prepared = prepare_intent(tag_entities(query), transcript=query)

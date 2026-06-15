@@ -33,6 +33,7 @@ _INGREDIENT_SCOPE_TERMS = [
 ]
 
 _RECIPE_SCOPE_TERMS = [
+    "total recipe",
     "recipe level",
     "full recipe",
     "whole recipe",
