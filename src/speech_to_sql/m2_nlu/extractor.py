@@ -210,7 +210,7 @@ _RISKY_CORRECTIONS: dict = {
     r"\bplumb\b":   "plum",
 }
 
-# -- CHANGE: Added phonetically distant ASR variants -------
+# ASR variants that are common enough to rescue explicitly.
 #
 # WHY: Some ASR transcriptions are too far from the canonical
 # form for any phonetic algorithm (metaphone, g2p) to bridge.

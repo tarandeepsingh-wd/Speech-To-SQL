@@ -24,7 +24,13 @@ def build_sql_plan(
     )
 
     relation_counts: dict[str, int] = {}
-    planned_predicates = _add_multi_join_strategies(query_ir, registry, plan)
+    planned_predicates = _add_scoped_ingredient_child_strategies(query_ir, registry, plan)
+    planned_predicates.update(_add_multi_join_strategies(
+        query_ir,
+        registry,
+        plan,
+        planned_predicates,
+    ))
     join_strategy_sources = _join_strategy_sources(query_ir, registry, planned_predicates)
     for predicate in query_ir.predicates:
         if id(predicate) in planned_predicates:
@@ -392,12 +398,16 @@ def _add_multi_join_strategies(
     query_ir: QueryIR,
     registry: SchemaRegistry,
     plan: SqlPlan,
+    skipped_predicates: set[int] | None = None,
 ) -> set[int]:
     skipped: set[int] = set()
+    skipped_predicates = skipped_predicates or set()
     if plan.root_source != "base":
         return skipped
     by_source: dict[str, list[Predicate]] = {}
     for predicate in query_ir.predicates:
+        if id(predicate) in skipped_predicates:
+            continue
         by_source.setdefault(predicate.source, []).append(predicate)
 
     for source, predicates in by_source.items():
@@ -424,6 +434,138 @@ def _add_multi_join_strategies(
             plan.join_assumptions.append(join_assumption)
         skipped.update(id(predicate) for predicate in include_predicates)
     return skipped
+
+
+def _add_scoped_ingredient_child_strategies(
+    query_ir: QueryIR,
+    registry: SchemaRegistry,
+    plan: SqlPlan,
+) -> set[int]:
+    if plan.root_source != "base":
+        return set()
+
+    ingredient_relation = registry.relation("ingredients")
+    if not ingredient_relation:
+        return set()
+
+    ingredient_predicates = [
+        predicate for predicate in query_ir.predicates
+        if predicate.source == "ingredients"
+        and predicate.quantifier == "exists"
+        and predicate.operator.upper() == "="
+        and len(predicate.values) == 1
+        and _uses_relation_match_strategy(predicate, registry, ingredient_relation)
+    ]
+    if len(ingredient_predicates) != 1:
+        return set()
+
+    parent_join = registry.relationship_for_relation("ingredients")
+    if not parent_join or not registry.relationship_is_direct_to_base("ingredients"):
+        return set()
+
+    skipped: set[int] = set()
+    ingredient_predicate = ingredient_predicates[0]
+    for source, relation in registry.schema.get("relations", {}).items():
+        if relation.get("requires") != "ingredients":
+            continue
+        child_predicates = [
+            predicate for predicate in query_ir.predicates
+            if predicate.source == source
+            and predicate.quantifier == "exists"
+        ]
+        if not child_predicates:
+            continue
+        if _add_scoped_ingredient_child_condition(
+            source,
+            ingredient_predicate,
+            child_predicates,
+            registry,
+            plan,
+        ):
+            skipped.add(id(ingredient_predicate))
+            skipped.update(id(predicate) for predicate in child_predicates)
+    return skipped
+
+
+def _add_scoped_ingredient_child_condition(
+    child_source: str,
+    ingredient_predicate: Predicate,
+    child_predicates: list[Predicate],
+    registry: SchemaRegistry,
+    plan: SqlPlan,
+) -> bool:
+    ingredient_relation = registry.relation("ingredients")
+    child_relation = registry.relation(child_source)
+    parent_join = registry.relationship_for_relation("ingredients")
+    child_join = registry.relationship_for_relation(child_source)
+    if not ingredient_relation or not child_relation or not parent_join or not child_join:
+        return False
+
+    ingredient_alias = f"{ingredient_relation['alias']}_{child_source}_scope"
+    child_alias = f"{child_relation['alias']}_scope"
+    chain_condition = _relationship_condition_between_aliases(
+        child_join,
+        ingredient_relation["table"],
+        ingredient_alias,
+        child_relation["table"],
+        child_alias,
+        registry,
+    )
+    if not chain_condition:
+        return False
+
+    filter_conditions: list[SqlCondition] = []
+    ingredient_condition = _relation_match_condition(
+        ingredient_alias,
+        ingredient_predicate,
+        registry,
+        ingredient_relation,
+    )
+    if not ingredient_condition:
+        return False
+    filter_conditions.append(ingredient_condition)
+
+    for predicate in child_predicates:
+        condition = _relation_match_condition(
+            child_alias,
+            predicate,
+            registry,
+            child_relation,
+        )
+        if not condition:
+            return False
+        filter_conditions.append(condition)
+
+    parent_base_condition = (
+        f"{ingredient_alias}.{registry.quote_identifier(parent_join.from_column)} = "
+        f"{registry.base_alias}.{registry.quote_identifier(parent_join.to_column)}"
+    )
+    params: list[Any] = []
+    where_parts = [parent_base_condition]
+    for condition in filter_conditions:
+        where_parts.append(condition.sql)
+        params.extend(condition.params)
+
+    exists_sql = (
+        f"SELECT 1 FROM {registry.table_sql(ingredient_relation['table'])} AS {ingredient_alias} "
+        f"JOIN {registry.table_sql(child_relation['table'])} AS {child_alias} "
+        f"ON {chain_condition} "
+        f"WHERE {' AND '.join(where_parts)}"
+    )
+    plan.where.append(SqlCondition(
+        f"EXISTS ({exists_sql})",
+        tuple(params),
+        child_source,
+    ))
+
+    join_assumption = {
+        "name": f"{parent_join.name}->{child_join.name}",
+        "path": [parent_join.as_dict(), child_join.as_dict()],
+        "confidence": _path_confidence(parent_join.confidence, child_join.confidence),
+    }
+    if join_assumption not in plan.join_assumptions:
+        plan.join_assumptions.append(join_assumption)
+    return True
 
 
 def _add_and_joins(
@@ -594,6 +736,9 @@ def _relation_match_condition(
     registry: SchemaRegistry,
     relation: dict[str, Any],
 ) -> SqlCondition | None:
+    if relation.get("predicate_mode") == "truthy_flag" or predicate.source == "dietary":
+        return _truthy_relation_condition(alias, predicate, registry, relation)
+
     if not _uses_relation_match_strategy(predicate, registry, relation):
         filter_predicate = _normalized_predicate(predicate, relation)
         column = registry.predicate_column(filter_predicate)
@@ -639,6 +784,35 @@ def _relation_match_condition(
     if len(parts) == 1:
         return SqlCondition(parts[0], tuple(params), predicate.source)
     return SqlCondition("(" + " OR ".join(parts) + ")", tuple(params), predicate.source)
+
+
+def _truthy_relation_condition(
+    alias: str,
+    predicate: Predicate,
+    registry: SchemaRegistry,
+    relation: dict[str, Any],
+) -> SqlCondition | None:
+    columns = relation.get("columns", {})
+    truthy_values = tuple(registry.truthy_values(predicate.source))
+    if not truthy_values:
+        return None
+
+    placeholders = ", ".join("?" for _ in truthy_values)
+    parts: list[str] = []
+    params: list[Any] = []
+    for value in predicate.values:
+        column = columns.get(str(value))
+        if not column:
+            return None
+        parts.append(f"{registry.column_sql(alias, column)} IN ({placeholders})")
+        params.extend(truthy_values)
+
+    if not parts:
+        return None
+    joiner = " OR " if predicate.operator.upper() == "IN" or predicate.quantifier == "or_exists" else " AND "
+    if len(parts) == 1:
+        return SqlCondition(parts[0], tuple(params), predicate.source)
+    return SqlCondition("(" + joiner.join(parts) + ")", tuple(params), predicate.source)
 
 
 def _relation_match_value_conditions(

@@ -1,29 +1,15 @@
--- RecipeDB 2.0 SQL schema contract for Speech-to-SQL.
---
--- Source evidence:
--- - Recipe_db2.0 schema PDF shared by the user.
--- - MongoDB Atlas index screenshots shared by the user.
---
--- Important:
--- - This is a logical SQL contract over MongoDB collections.
--- - MongoDB does not declare foreign keys here.
--- - Relationship lines below are index-supported/inferred assumptions, not
---   guaranteed FK constraints.
--- - Do not treat this as a production migration until sample-data join checks
---   verify the relationships.
--- - Runtime safety, KG metadata, allowed operators, and join policy live in
---   config/sql_schema.json.
+-- RecipeDB schema contract generated from recipe_db_schema.md.
+-- Only physical columns listed in that schema file are included here.
+-- Relationship notes below use only columns that exist in those tables.
 
 CREATE TABLE `RecipeDB_ingredient_flavor` (
   `_id` TEXT,
-  `IngID` TEXT,
   `ingid` TEXT,
   `ingredient` TEXT,
   `frequency` TEXT,
   `generic_name` TEXT,
   `wikilink` TEXT,
   `wikiimage` TEXT,
-  `Dietrx_Category` TEXT,
   `dietrx_category` TEXT,
   `flavor_db_link` TEXT,
   `flavordb_id` TEXT,
@@ -31,25 +17,10 @@ CREATE TABLE `RecipeDB_ingredient_flavor` (
   `diet_rx_link` TEXT
 );
 
-CREATE UNIQUE INDEX `idx_RecipeDB_ingredient_flavor_id`
-  ON `RecipeDB_ingredient_flavor` (`_id`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_flavor_IngID_1`
-  ON `RecipeDB_ingredient_flavor` (`IngID`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_flavor_Dietrx_Category_1_IngID_1`
-  ON `RecipeDB_ingredient_flavor` (`Dietrx_Category`, `IngID`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_flavor_Dietrx_Category_1`
-  ON `RecipeDB_ingredient_flavor` (`Dietrx_Category`);
-
 CREATE TABLE `RecipeDB_ingredient_nutrition` (
   `_id` TEXT,
-  `Recipe_id` BIGINT,
-  `recipe_no` BIGINT,
+  `recipe_id` BIGINT,
   `ndb_id` BIGINT,
-  `ingredient` TEXT,
-  `calories` DOUBLE,
   `ash (g)` DOUBLE,
   `calcium, ca (mg)` DOUBLE,
   `carbohydrate, by difference (g)` DOUBLE,
@@ -60,6 +31,12 @@ CREATE TABLE `RecipeDB_ingredient_nutrition` (
   `fatty acids, total monounsaturated (g)` DOUBLE,
   `fatty acids, total polyunsaturated (g)` DOUBLE,
   `fatty acids, total saturated (g)` DOUBLE,
+  `fatty acids, total saturated 14:0 (g)` DOUBLE,
+  `fatty acids, total saturated 16:0 (g)` DOUBLE,
+  `fatty acids, total saturated 16:1 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:0 (g)` DOUBLE,
+  `fatty acids, total saturated 18:1 undifferentiated (g)` DOUBLE,
+  `fatty acids, total saturated 18:2 undifferentiated (g)` DOUBLE,
   `fiber, total dietary (g)` DOUBLE,
   `folate, dfe (g)` DOUBLE,
   `folate, food (g)` DOUBLE,
@@ -70,32 +47,23 @@ CREATE TABLE `RecipeDB_ingredient_nutrition` (
   `manganese, mn (mg)` DOUBLE,
   `niacin (mg)` DOUBLE,
   `phosphorus, p (mg)` DOUBLE,
+  `phytosterols (mg)` DOUBLE,
   `potassium, k (mg)` DOUBLE,
   `protein (g)` DOUBLE,
+  `retinol (g)` DOUBLE,
   `riboflavin (mg)` DOUBLE,
   `selenium, se (g)` DOUBLE,
   `sodium, na (mg)` DOUBLE,
   `thiamin (mg)` DOUBLE,
   `total lipid (fat) (g)` DOUBLE,
   `vitamin a, iu (iu)` DOUBLE,
+  `vitamin a, rae (g)` DOUBLE,
   `vitamin b-12 (g)` DOUBLE,
-  `vitamin b-6 (mg)` DOUBLE,
   `vitamin c, total ascorbic acid (mg)` DOUBLE,
+  `vitamin d (d2 + d3) (g)` DOUBLE,
   `vitamin d (iu)` DOUBLE,
-  `vitamin e (alpha-tocopherol) (mg)` DOUBLE,
-  `vitamin k (phylloquinone) (g)` DOUBLE,
   `water (g)` DOUBLE,
   `zinc, zn (mg)` DOUBLE,
-  `fatty acids, total saturated 14:0 (g)` DOUBLE,
-  `fatty acids, total saturated 16:0 (g)` DOUBLE,
-  `fatty acids, total saturated 16:1 undifferentiated (g)` DOUBLE,
-  `fatty acids, total saturated 18:0 (g)` DOUBLE,
-  `fatty acids, total saturated 18:1 undifferentiated (g)` DOUBLE,
-  `fatty acids, total saturated 18:2 undifferentiated (g)` DOUBLE,
-  `phytosterols (mg)` DOUBLE,
-  `retinol (g)` DOUBLE,
-  `vitamin a, rae (g)` DOUBLE,
-  `vitamin d (d2 + d3) (g)` DOUBLE,
   `alcohol, ethyl (g)` DOUBLE,
   `caffeine (mg)` DOUBLE,
   `carotene, alpha (g)` DOUBLE,
@@ -120,7 +88,10 @@ CREATE TABLE `RecipeDB_ingredient_nutrition` (
   `sugars, total (g)` DOUBLE,
   `theobromine (mg)` DOUBLE,
   `vitamin b-12, added (g)` DOUBLE,
+  `vitamin b-6 (mg)` DOUBLE,
+  `vitamin e (alpha-tocopherol) (mg)` DOUBLE,
   `vitamin e, added (mg)` DOUBLE,
+  `vitamin k (phylloquinone) (g)` DOUBLE,
   `alanine (g)` DOUBLE,
   `arginine (g)` DOUBLE,
   `aspartic acid (g)` DOUBLE,
@@ -202,26 +173,11 @@ CREATE TABLE `RecipeDB_ingredient_nutrition` (
   `adjusted protein (g)` TEXT
 );
 
-CREATE UNIQUE INDEX `idx_RecipeDB_ingredient_nutrition_id`
-  ON `RecipeDB_ingredient_nutrition` (`_id`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_nutrition_Recipe_id_1`
-  ON `RecipeDB_ingredient_nutrition` (`Recipe_id`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_nutrition_recipe_no_1`
-  ON `RecipeDB_ingredient_nutrition` (`recipe_no`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_nutrition_ingredient_1`
-  ON `RecipeDB_ingredient_nutrition` (`ingredient`);
-
 CREATE TABLE `RecipeDB_ingredient_phrase` (
   `_id` TEXT,
   `recipe_no` TEXT,
-  `Recipe_id` TEXT,
   `ingredient_phrase` TEXT,
   `ingredient` TEXT,
-  `ingredient_lower` TEXT,
-  `matching_values` TEXT,
   `quantity` TEXT,
   `unit` TEXT,
   `ing_id` TEXT,
@@ -233,78 +189,23 @@ CREATE TABLE `RecipeDB_ingredient_phrase` (
   `df` TEXT
 );
 
-CREATE UNIQUE INDEX `idx_RecipeDB_ingredient_phrase_id`
-  ON `RecipeDB_ingredient_phrase` (`_id`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_ingredient_1`
-  ON `RecipeDB_ingredient_phrase` (`ingredient`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_recipe_no_1`
-  ON `RecipeDB_ingredient_phrase` (`recipe_no`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_recipe_no_1_ingredient_1`
-  ON `RecipeDB_ingredient_phrase` (`recipe_no`, `ingredient`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_Recipe_id_1`
-  ON `RecipeDB_ingredient_phrase` (`Recipe_id`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_matching_values_1`
-  ON `RecipeDB_ingredient_phrase` (`matching_values`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_matching_values_1_ingredient_1`
-  ON `RecipeDB_ingredient_phrase` (`matching_values`, `ingredient`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_ingredient_1_matching_values_1`
-  ON `RecipeDB_ingredient_phrase` (`ingredient`, `matching_values`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_ing_id_1_recipe_no_1`
-  ON `RecipeDB_ingredient_phrase` (`ing_id`, `recipe_no`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_ingredient_1_recipe_no_1`
-  ON `RecipeDB_ingredient_phrase` (`ingredient`, `recipe_no`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_ing_id_1`
-  ON `RecipeDB_ingredient_phrase` (`ing_id`);
-
-CREATE INDEX `idx_RecipeDB_ingredient_phrase_ingredient_lower_1`
-  ON `RecipeDB_ingredient_phrase` (`ingredient_lower`);
-
 CREATE TABLE `RecipeDB_instructions` (
   `_id` TEXT,
-  `Recipe_id` TEXT,
   `recipe_id` TEXT,
   `steps` TEXT
 );
 
-CREATE UNIQUE INDEX `idx_RecipeDB_instructions_id`
-  ON `RecipeDB_instructions` (`_id`);
-
-CREATE INDEX `idx_RecipeDB_instructions_Recipe_id_1`
-  ON `RecipeDB_instructions` (`Recipe_id`);
-
 CREATE TABLE `RecipeDB_micronutrients_v1` (
   `_id` TEXT,
-  `Recipe_id` BIGINT,
   `recipe_index` BIGINT,
-  `calories` DOUBLE,
+  `recipe_id` BIGINT,
   `cook_time` BIGINT,
   `prep_time` BIGINT,
-  `servings` BIGINT,
   `recipe_title` TEXT,
-  `total_time` BIGINT,
   `url` TEXT,
-  `region` TEXT,
-  `sub_region` TEXT,
-  `continent` TEXT,
+  `servings` BIGINT,
   `source` TEXT,
   `img_url` TEXT,
-  `processes` TEXT,
-  `utensils` TEXT,
-  `vegan` TEXT,
-  `pescetarian` TEXT,
-  `ovo_vegetarian` TEXT,
-  `lacto_vegetarian` TEXT,
-  `ovo_lacto_vegetarian` TEXT,
   `adjusted protein (g)` DOUBLE,
   `alanine (g)` DOUBLE,
   `alcohol, ethyl (g)` DOUBLE,
@@ -329,45 +230,6 @@ CREATE TABLE `RecipeDB_micronutrients_v1` (
   `energy (kcal)` DOUBLE,
   `fatty acids, total monounsaturated (g)` DOUBLE,
   `fatty acids, total polyunsaturated (g)` DOUBLE,
-  `fatty acids, total saturated (g)` DOUBLE,
-  `fatty acids, total trans (g)` DOUBLE,
-  `fiber, total dietary (g)` DOUBLE,
-  `folate, dfe (g)` DOUBLE,
-  `folate, food (g)` DOUBLE,
-  `folate, total (g)` DOUBLE,
-  `folic acid (g)` DOUBLE,
-  `iron, fe (mg)` DOUBLE,
-  `leucine (g)` DOUBLE,
-  `lysine (g)` DOUBLE,
-  `magnesium, mg (mg)` DOUBLE,
-  `manganese, mn (mg)` DOUBLE,
-  `methionine (g)` DOUBLE,
-  `niacin (mg)` DOUBLE,
-  `pantothenic acid (mg)` DOUBLE,
-  `phenylalanine (g)` DOUBLE,
-  `phosphorus, p (mg)` DOUBLE,
-  `potassium, k (mg)` DOUBLE,
-  `proline (g)` DOUBLE,
-  `protein (g)` DOUBLE,
-  `retinol (g)` DOUBLE,
-  `riboflavin (mg)` DOUBLE,
-  `selenium, se (g)` DOUBLE,
-  `sodium, na (mg)` DOUBLE,
-  `thiamin (mg)` DOUBLE,
-  `total lipid (fat) (g)` DOUBLE,
-  `tryptophan (g)` DOUBLE,
-  `tyrosine (g)` DOUBLE,
-  `valine (g)` DOUBLE,
-  `vitamin a, iu (iu)` DOUBLE,
-  `vitamin b-12 (g)` DOUBLE,
-  `vitamin b-6 (mg)` DOUBLE,
-  `vitamin c, total ascorbic acid (mg)` DOUBLE,
-  `vitamin d (d2 + d3) (g)` DOUBLE,
-  `vitamin d (iu)` DOUBLE,
-  `vitamin e (alpha-tocopherol) (mg)` DOUBLE,
-  `vitamin k (phylloquinone) (g)` DOUBLE,
-  `water (g)` DOUBLE,
-  `zinc, zn (mg)` DOUBLE,
   `fatty acids, total polyunsaturated 15:0 (g)` DOUBLE,
   `fatty acids, total polyunsaturated 16:1 c (g)` DOUBLE,
   `fatty acids, total polyunsaturated 16:1 t (g)` DOUBLE,
@@ -387,6 +249,7 @@ CREATE TABLE `RecipeDB_micronutrients_v1` (
   `fatty acids, total polyunsaturated 22:1 t (g)` DOUBLE,
   `fatty acids, total polyunsaturated 24:0 (g)` DOUBLE,
   `fatty acids, total polyunsaturated 24:1 c (g)` DOUBLE,
+  `fatty acids, total saturated (g)` DOUBLE,
   `fatty acids, total saturated 10:0 (g)` DOUBLE,
   `fatty acids, total saturated 12:0 (g)` DOUBLE,
   `fatty acids, total saturated 14:0 (g)` DOUBLE,
@@ -409,6 +272,7 @@ CREATE TABLE `RecipeDB_micronutrients_v1` (
   `fatty acids, total saturated 4:0 (g)` DOUBLE,
   `fatty acids, total saturated 6:0 (g)` DOUBLE,
   `fatty acids, total saturated 8:0 (g)` DOUBLE,
+  `fatty acids, total trans (g)` DOUBLE,
   `fatty acids, total trans-monoenoic (g)` DOUBLE,
   `fatty acids, total trans-polyenoic (g)` DOUBLE,
   `fatty acids, total trans-polyenoic 13:0 (g)` DOUBLE,
@@ -421,7 +285,12 @@ CREATE TABLE `RecipeDB_micronutrients_v1` (
   `fatty acids, total trans-polyenoic 20:4 n-6 (g)` DOUBLE,
   `fatty acids, total trans-polyenoic 21:5 (g)` DOUBLE,
   `fatty acids, total trans-polyenoic 22:4 (g)` DOUBLE,
+  `fiber, total dietary (g)` DOUBLE,
   `fluoride, f (g)` DOUBLE,
+  `folate, dfe (g)` DOUBLE,
+  `folate, food (g)` DOUBLE,
+  `folate, total (g)` DOUBLE,
+  `folic acid (g)` DOUBLE,
   `fructose (g)` DOUBLE,
   `galactose (g)` DOUBLE,
   `glucose (dextrose) (g)` DOUBLE,
@@ -429,19 +298,37 @@ CREATE TABLE `RecipeDB_micronutrients_v1` (
   `glycine (g)` DOUBLE,
   `histidine (g)` DOUBLE,
   `hydroxyproline (g)` DOUBLE,
+  `iron, fe (mg)` DOUBLE,
   `isoleucine (g)` DOUBLE,
   `lactose (g)` DOUBLE,
+  `leucine (g)` DOUBLE,
   `lutein + zeaxanthin (g)` DOUBLE,
   `lycopene (g)` DOUBLE,
+  `lysine (g)` DOUBLE,
+  `magnesium, mg (mg)` DOUBLE,
   `maltose (g)` DOUBLE,
+  `manganese, mn (mg)` DOUBLE,
   `menaquinone-4 (g)` DOUBLE,
+  `methionine (g)` DOUBLE,
+  `niacin (mg)` DOUBLE,
+  `pantothenic acid (mg)` DOUBLE,
+  `phenylalanine (g)` DOUBLE,
+  `phosphorus, p (mg)` DOUBLE,
   `phytosterols (mg)` DOUBLE,
+  `potassium, k (mg)` DOUBLE,
+  `proline (g)` DOUBLE,
+  `protein (g)` DOUBLE,
+  `retinol (g)` DOUBLE,
+  `riboflavin (mg)` DOUBLE,
+  `selenium, se (g)` DOUBLE,
   `serine (g)` DOUBLE,
+  `sodium, na (mg)` DOUBLE,
   `starch (g)` DOUBLE,
   `stigmasterol (mg)` DOUBLE,
   `sucrose (g)` DOUBLE,
   `sugars, total (g)` DOUBLE,
   `theobromine (mg)` DOUBLE,
+  `thiamin (mg)` DOUBLE,
   `threonine (g)` DOUBLE,
   `tocopherol, beta (mg)` DOUBLE,
   `tocopherol, delta (mg)` DOUBLE,
@@ -450,18 +337,33 @@ CREATE TABLE `RecipeDB_micronutrients_v1` (
   `tocotrienol, beta (mg)` DOUBLE,
   `tocotrienol, delta (mg)` DOUBLE,
   `tocotrienol, gamma (mg)` DOUBLE,
+  `total lipid (fat) (g)` DOUBLE,
+  `tryptophan (g)` DOUBLE,
+  `tyrosine (g)` DOUBLE,
+  `valine (g)` DOUBLE,
+  `vitamin a, iu (iu)` DOUBLE,
   `vitamin a, rae (g)` DOUBLE,
+  `vitamin b-12 (g)` DOUBLE,
   `vitamin b-12, added (g)` DOUBLE,
+  `vitamin b-6 (mg)` DOUBLE,
+  `vitamin c, total ascorbic acid (mg)` DOUBLE,
+  `vitamin d (d2 + d3) (g)` DOUBLE,
+  `vitamin d (iu)` DOUBLE,
   `vitamin d2 (ergocalciferol) (g)` DOUBLE,
   `vitamin d3 (cholecalciferol) (g)` DOUBLE,
-  `vitamin e, added (mg)` DOUBLE
+  `vitamin e (alpha-tocopherol) (mg)` DOUBLE,
+  `vitamin e, added (mg)` DOUBLE,
+  `vitamin k (phylloquinone) (g)` DOUBLE,
+  `water (g)` DOUBLE,
+  `zinc, zn (mg)` DOUBLE,
+  `processes` TEXT,
+  `calories` DOUBLE,
+  `total_time` TEXT,
+  `continent` TEXT,
+  `region` TEXT,
+  `sub_region` TEXT,
+  `utensils` TEXT
 );
-
-CREATE UNIQUE INDEX `idx_RecipeDB_micronutrients_v1_id`
-  ON `RecipeDB_micronutrients_v1` (`_id`);
-
-CREATE UNIQUE INDEX `idx_RecipeDB_micronutrients_v1_Recipe_id_1`
-  ON `RecipeDB_micronutrients_v1` (`Recipe_id`);
 
 CREATE TABLE `recipes` (
   `_id` TEXT,
@@ -478,7 +380,7 @@ CREATE TABLE `recipes` (
   `continent` TEXT,
   `source` TEXT,
   `img_url` TEXT,
-  `carbohydrate by difference (g)` TEXT,
+  `carbohydrate, by difference (g)` TEXT,
   `energy (kcal)` TEXT,
   `protein (g)` TEXT,
   `total lipid (fat) (g)` TEXT,
@@ -491,20 +393,10 @@ CREATE TABLE `recipes` (
   `utensils` TEXT
 );
 
-CREATE UNIQUE INDEX `idx_recipes_id`
-  ON `recipes` (`_id`);
-
 -- Relationship contract used by config/sql_schema.json
--- recipe_to_ingredient_phrase_by_recipe_no: RecipeDB_ingredient_phrase.recipe_no -> RecipeDB_micronutrients_v1.Recipe_id [many_to_one, index_supported]
--- recipe_to_ingredient_phrase_by_recipe_id: RecipeDB_ingredient_phrase.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id [many_to_one, index_supported]
--- recipe_to_ingredient_nutrition_by_recipe_no: RecipeDB_ingredient_nutrition.recipe_no -> RecipeDB_micronutrients_v1.Recipe_id [many_to_one, index_supported]
--- recipe_to_ingredient_nutrition_by_recipe_id: RecipeDB_ingredient_nutrition.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id [many_to_one, index_supported]
--- recipe_to_instructions: RecipeDB_instructions.Recipe_id -> RecipeDB_micronutrients_v1.Recipe_id [one_or_many_to_one, index_supported]
--- ingredient_phrase_to_flavor: RecipeDB_ingredient_phrase.ing_id -> RecipeDB_ingredient_flavor.IngID [many_to_one, index_supported]
--- ingredient_phrase_to_ingredient_nutrition: RecipeDB_ingredient_phrase.ndb_id -> RecipeDB_ingredient_nutrition.ndb_id [many_to_one, inferred]
--- ingredient_nutrition_to_ingredient_phrase_by_recipe_and_ingredient: RecipeDB_ingredient_nutrition.recipe_no -> RecipeDB_ingredient_phrase.recipe_no [many_to_many, inferred]
-
--- Runtime safety constraints live in config/sql_schema.json:
--- allowed operators/quantifiers, predicate-count limits, numeric value ranges,
--- preferred/fallback joins, semantic conflict guards, schema-driven action/
--- utensil filters, field_catalog, knowledge_graph, and relaxation policy priority.
+-- recipe_profile_to_recipes_by_recipe_id: recipes.recipe_id -> RecipeDB_micronutrients_v1.recipe_id [one_to_one_or_many_to_one, schema]
+-- recipe_to_ingredient_phrase_by_recipe_no: RecipeDB_ingredient_phrase.recipe_no -> RecipeDB_micronutrients_v1.recipe_id [many_to_one, schema]
+-- recipe_to_ingredient_nutrition_by_recipe_id: RecipeDB_ingredient_nutrition.recipe_id -> RecipeDB_micronutrients_v1.recipe_id [many_to_one, schema]
+-- recipe_to_instructions: RecipeDB_instructions.recipe_id -> RecipeDB_micronutrients_v1.recipe_id [one_or_many_to_one, schema]
+-- ingredient_phrase_to_flavor: RecipeDB_ingredient_phrase.ing_id -> RecipeDB_ingredient_flavor.ingid [many_to_one, schema]
+-- ingredient_phrase_to_ingredient_nutrition: RecipeDB_ingredient_phrase.ndb_id -> RecipeDB_ingredient_nutrition.ndb_id [many_to_many, schema]

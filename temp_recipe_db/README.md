@@ -28,7 +28,7 @@ python temp_recipe_db\run_query.py "recipes rich in folate"
 Run raw SQL directly against the same temp tables:
 
 ```powershell
-python temp_recipe_db\run_query.py --sql "SELECT Recipe_id, recipe_title FROM RecipeDB_micronutrients_v1 WHERE calories < ?" --params "[400]"
+python temp_recipe_db\run_query.py --sql "SELECT recipe_id, recipe_title FROM RecipeDB_micronutrients_v1 WHERE calories < ?" --params "[400]"
 ```
 
 The generated database file is `recipe_test.db` and can be deleted/rebuilt at

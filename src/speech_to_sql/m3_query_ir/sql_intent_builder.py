@@ -37,7 +37,7 @@ def build_query_ir(
     query.predicates.extend(_time_predicates(tag_result, text, recipe_config))
     query.predicates.extend(_ingredient_quantity_predicates(text))
     query.predicates.extend(_instruction_text_predicates(tag_result, text))
-    query.predicates.extend(_semantic_filter_predicates(tag_result, schema))
+    query.predicates.extend(_semantic_filter_predicates(tag_result, schema, text))
     query.predicates.extend(_category_predicates(tag_result))
 
     order = _order_by(tag_result, text, recipe_config)
@@ -254,19 +254,24 @@ def _ingredient_quantity_predicates(text: str) -> list[Predicate]:
 def _instruction_text_predicates(tag_result: dict, text: str) -> list[Predicate]:
     if not _instruction_scope(text):
         return []
-    values: list[Any] = []
-    action_values = [
-        item.get("action")
-        for item in tag_result.get("actions") or []
-        if isinstance(item, dict) and item.get("action")
-    ]
+    scoped_terms = _instruction_scoped_terms(tag_result, text)
+    action_values = list(scoped_terms["actions"])
+    utensil_values = list(scoped_terms["utensils"])
+
+    if not action_values and not utensil_values:
+        action_values = [
+            item.get("action")
+            for item in tag_result.get("actions") or []
+            if isinstance(item, dict) and item.get("action")
+        ]
+        utensil_values = list(tag_result.get("utensils") or [])
+
     if len(action_values) > 1:
         action_values = [
             value for value in action_values
             if str(value).strip().lower() not in {"cook"}
         ]
-    values.extend(action_values)
-    values.extend(tag_result.get("utensils") or [])
+    values: list[Any] = [*action_values, *utensil_values]
     return [
         Predicate(
             source="instructions",
@@ -288,13 +293,21 @@ def _instruction_scope(text: str) -> bool:
 def _semantic_filter_predicates(
     tag_result: dict,
     schema: dict[str, Any],
+    text: str,
 ) -> list[Predicate]:
     filters = schema.get("semantic_filters", {})
     predicates: list[Predicate] = []
+    scoped_terms = _instruction_scoped_terms(tag_result, text) if _instruction_scope(text) else {
+        "actions": set(),
+        "utensils": set(),
+    }
 
     utensil_config = filters.get("utensils") or {}
     predicates.extend(_text_filter_predicates(
-        tag_result.get("utensils") or [],
+        [
+            utensil for utensil in tag_result.get("utensils") or []
+            if str(utensil).strip().lower() not in scoped_terms["utensils"]
+        ],
         utensil_config,
     ))
 
@@ -308,6 +321,7 @@ def _semantic_filter_predicates(
         for item in tag_result.get("actions") or []
         if isinstance(item, dict)
         and item.get("action")
+        and str(item.get("action")).strip().lower() not in scoped_terms["actions"]
         and (
             not allowed_action_types
             or str(item.get("type")) in allowed_action_types
@@ -315,6 +329,54 @@ def _semantic_filter_predicates(
     ]
     predicates.extend(_text_filter_predicates(actions, action_config))
     return predicates
+
+
+def _instruction_scoped_terms(tag_result: dict, text: str) -> dict[str, set[str]]:
+    scoped = {"actions": set(), "utensils": set()}
+
+    for item in tag_result.get("actions") or []:
+        if not isinstance(item, dict) or not item.get("action"):
+            continue
+        if _span_is_instruction_scoped(text, item.get("span")):
+            scoped["actions"].add(str(item["action"]).strip().lower())
+
+    utensil_values = {
+        str(value).strip().lower()
+        for value in tag_result.get("utensils") or []
+        if str(value).strip()
+    }
+    for item in tag_result.get("raw_spans") or []:
+        if not isinstance(item, dict):
+            continue
+        canonical = str(item.get("canonical") or "").strip().lower()
+        if canonical not in utensil_values:
+            continue
+        if _span_is_instruction_scoped(text, item.get("span")):
+            scoped["utensils"].add(canonical)
+
+    return scoped
+
+
+def _span_is_instruction_scoped(text: str, span: Any) -> bool:
+    if not isinstance(span, (list, tuple)) or len(span) != 2:
+        return False
+    try:
+        start = int(span[0])
+        end = int(span[1]) + 1
+    except (TypeError, ValueError):
+        return False
+
+    text_lower = text.lower()
+    prefix = text_lower[max(0, start - 96):start]
+    suffix = text_lower[end:min(len(text_lower), end + 72)]
+    instruction_pattern = r"\b(?:instruction|instructions|step|steps|cooking\s+steps?)\b"
+    mention_pattern = r"\b(?:mention|mentions|mentioned|contain|contains|containing|include|includes|including|with|in)\b"
+
+    if re.search(instruction_pattern, prefix) and re.search(mention_pattern, prefix):
+        return True
+    if re.search(instruction_pattern, suffix) and re.search(mention_pattern, suffix):
+        return True
+    return False
 
 
 def _text_filter_predicates(

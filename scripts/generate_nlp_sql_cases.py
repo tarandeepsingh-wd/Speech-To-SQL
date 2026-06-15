@@ -272,7 +272,7 @@ def _expected_schema(intent: dict[str, Any], schema: dict[str, Any]) -> dict[str
             "from_table": ingredients_relation["table"],
             "from_column": "recipe_no",
             "to_table": base_table,
-            "to_column": "Recipe_id",
+            "to_column": "recipe_id",
             "reason": "connect ingredient rows to recipe rows",
         })
         for value in include:
@@ -293,10 +293,25 @@ def _expected_schema(intent: dict[str, Any], schema: dict[str, Any]) -> dict[str
         })
 
     for style in intent.get("dietary_styles") or []:
+        dietary_relation = schema["relations"]["dietary"]
+        dietary_join = _relationship(schema, dietary_relation.get("join"))
+        tables.append({
+            "table": dietary_relation["table"],
+            "alias": dietary_relation["alias"],
+            "role": "dietary flags",
+        })
+        if dietary_join:
+            joins.append({
+                "from_table": dietary_join["from_table"],
+                "from_column": dietary_join["from_column"],
+                "to_table": dietary_join["to_table"],
+                "to_column": dietary_join["to_column"],
+                "reason": "connect dietary flag rows to recipe rows",
+            })
         column = dietary_columns.get(_diet_column_key(style))
         columns.append({
-            "table": base_table,
-            "alias": root_alias,
+            "table": dietary_relation["table"],
+            "alias": dietary_relation["alias"],
             "column": column,
             "logical_field": style,
             "operator": "IN",
@@ -305,14 +320,20 @@ def _expected_schema(intent: dict[str, Any], schema: dict[str, Any]) -> dict[str
         })
 
     if intent.get("cuisine"):
-        for field in ("region", "sub_region", "continent"):
+        cuisine_config = load_recipe_db_config().get("cuisine_aliases", {})
+        mapped = cuisine_config.get(str(intent["cuisine"]).lower()) or {
+            "region": str(intent["cuisine"]).title()
+        }
+        for field, value in mapped.items():
+            if field not in schema["base_columns"]:
+                continue
             columns.append({
                 "table": base_table,
                 "alias": root_alias,
                 "column": schema["base_columns"][field],
                 "logical_field": field,
                 "operator": "=",
-                "value": intent["cuisine"],
+                "value": value,
                 "role": "cuisine/category filter",
             })
 
@@ -436,6 +457,15 @@ def _diet_column_key(style: str) -> str:
         "pescetarian": "pescetarian",
         "pescatarian": "pescetarian",
     }.get(style, style)
+
+
+def _relationship(schema: dict[str, Any], name: Any) -> dict[str, Any] | None:
+    if not name:
+        return None
+    for item in schema.get("relationships", []):
+        if item.get("name") == name:
+            return item
+    return None
 
 
 def _dedupe_dicts(items: list[dict[str, Any]]) -> list[dict[str, Any]]:

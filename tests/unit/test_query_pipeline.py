@@ -186,7 +186,7 @@ def test_sql_query_builder_adds_where_order_and_limit():
     sql = build_sql_query(tag_result, transcript="top 5 vegan recipes highest protein")
 
     assert sql["query"].startswith("SELECT r.* FROM `RecipeDB_micronutrients_v1` AS r WHERE")
-    assert "r.`vegan` IN" in sql["query"]
+    assert "d1.`vegan` IN" in sql["query"]
     assert "ORDER BY r.`protein (g)` DESC" in sql["query"]
     assert sql["query"].endswith("LIMIT ?")
     assert sql["params"][-1] == 5
@@ -337,7 +337,7 @@ def test_mixed_recipe_and_ingredient_nutrition_uses_scoped_tables():
     assert sql["validation"]["ok"] is True
     assert "r.`carbohydrate, by difference (g)` <= ?" in sql["query"]
     assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
-    assert "inut1.`protein (g)` >= ?" in sql["query"]
+    assert "`protein (g)` >= ?" in sql["query"]
     assert "ORDER BY" not in sql["query"]
 
 
@@ -355,7 +355,7 @@ def test_ingredient_level_fat_filter_is_not_recipe_level_or_category():
     assert sql["validation"]["ok"] is True
     assert "r.`cholesterol (mg)` < ?" in sql["query"]
     assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
-    assert "inut1.`total lipid (fat) (g)` > ?" in sql["query"]
+    assert "`total lipid (fat) (g)` > ?" in sql["query"]
 
 
 def test_high_fiber_recipe_with_ingredient_thiamin_scopes_each_nutrient():
@@ -372,7 +372,7 @@ def test_high_fiber_recipe_with_ingredient_thiamin_scopes_each_nutrient():
     assert sql["validation"]["ok"] is True
     assert "r.`fiber, total dietary (g)` >= ?" in sql["query"]
     assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
-    assert "inut1.`thiamin (mg)` > ?" in sql["query"]
+    assert "`thiamin (mg)` > ?" in sql["query"]
 
 
 def test_seafood_category_and_ingredient_level_cholesterol_use_correct_sources():
@@ -410,7 +410,7 @@ def test_ingredient_level_numeric_nutrition_with_copula_uses_ingredient_table():
     assert sql["validation"]["ok"] is True
     assert "`RecipeDB_ingredient_phrase`" in sql["query"]
     assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
-    assert "inut1.`protein (g)` > ?" in sql["query"]
+    assert "`protein (g)` > ?" in sql["query"]
 
 
 def test_greater_than_copula_numeric_nutrition_keeps_threshold():
@@ -424,7 +424,7 @@ def test_greater_than_copula_numeric_nutrition_keeps_threshold():
     assert nutrition["thiamin"]["value"] == 0.2
     assert sql["validation"]["ok"] is True
     assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
-    assert "inut1.`thiamin (mg)` > ?" in sql["query"]
+    assert "`thiamin (mg)` > ?" in sql["query"]
 
 
 def test_total_recipe_vitamin_c_with_copula_stays_recipe_level():
@@ -440,6 +440,7 @@ def test_total_recipe_vitamin_c_with_copula_stays_recipe_level():
     assert "r.`vitamin c, total ascorbic acid (mg)` > ?" in sql["query"]
     assert "`RecipeDB_instructions`" in sql["query"]
     assert "ins1.`steps` LIKE ?" in sql["query"]
+    assert "r.`processes` LIKE ?" not in sql["query"]
 
 
 def test_total_recipe_scope_does_not_become_sum_aggregate():
@@ -454,7 +455,7 @@ def test_total_recipe_scope_does_not_become_sum_aggregate():
     assert nutrition["protein"]["table_source"] == "ingredient_nutrition"
     assert sql["validation"]["ok"] is True
     assert "r.`calories` < ?" in sql["query"]
-    assert "inut1.`protein (g)` > ?" in sql["query"]
+    assert "`protein (g)` > ?" in sql["query"]
 
 
 def test_same_nutrient_threshold_can_exist_at_recipe_and_ingredient_level():
@@ -473,7 +474,7 @@ def test_same_nutrient_threshold_can_exist_at_recipe_and_ingredient_level():
     ]
     assert sql["validation"]["ok"] is True
     assert "r.`vitamin c, total ascorbic acid (mg)` > ?" in sql["query"]
-    assert "inut1.`vitamin c, total ascorbic acid (mg)` > ?" in sql["query"]
+    assert "`vitamin c, total ascorbic acid (mg)` > ?" in sql["query"]
 
 
 def test_leafy_green_category_does_not_create_grain_ingredient():
@@ -499,7 +500,7 @@ def test_repeated_ingredient_and_nutrient_term_prefers_scoped_nutrition_mention(
     assert nutrition["water"]["table_source"] == "ingredient_nutrition"
     assert sql["validation"]["ok"] is True
     assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
-    assert "inut1.`water (g)` > ?" in sql["query"]
+    assert "`water (g)` > ?" in sql["query"]
 
 
 def test_limit_cue_does_not_become_instruction_action():
@@ -527,7 +528,23 @@ def test_flavor_category_and_instruction_mentions_use_joined_tables():
     assert "`RecipeDB_ingredient_flavor`" in sql["query"]
     assert "`RecipeDB_instructions`" in sql["query"]
     assert "ins1.`steps` LIKE ?" in sql["query"]
+    assert "r.`processes` LIKE ?" not in sql["query"]
     assert "%saute%" in sql["params"]
+
+
+def test_instruction_scoped_utensil_does_not_duplicate_base_utensil_filter():
+    query = "Find recipes where the ingredient phrase contains chicken and the instruction steps mention skillet."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["chicken"]
+    assert prepared["utensils"] == ["skillet"]
+    assert sql["validation"]["ok"] is True
+    assert "`RecipeDB_ingredient_phrase`" in sql["query"]
+    assert "`RecipeDB_instructions`" in sql["query"]
+    assert "ins1.`steps` LIKE ?" in sql["query"]
+    assert "r.`utensils` LIKE ?" not in sql["query"]
+    assert "%skillet%" in sql["params"]
 
 
 def test_quantity_available_and_cooking_step_mentions_use_phrase_and_instruction_tables():
@@ -541,6 +558,7 @@ def test_quantity_available_and_cooking_step_mentions_use_phrase_and_instruction
     assert "ip1.`quantity` LIKE ?" in sql["query"]
     assert "`RecipeDB_instructions`" in sql["query"]
     assert "ins1.`steps` LIKE ?" in sql["query"]
+    assert "r.`processes` LIKE ?" not in sql["query"]
     assert "%bake%" in sql["params"]
     assert "%cook%" not in sql["params"]
 
@@ -700,7 +718,7 @@ def test_sql_intent_builder_does_not_import_planner_internals():
     assert "query_planner" not in source
 
 
-def test_schema_registry_uses_real_index_supported_recipe_join():
+def test_schema_registry_uses_real_schema_recipe_join():
     registry = load_schema_registry()
     join = registry.relationship_for_relation("ingredients")
 
@@ -708,18 +726,18 @@ def test_schema_registry_uses_real_index_supported_recipe_join():
     assert join is not None
     assert join.from_table == "RecipeDB_ingredient_phrase"
     assert join.from_column == "recipe_no"
-    assert join.to_column == "Recipe_id"
-    assert join.confidence == "index_supported"
+    assert join.to_column == "recipe_id"
+    assert join.confidence == "schema"
 
 
-def test_schema_sql_documents_real_tables_indexes_and_join_assumptions():
+def test_schema_sql_documents_real_tables_and_join_assumptions():
     schema_sql = load_schema_sql()
 
     assert "CREATE TABLE `RecipeDB_micronutrients_v1`" in schema_sql
     assert "CREATE TABLE `RecipeDB_ingredient_phrase`" in schema_sql
-    assert "CREATE UNIQUE INDEX `idx_RecipeDB_micronutrients_v1_Recipe_id_1`" in schema_sql
-    assert "RecipeDB_ingredient_phrase.recipe_no -> RecipeDB_micronutrients_v1.Recipe_id" in schema_sql
-    assert "MongoDB does not declare foreign keys" in schema_sql
+    assert "CREATE INDEX" not in schema_sql
+    assert "matching_values" not in schema_sql
+    assert "RecipeDB_ingredient_phrase.recipe_no -> RecipeDB_micronutrients_v1.recipe_id" in schema_sql
 
 
 def test_architecture_doc_locks_model_boundary_to_query_ir():
@@ -748,7 +766,7 @@ def test_query_ir_contract_accepts_constrained_payload_and_compiles():
     assert query_ir_to_payload(query_ir)["select"][0]["expression"] == "r.*"
     assert sql["validation"]["ok"] is True
     assert "r.`calories` < ?" in sql["query"]
-    assert "r.`vegan` IN" in sql["query"]
+    assert "d1.`vegan` IN" in sql["query"]
     assert "ORDER BY r.`protein (g)` DESC" in sql["query"]
     assert sql["params"][-1] == 3
 
@@ -865,8 +883,8 @@ def test_single_include_ingredient_uses_configured_join_strategy():
     assert sql["validation"]["ok"] is True
     assert sql["query"].startswith("SELECT DISTINCT r.*")
     assert " JOIN `RecipeDB_ingredient_phrase` AS ip ON " in sql["query"]
-    assert "ip.`matching_values` = ?" in sql["query"]
-    assert "ip.`ingredient_lower` LIKE ?" in sql["query"]
+    assert "ip.`ingredient` = ?" in sql["query"]
+    assert "ip.`ingredient_phrase` LIKE ?" in sql["query"]
     assert "EXISTS" not in sql["query"]
     assert sql["params"] == ["paneer", "%paneer%"]
     assert sql["plan"]["joins"][0]["source"] == "ingredients"
@@ -890,8 +908,8 @@ def test_complex_ingredient_filters_keep_exists_strategy():
     assert sql["validation"]["ok"] is True
     assert sql["query"].startswith("SELECT DISTINCT")
     assert "UNION ALL" in sql["query"]
-    assert "ip_u1.`matching_values` = ?" in sql["query"]
-    assert "ip_u1.`ingredient_lower` LIKE ?" in sql["query"]
+    assert "ip_u1.`ingredient` = ?" in sql["query"]
+    assert "ip_u1.`ingredient_phrase` LIKE ?" in sql["query"]
     assert "GROUP BY ip_union.`recipe_no`" in sql["query"]
     assert "HAVING COUNT(*) = ?" in sql["query"]
     assert "NOT EXISTS" in sql["query"]
@@ -923,8 +941,8 @@ def test_multi_include_ingredients_use_grouped_join_strategy():
 
     assert sql["validation"]["ok"] is True
     assert "UNION ALL" in sql["query"]
-    assert "ip_u1.`matching_values` = ?" in sql["query"]
-    assert "ip_u1.`ingredient_lower` LIKE ?" in sql["query"]
+    assert "ip_u1.`ingredient` = ?" in sql["query"]
+    assert "ip_u1.`ingredient_phrase` LIKE ?" in sql["query"]
     assert "GROUP BY ip_union.`recipe_no`" in sql["query"]
     assert "HAVING COUNT(*) = ?" in sql["query"]
     assert "JOIN `RecipeDB_ingredient_phrase` AS ip1" not in sql["query"]
@@ -984,7 +1002,7 @@ def test_sql_builder_uses_schema_linker_for_alias_inputs():
 
     assert sql["validation"]["ok"] is True
     assert "r.`calories` < ?" in sql["query"]
-    assert "r.`ovo_lacto_vegetarian` IN" in sql["query"]
+    assert "d1.`ovo_lacto_vegetarian` IN" in sql["query"]
     assert sql["params"][0] == 300.0
 
 
@@ -1017,7 +1035,7 @@ def test_sql_builder_uses_enriched_low_carb_filter():
     assert "`RecipeDB_ingredient_phrase`" in sql["query"]
     assert "r.`carbohydrate, by difference (g)` <= ?" in sql["query"]
     assert sql["params"] == ["paneer", "%paneer%", 50.0]
-    assert sql["join_assumptions"][0]["confidence"] == "index_supported"
+    assert sql["join_assumptions"][0]["confidence"] == "schema"
 
 
 def test_planner_uses_enriched_low_carb_endpoint():
@@ -1169,8 +1187,8 @@ def test_dietary_or_intent_uses_or_condition_not_and():
 
     assert sql["validation"]["ok"] is True
     assert sql["ir"]["predicates"][0]["quantifier"] == "or_exists"
-    assert "r.`vegan` IN" in sql["query"]
-    assert " OR r.`ovo_lacto_vegetarian` IN" in sql["query"]
+    assert "d1.`vegan` IN" in sql["query"]
+    assert " OR d1.`ovo_lacto_vegetarian` IN" in sql["query"]
 
 
 def test_ranker_uses_same_prepared_time_direction_rules():

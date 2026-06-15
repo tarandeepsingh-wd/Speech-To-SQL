@@ -334,8 +334,10 @@ def build_pipeline_report(result: dict) -> dict[str, Any]:
 
     try:
         start = time.perf_counter()
+        verifier_source = dict(prepared_intent or result)
+        verifier_source.setdefault("transcript", transcript)
         report["dummy_db"] = run_dummy_db_verification(
-            prepared_intent or result,
+            verifier_source,
             report.get("sql") or {},
         )
         timings["m5_dummy_db"] = time.perf_counter() - start
@@ -408,6 +410,8 @@ def _intent_for_verifier(intent: dict) -> dict[str, Any]:
         "category_filters": intent.get("category_filters", []),
         "nutrition_filters": intent.get("nutrition_filters", []),
         "ingredient_logic": intent.get("ingredient_logic", {}),
+        "raw_spans": intent.get("raw_spans", []),
+        "_transcript": intent.get("transcript") or intent.get("query"),
     }
 
 
@@ -608,7 +612,7 @@ def _print_dummy_db(dummy: dict) -> None:
         for row in rows[:5]:
             print(
                 "    - "
-                f"{row.get('Recipe_id', row.get('recipe_id'))}: "
+                f"{row.get('recipe_id')}: "
                 f"{row.get('recipe_title', row.get('ingredient', ''))} | "
                 f"calories={row.get('calories')} | "
                 f"vegan={row.get('vegan')} | "
@@ -679,9 +683,9 @@ def _sql_strategy(plan: dict, query: str | None) -> str:
         join for join in joins
         if join.get("source") == "ingredients"
     ]
-    if len(ingredient_joins) > 1 and query and "SELECT DISTINCT" in query and "ingredient_lower" in query:
+    if len(ingredient_joins) > 1 and query and "SELECT DISTINCT" in query and "ingredient_phrase" in query:
         return "filtered ingredient AND JOINs"
-    if len(ingredient_joins) > 1 and query and "ingredient_lower" in query:
+    if len(ingredient_joins) > 1 and query and "ingredient_phrase" in query:
         return "ingredient AND JOINs"
     if query and "GROUP BY" in query and ("COUNT(DISTINCT" in query or "COUNT(*)" in query):
         return "grouped ingredient JOIN"

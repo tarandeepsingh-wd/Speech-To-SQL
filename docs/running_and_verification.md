@@ -47,7 +47,7 @@ python temp_recipe_db\run_query.py --schema
 Run raw SQL against the fixture:
 
 ```powershell
-python temp_recipe_db\run_query.py --sql "SELECT Recipe_id, recipe_title FROM RecipeDB_micronutrients_v1 WHERE calories < ?" --params "[400]"
+python temp_recipe_db\run_query.py --sql "SELECT recipe_id, recipe_title FROM RecipeDB_micronutrients_v1 WHERE calories < ?" --params "[400]"
 ```
 
 ## Tests

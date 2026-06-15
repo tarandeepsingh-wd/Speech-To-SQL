@@ -9,11 +9,7 @@ PROJECT_ROOT = THIS_DIR.parent
 SCHEMA_PATH = PROJECT_ROOT / "config" / "schema.sql"
 DB_PATH = THIS_DIR / "recipe_test.db"
 TOTAL_RECIPE_ROWS = 100
-SQLITE_DUPLICATE_COLUMNS = {
-    ("RecipeDB_ingredient_flavor", "ingid"),
-    ("RecipeDB_ingredient_flavor", "dietrx_category"),
-    ("RecipeDB_instructions", "recipe_id"),
-}
+SQLITE_DUPLICATE_COLUMNS: set[tuple[str, str]] = set()
 TABLE_COLUMN_CACHE: dict[str, list[tuple[str, str]]] = {}
 
 BASE_RECIPE_INGREDIENTS = {
@@ -349,8 +345,11 @@ def default_value(column_type: str) -> object:
 def insert_row(conn: sqlite3.Connection, table: str, row: dict[str, object]) -> None:
     table_meta = table_columns(conn, table)
     columns = [column for column, _column_type in table_meta] or list(row)
+    lowered_row = {key.lower(): value for key, value in row.items()}
     complete_row = {
-        column: row.get(column, default_value(column_type))
+        column: row[column]
+        if column in row
+        else lowered_row.get(column.lower(), default_value(column_type))
         for column, column_type in table_meta
     } if table_meta else row
     placeholders = ", ".join("?" for _ in columns)
@@ -383,7 +382,7 @@ def seed_recipes(conn: sqlite3.Connection) -> None:
     recipes = [
         {
             "_id": "r1001",
-            "Recipe_id": 1001,
+            "recipe_id": 1001,
             "recipe_index": 1,
             "recipe_title": "Vitamin K Chicken Spinach Bowl",
             "calories": 420,
@@ -421,7 +420,7 @@ def seed_recipes(conn: sqlite3.Connection) -> None:
         },
         {
             "_id": "r1002",
-            "Recipe_id": 1002,
+            "recipe_id": 1002,
             "recipe_index": 2,
             "recipe_title": "Vegan Magnesium Spinach Salad",
             "calories": 260,
@@ -459,7 +458,7 @@ def seed_recipes(conn: sqlite3.Connection) -> None:
         },
         {
             "_id": "r1003",
-            "Recipe_id": 1003,
+            "recipe_id": 1003,
             "recipe_index": 3,
             "recipe_title": "Low Carb Garlic Salmon",
             "calories": 390,
@@ -497,7 +496,7 @@ def seed_recipes(conn: sqlite3.Connection) -> None:
         },
         {
             "_id": "r1004",
-            "Recipe_id": 1004,
+            "recipe_id": 1004,
             "recipe_index": 4,
             "recipe_title": "Tomato Garlic Pasta",
             "calories": 550,
@@ -535,7 +534,7 @@ def seed_recipes(conn: sqlite3.Connection) -> None:
         },
         {
             "_id": "r1005",
-            "Recipe_id": 1005,
+            "recipe_id": 1005,
             "recipe_index": 5,
             "recipe_title": "Thiamine Lentil Stew",
             "calories": 310,
@@ -573,7 +572,7 @@ def seed_recipes(conn: sqlite3.Connection) -> None:
         },
         {
             "_id": "r1006",
-            "Recipe_id": 1006,
+            "recipe_id": 1006,
             "recipe_index": 6,
             "recipe_title": "Sugar Water Lemonade",
             "calories": 160,
@@ -620,7 +619,7 @@ def seed_recipes(conn: sqlite3.Connection) -> None:
 def recipe_as_legacy_row(recipe: dict[str, object]) -> dict[str, object]:
     return {
         "_id": recipe["_id"],
-        "recipe_id": str(recipe["Recipe_id"]),
+        "recipe_id": str(recipe["recipe_id"]),
         "calories": str(recipe["calories"]),
         "cook_time": str(recipe["cook_time"]),
         "prep_time": str(recipe["prep_time"]),
@@ -633,7 +632,7 @@ def recipe_as_legacy_row(recipe: dict[str, object]) -> dict[str, object]:
         "continent": recipe["continent"],
         "source": recipe["source"],
         "img_url": recipe["img_url"],
-        "carbohydrate by difference (g)": str(recipe["carbohydrate, by difference (g)"]),
+        "carbohydrate, by difference (g)": str(recipe["carbohydrate, by difference (g)"]),
         "energy (kcal)": str(recipe["energy (kcal)"]),
         "protein (g)": str(recipe["protein (g)"]),
         "total lipid (fat) (g)": str(recipe["total lipid (fat) (g)"]),
@@ -660,7 +659,7 @@ def generate_recipe_rows(existing_count: int, total_rows: int) -> list[dict[str,
         time_shift = (recipe_index % 6) * 2
         generated.append({
             "_id": f"r{recipe_id}",
-            "Recipe_id": recipe_id,
+            "recipe_id": recipe_id,
             "recipe_index": recipe_index,
             "recipe_title": title,
             "calories": float(blueprint["calories"]) + nutrition_shift,
@@ -717,10 +716,10 @@ def seed_ingredients(conn: sqlite3.Connection) -> None:
     for ingredient, (ing_id, _ndb_id, category, generic_name) in ingredient_meta.items():
         insert_row(conn, "RecipeDB_ingredient_flavor", {
             "_id": f"flavor_{ing_id}",
-            "IngID": ing_id,
+            "ingid": ing_id,
             "ingredient": ingredient,
             "generic_name": generic_name,
-            "Dietrx_Category": category,
+            "dietrx_category": category,
             "flavordb_category": generic_name,
         })
 
@@ -731,11 +730,8 @@ def seed_ingredients(conn: sqlite3.Connection) -> None:
             insert_row(conn, "RecipeDB_ingredient_phrase", {
                 "_id": f"ip{row_number:03d}",
                 "recipe_no": recipe_id,
-                "Recipe_id": recipe_id,
                 "ingredient_phrase": f"1 serving {ingredient}",
                 "ingredient": ingredient,
-                "ingredient_lower": ingredient,
-                "matching_values": ingredient,
                 "quantity": "1",
                 "unit": "serving",
                 "ing_id": ing_id,
@@ -779,11 +775,8 @@ def ingredient_nutrition_row(
     }
     return {
         "_id": f"inut{row_number:03d}",
-        "Recipe_id": recipe_id,
-        "recipe_no": recipe_id,
+        "recipe_id": recipe_id,
         "ndb_id": ndb_id,
-        "ingredient": ingredient,
-        "calories": 120 if ingredient in {"chicken", "salmon", "pasta", "lentil"} else 25,
         "protein (g)": protein_defaults.get(ingredient, 1),
         "carbohydrate, by difference (g)": carb_defaults.get(ingredient, 2),
         "total lipid (fat) (g)": 12 if ingredient in {"olive oil", "salmon"} else 1,
@@ -812,7 +805,7 @@ def seed_instructions(conn: sqlite3.Connection) -> None:
     for recipe_id, text in steps.items():
         insert_row(conn, "RecipeDB_instructions", {
             "_id": f"ins{recipe_id}",
-            "Recipe_id": recipe_id,
+            "recipe_id": recipe_id,
             "steps": text,
         })
 
@@ -835,6 +828,7 @@ def generated_instruction_steps() -> dict[int, str]:
 
 
 def build_database() -> Path:
+    TABLE_COLUMN_CACHE.clear()
     if DB_PATH.exists():
         DB_PATH.unlink()
 

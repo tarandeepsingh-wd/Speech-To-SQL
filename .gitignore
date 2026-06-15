@@ -23,7 +23,9 @@ src/speech_to_sql/m2_nlu/models/*
 
 # Feedback logs can contain user queries/corrections.
 src/speech_to_sql/m2_nlu/data/feedback/*.jsonl
-!src/speech_to_sql/m2_nlu/data/feedback/ingredient_feedback.jsonl
+
+# Generated verification reports are local evidence, not source artifacts.
+docs/verification/
 
 # API probing generates local virtual schema evidence.
 data/query_cache/*.json

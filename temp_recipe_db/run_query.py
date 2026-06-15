@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -17,12 +18,10 @@ if str(SRC_DIR) not in sys.path:
 
 
 BRIEF_COLUMNS = [
-    "Recipe_id",
     "recipe_id",
     "recipe_title",
     "ingredient",
-    "ingredient_lower",
-    "matching_values",
+    "ingredient_phrase",
     "calories",
     "protein (g)",
     "carbohydrate, by difference (g)",
@@ -64,16 +63,23 @@ def generated_sql(query: str) -> dict[str, Any]:
     tags["transcript"] = query
     prepared = prepare_intent(tags, transcript=query)
     compiled = build_sql_query(prepared, transcript=query)
+    public_intent = {
+        "ingredients": _normalized_ingredients_for_display(prepared),
+        "dietary_styles": prepared.get("dietary_styles", []),
+        "utensils": prepared.get("utensils", []),
+        "actions": prepared.get("actions", []),
+        "category_filters": prepared.get("category_filters", []),
+        "nutrition_filters": prepared.get("nutrition_filters", []),
+        "ingredient_logic": prepared.get("ingredient_logic", {}),
+    }
+    verifier_intent = {
+        **public_intent,
+        "_transcript": query,
+        "raw_spans": prepared.get("raw_spans", []),
+    }
     return {
-        "intent": {
-            "ingredients": _normalized_ingredients_for_display(prepared),
-            "dietary_styles": prepared.get("dietary_styles", []),
-            "utensils": prepared.get("utensils", []),
-            "actions": prepared.get("actions", []),
-            "category_filters": prepared.get("category_filters", []),
-            "nutrition_filters": prepared.get("nutrition_filters", []),
-            "ingredient_logic": prepared.get("ingredient_logic", {}),
-        },
+        "intent": public_intent,
+        "verifier_intent": verifier_intent,
         "sql": compiled,
     }
 
@@ -159,8 +165,9 @@ def verify_generated_result(
         _verify_excluded_ingredients(conn, checks, intent, rows)
         _verify_nutrition_filters(conn, checks, intent, rows)
         _verify_category_filters(conn, checks, intent, rows)
+        _verify_dietary_styles(conn, checks, intent, rows)
+        _verify_instruction_terms(conn, checks, intent, rows)
 
-    _verify_dietary_styles(checks, intent, rows)
     _verify_utensils(checks, intent, rows)
 
     return {
@@ -281,6 +288,7 @@ def _verify_excluded_ingredients(
 
 
 def _verify_dietary_styles(
+    conn: sqlite3.Connection,
     checks: list[dict[str, Any]],
     intent: dict[str, Any],
     rows: list[dict[str, Any]],
@@ -297,7 +305,7 @@ def _verify_dietary_styles(
         missing = [
             style
             for style in styles
-            if not _truthy(row.get(style))
+            if not _truthy(row.get(style, _dietary_value_for_recipe(conn, _recipe_id(row), style)))
         ]
         if missing:
             failures.append({
@@ -311,6 +319,22 @@ def _verify_dietary_styles(
         "Every returned row satisfies the dietary style filter(s).",
         failures,
     )
+
+
+def _dietary_value_for_recipe(
+    conn: sqlite3.Connection,
+    recipe_id: int | None,
+    style: str,
+) -> Any:
+    if recipe_id is None:
+        return None
+    if style not in {"vegan", "pescetarian", "ovo_vegetarian", "lacto_vegetarian", "ovo_lacto_vegetarian"}:
+        return None
+    row = conn.execute(
+        f"SELECT `{style}` FROM recipes WHERE recipe_id = ?",
+        [recipe_id],
+    ).fetchone()
+    return row[0] if row else None
 
 
 def _verify_nutrition_filters(
@@ -416,9 +440,9 @@ def _ingredient_nutrition_values(
         f"""
         SELECT `{column}`
         FROM RecipeDB_ingredient_nutrition
-        WHERE recipe_no = ? OR Recipe_id = ?
+        WHERE recipe_id = ?
         """,
-        [recipe_id, recipe_id],
+        [recipe_id],
     ):
         value = _number(row[0])
         if value is not None:
@@ -483,7 +507,7 @@ def _verify_ingredient_flavor_filter(
     item: dict[str, Any],
 ) -> None:
     column = {
-        "dietrx_category": "Dietrx_Category",
+        "dietrx_category": "dietrx_category",
         "flavordb_category": "flavordb_category",
         "generic_name": "generic_name",
         "ingredient": "ingredient",
@@ -515,10 +539,10 @@ def _ingredient_flavor_values(
         SELECT ifl.`{column}`
         FROM RecipeDB_ingredient_phrase AS ip
         JOIN RecipeDB_ingredient_flavor AS ifl
-          ON ip.ing_id = ifl.IngID
-        WHERE ip.recipe_no = ? OR ip.Recipe_id = ?
+          ON ip.ing_id = ifl.ingid
+        WHERE ip.recipe_no = ?
         """,
-        [recipe_id, recipe_id],
+        [recipe_id],
     ):
         value = str(row[0] or "").strip()
         if value and value not in values:
@@ -531,10 +555,12 @@ def _verify_utensils(
     intent: dict[str, Any],
     rows: list[dict[str, Any]],
 ) -> None:
+    scoped_terms = _instruction_scoped_terms(intent)
     utensils = [
         str(item).strip().lower()
         for item in intent.get("utensils", [])
         if str(item).strip()
+        and str(item).strip().lower() not in scoped_terms["utensils"]
     ]
     if not utensils:
         return
@@ -558,6 +584,105 @@ def _verify_utensils(
         not failures,
         "Every returned row satisfies utensil filter(s).",
         failures,
+    )
+
+
+def _verify_instruction_terms(
+    conn: sqlite3.Connection,
+    checks: list[dict[str, Any]],
+    intent: dict[str, Any],
+    rows: list[dict[str, Any]],
+) -> None:
+    scoped_terms = _instruction_scoped_terms(intent)
+    terms = sorted(scoped_terms["actions"] | scoped_terms["utensils"])
+    if not terms:
+        return
+
+    failures = []
+    for row in rows:
+        recipe_id = _recipe_id(row)
+        steps = _instruction_steps_for_recipe(conn, recipe_id)
+        missing = [
+            term
+            for term in terms
+            if term not in steps
+        ]
+        if missing:
+            failures.append({
+                "recipe_id": recipe_id,
+                "missing": missing,
+                "available": steps[:160],
+            })
+    _add_check(
+        checks,
+        "instructions",
+        not failures,
+        "Every returned row satisfies instruction-step term filter(s).",
+        failures,
+    )
+
+
+def _instruction_steps_for_recipe(conn: sqlite3.Connection, recipe_id: int | None) -> str:
+    if recipe_id is None:
+        return ""
+    rows = conn.execute(
+        """
+        SELECT steps
+        FROM RecipeDB_instructions
+        WHERE recipe_id = ?
+        """,
+        [recipe_id],
+    ).fetchall()
+    return " ".join(str(row[0] or "").lower() for row in rows)
+
+
+def _instruction_scoped_terms(intent: dict[str, Any]) -> dict[str, set[str]]:
+    scoped = {"actions": set(), "utensils": set()}
+    text = str(intent.get("_transcript") or intent.get("transcript") or intent.get("query") or "")
+    if not text:
+        return scoped
+
+    for item in intent.get("actions") or []:
+        if not isinstance(item, dict) or not item.get("action"):
+            continue
+        if _span_is_instruction_scoped(text, item.get("span")):
+            scoped["actions"].add(str(item["action"]).strip().lower())
+
+    utensil_values = {
+        str(value).strip().lower()
+        for value in intent.get("utensils") or []
+        if str(value).strip()
+    }
+    for item in intent.get("raw_spans") or []:
+        if not isinstance(item, dict):
+            continue
+        canonical = str(item.get("canonical") or "").strip().lower()
+        if canonical not in utensil_values:
+            continue
+        if _span_is_instruction_scoped(text, item.get("span")):
+            scoped["utensils"].add(canonical)
+    if len(scoped["actions"]) > 1:
+        scoped["actions"].discard("cook")
+    return scoped
+
+
+def _span_is_instruction_scoped(text: str, span: Any) -> bool:
+    if not isinstance(span, (list, tuple)) or len(span) != 2:
+        return False
+    try:
+        start = int(span[0])
+        end = int(span[1]) + 1
+    except (TypeError, ValueError):
+        return False
+
+    text_lower = text.lower()
+    prefix = text_lower[max(0, start - 96):start]
+    suffix = text_lower[end:min(len(text_lower), end + 72)]
+    instruction_pattern = r"\b(?:instruction|instructions|step|steps|cooking\s+steps?)\b"
+    mention_pattern = r"\b(?:mention|mentions|mentioned|contain|contains|containing|include|includes|including|with|in)\b"
+    return (
+        bool(re.search(instruction_pattern, prefix) and re.search(mention_pattern, prefix))
+        or bool(re.search(instruction_pattern, suffix) and re.search(mention_pattern, suffix))
     )
 
 
@@ -589,7 +714,7 @@ def _unique_lower(values: list[Any]) -> list[str]:
 
 
 def _recipe_id(row: dict[str, Any]) -> int | None:
-    value = row.get("Recipe_id", row.get("recipe_id"))
+    value = row.get("recipe_id")
     try:
         return int(value)
     except (TypeError, ValueError):
@@ -602,11 +727,11 @@ def _ingredients_for_recipe(conn: sqlite3.Connection, recipe_id: int | None) -> 
     values = []
     for row in conn.execute(
         """
-        SELECT ingredient, ingredient_lower, matching_values
+        SELECT ingredient, ingredient_phrase
         FROM RecipeDB_ingredient_phrase
-        WHERE recipe_no = ? OR Recipe_id = ?
+        WHERE recipe_no = ?
         """,
-        [recipe_id, recipe_id],
+        [recipe_id],
     ):
         for value in row:
             item = str(value or "").strip().lower()
@@ -754,7 +879,7 @@ def print_explanation(payload: dict[str, Any]) -> None:
     for row in payload.get("rows", [])[:5]:
         print(
             "  "
-            f"{row.get('Recipe_id', row.get('recipe_id'))}: "
+            f"{row.get('recipe_id')}: "
             f"{row.get('recipe_title')} | "
             f"calories={row.get('calories')} | "
             f"vegan={row.get('vegan')} | "
@@ -878,7 +1003,7 @@ def main() -> None:
     columns, rows = rows_for_sql(db_path, sql, params, args.limit)
     verification = verify_generated_result(
         db_path,
-        generated["intent"],
+        generated.get("verifier_intent", generated["intent"]),
         compiled,
         rows,
         total_count,

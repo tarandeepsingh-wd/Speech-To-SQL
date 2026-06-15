@@ -1,60 +1,8 @@
-# import numpy as np
-
-# from speech_to_sql.m2_nlu.embedding_model import MODEL
-# from speech_to_sql.m2_nlu.embedding_index import (
-#     ALL_TERMS,
-#     TERM_EMBEDDINGS
-# )
-
-# from speech_to_sql.m2_nlu.data.ingredient_synonyms import SYNONYMS
-# def semantic_match(query, threshold=0.72):
-    
-#     query_embedding = MODEL.encode(
-#         query,
-#         convert_to_numpy=True,
-#         normalize_embeddings=True
-#     )
-
-#     similarities = np.dot(
-#         TERM_EMBEDDINGS,
-#         query_embedding
-#     )
-
-#     best_idx = np.argmax(similarities)
-
-#     best_score = similarities[best_idx]
-
-#     if best_score < threshold:
-#         return None
-
-#     matched_term = ALL_TERMS[best_idx]
-
-#     canonical = SYNONYMS.get(
-#         matched_term,
-#         matched_term
-#     )
-
-#     return {
-#         "matched": matched_term,
-#         "canonical": canonical,
-#         "score": float(best_score)
-#     }
 import numpy as np
 
 from speech_to_sql.m2_nlu.embedding_model import get_model
 from speech_to_sql.m2_nlu.embedding_index import ALL_TERMS, TERM_EMBEDDINGS
-from speech_to_sql.m2_nlu.data.ingredient_synonyms import SYNONYMS, canonicalize_ingredient
-
-# ---------------------------------------------------------
-# CHANGE: Was importing MODEL directly from embedding_model.
-#
-# WHY THIS IS WRONG:
-#   `from speech_to_sql.m2_nlu.embedding_model import MODEL` would
-#   execute SentenceTransformer("all-MiniLM-L6-v2") at
-#   import time (before the lazy-load fix). Now uses
-#   get_model() so the model only loads when a query
-#   actually reaches Stage 3.
-# ---------------------------------------------------------
+from speech_to_sql.m2_nlu.data.ingredient_synonyms import canonicalize_ingredient
 
 
 def semantic_match(query: str, threshold: float = 0.78) -> dict | None:

@@ -290,7 +290,7 @@ def _dynamic_nutrient_patterns() -> tuple[tuple[str, str, re.Pattern, re.Pattern
             rf"(?P<nutrient>{alias_pattern})",
             re.IGNORECASE,
         )
-        patterns.append((alias, nutrient, nutrient_first, value_first))
+        patterns.append((alias, nutrient, value_first, nutrient_first))
     return tuple(patterns)
 
 

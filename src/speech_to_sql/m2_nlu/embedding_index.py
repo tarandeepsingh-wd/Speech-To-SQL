@@ -4,25 +4,8 @@ from pathlib import Path
 from speech_to_sql.m2_nlu.data.db_loader import DB_INGREDIENTS
 from speech_to_sql.m2_nlu.data.ingredient_synonyms import SYNONYMS
 
-# ---------------------------------------------------------
-# CHANGE 1: Was computing embeddings at import time.
-#
-# WHY THIS IS WRONG:
-#   The original code ran MODEL.encode(ALL_TERMS) the moment
-#   the module was imported. ALL_TERMS has ~5,000 strings.
-#   Encoding 5,000 strings takes 15-30 seconds on CPU.
-#   This ran EVERY time the app restarted - even when nothing
-#   had changed.
-#
-# FIX: Save the embeddings to disk after the first compute.
-#   Subsequent runs load from disk in under 1 second.
-#   Cache is invalidated only if ALL_TERMS changes (we
-#   compare a hash of the sorted term list).
-#
-# CHANGE 2: Model is now loaded lazily via get_model()
-#   so this file can be imported without triggering
-#   SentenceTransformer to load.
-# ---------------------------------------------------------
+# Ingredient embeddings are cached on disk and rebuilt only when the term list
+# changes. The sentence-transformer model is loaded lazily during cache rebuild.
 
 _CACHE_DIR  = Path(__file__).parent / "data" / "_cache"
 _TERMS_FILE = _CACHE_DIR / "ingredient_terms.npy"
@@ -49,16 +32,15 @@ def _load_or_build() -> np.ndarray:
     """Load embeddings from disk cache, or build and save them."""
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Check if cached version matches current term list
+    # Check if cached version matches current term list.
     if _TERMS_FILE.exists() and _EMBED_FILE.exists():
         try:
             cached_terms = list(np.load(_TERMS_FILE, allow_pickle=True))
             if cached_terms == ALL_TERMS:
                 return np.load(_EMBED_FILE)
         except Exception:
-            pass  # corrupted cache - rebuild below
+            pass
 
-    # Build: only happens on first run or when ingredients change
     print("[embedding_index] Building embedding cache - this runs once...")
     from speech_to_sql.m2_nlu.embedding_model import get_model
     model = get_model()
@@ -75,6 +57,4 @@ def _load_or_build() -> np.ndarray:
     return embeddings
 
 
-# Module-level - but only loads from disk (fast), never
-# re-encodes unless the term list has changed.
 TERM_EMBEDDINGS: np.ndarray = _load_or_build()
