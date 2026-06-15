@@ -717,6 +717,32 @@ def _action_base_candidates(token: str) -> list[str]:
     return candidates
 
 
+def _filter_actions_claimed_by_sql_ops(actions: list[dict], sql_operators: list[dict]) -> list[dict]:
+    sql_spans = [
+        tuple(item.get("span") or ())
+        for item in sql_operators
+        if str(item.get("canonical") or "").startswith(("LIMIT", "ORDER BY"))
+    ]
+    sql_spans = [
+        span for span in sql_spans
+        if len(span) == 2 and span[0] >= 0 and span[1] >= 0
+    ]
+    if not sql_spans:
+        return actions
+
+    filtered = []
+    for action in actions:
+        span = tuple(action.get("span") or ())
+        if len(span) == 2 and any(_span_overlaps(span, sql_span) for sql_span in sql_spans):
+            continue
+        filtered.append(action)
+    return filtered
+
+
+def _span_overlaps(left: tuple[int, int], right: tuple[int, int]) -> bool:
+    return left[0] <= right[1] and right[0] <= left[1]
+
+
 # ---------------------------------------------------------
 # CATEGORY DETECTION
 # ---------------------------------------------------------
@@ -945,7 +971,7 @@ def tag_entities(text: str) -> dict:
     dietary_styles = list(dict.fromkeys(m["style"] for m in dietary_matches))
     nutrition_filters = detected["nutrition"]
     sql_operators = detected["sql_ops"]
-    action_matches = detected["actions"]
+    action_matches = _filter_actions_claimed_by_sql_ops(detected["actions"], sql_operators)
     categories = detected["categories"]
     utensil_matches = detected["utensils"]
 

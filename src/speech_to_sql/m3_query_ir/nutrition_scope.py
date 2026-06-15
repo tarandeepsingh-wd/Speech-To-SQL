@@ -143,11 +143,22 @@ def _locate_filter_position(
             matches.append(match.span())
 
     matches.sort(key=lambda span: (span[0], -(span[1] - span[0])))
-    for start, end in matches:
-        if any(_overlaps((start, end), used) for used in used_ranges):
-            continue
-        used_ranges.append((start, end))
-        return start
+    available = [
+        (start, end)
+        for start, end in matches
+        if not any(_overlaps((start, end), used) for used in used_ranges)
+    ]
+    scoped = [
+        (start, end)
+        for start, end in available
+        if _infer_source(text, start)[1] != "default recipe nutrition"
+    ]
+    if scoped:
+        used_ranges.append(scoped[0])
+        return scoped[0][0]
+    if available:
+        used_ranges.append(available[0])
+        return available[0][0]
     if matches:
         return matches[0][0]
     return None

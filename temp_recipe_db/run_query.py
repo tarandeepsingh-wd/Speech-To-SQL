@@ -205,10 +205,24 @@ def _verify_ingredients(
     required = _required_ingredients(intent)
     if not required:
         return
+    include_operator = _required_ingredient_operator(intent)
     failures = []
     for row in rows:
         recipe_id = _recipe_id(row)
         ingredients = _ingredients_for_recipe(conn, recipe_id)
+        if include_operator == "OR":
+            present = [
+                ingredient
+                for ingredient in required
+                if _ingredient_present(ingredient, ingredients)
+            ]
+            if not present:
+                failures.append({
+                    "recipe_id": recipe_id,
+                    "missing_any_of": required,
+                    "available": ingredients,
+                })
+            continue
         missing = [
             ingredient
             for ingredient in required
@@ -224,7 +238,11 @@ def _verify_ingredients(
         checks,
         "required_ingredients",
         not failures,
-        "Every returned row contains the required ingredient(s).",
+        (
+            "Every returned row contains at least one required ingredient."
+            if include_operator == "OR"
+            else "Every returned row contains the required ingredient(s)."
+        ),
         failures,
     )
 
@@ -547,6 +565,11 @@ def _required_ingredients(intent: dict[str, Any]) -> list[str]:
     logic = intent.get("ingredient_logic") or {}
     values = logic.get("include") if "include" in logic else intent.get("ingredients") or []
     return _unique_lower(values)
+
+
+def _required_ingredient_operator(intent: dict[str, Any]) -> str:
+    logic = intent.get("ingredient_logic") or {}
+    return str(logic.get("include_operator") or "AND").upper()
 
 
 def _excluded_ingredients(intent: dict[str, Any]) -> list[str]:

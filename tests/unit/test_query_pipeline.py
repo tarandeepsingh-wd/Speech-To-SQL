@@ -489,6 +489,31 @@ def test_leafy_green_category_does_not_create_grain_ingredient():
     assert "`RecipeDB_instructions`" in sql["query"]
 
 
+def test_repeated_ingredient_and_nutrient_term_prefers_scoped_nutrition_mention():
+    query = "Show recipes with water where ingredient-level water is above 50g."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert prepared["ingredient_logic"]["include"] == ["water"]
+    assert nutrition["water"]["table_source"] == "ingredient_nutrition"
+    assert sql["validation"]["ok"] is True
+    assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
+    assert "inut1.`water (g)` > ?" in sql["query"]
+
+
+def test_limit_cue_does_not_become_instruction_action():
+    query = "Show top 4 recipes with tomato where instructions mention saute."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert [item["action"] for item in prepared["actions"]] == ["saute"]
+    assert sql["validation"]["ok"] is True
+    assert "%top%" not in sql["params"]
+    assert "LIMIT ?" in sql["query"]
+    assert sql["params"][-1] == 4
+
+
 def test_flavor_category_and_instruction_mentions_use_joined_tables():
     query = "Show recipes that use garlic, where garlic is categorized as an allium, and the instructions mention saute."
     prepared = prepare_intent(tag_entities(query), transcript=query)
