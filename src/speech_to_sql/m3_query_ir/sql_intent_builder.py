@@ -6,6 +6,7 @@ from typing import Any
 from speech_to_sql.common.config import load_recipe_db_config, load_sql_schema_config
 from speech_to_sql.m3_query_ir.intent_grounder import assert_grounded_intent
 from speech_to_sql.m3_query_ir.intent_preparer import prepare_intent
+from speech_to_sql.m3_query_ir.nutrition_scope import nutrition_filter_source
 from speech_to_sql.m3_query_ir.sort_resolver import resolve_sort_intent
 from speech_to_sql.m3_query_ir.sql_ir import OrderBy, Predicate, QueryIR, SelectExpr
 from speech_to_sql.m3_query_ir.time_resolver import resolve_time_filter
@@ -34,6 +35,8 @@ def build_query_ir(
     query.predicates.extend(_nutrition_predicates(tag_result))
     query.predicates.extend(_dietary_predicates(tag_result, text, recipe_config))
     query.predicates.extend(_time_predicates(tag_result, text, recipe_config))
+    query.predicates.extend(_ingredient_quantity_predicates(text))
+    query.predicates.extend(_instruction_text_predicates(tag_result, text))
     query.predicates.extend(_semantic_filter_predicates(tag_result, schema))
     query.predicates.extend(_category_predicates(tag_result))
 
@@ -121,6 +124,7 @@ def _ingredient_predicates(tag_result: dict) -> list[Predicate]:
 
 def _nutrition_predicates(tag_result: dict) -> list[Predicate]:
     predicates: list[Predicate] = []
+    schema = load_sql_schema_config()
     for nf in tag_result.get("nutrition_filters", []) or []:
         nutrient_group = nf.get("nutrient_group")
         if nutrient_group:
@@ -140,20 +144,21 @@ def _nutrition_predicates(tag_result: dict) -> list[Predicate]:
         op = nf.get("operator")
         if not nutrient or not op:
             continue
+        source = nutrition_filter_source(nf, schema=schema)
         try:
             value = float(nf["value"])
         except (KeyError, TypeError, ValueError):
             continue
         if op == "~":
             predicates.append(Predicate(
-                source="nutrition",
+                source=source,
                 field=nutrient,
                 operator="BETWEEN",
                 values=(round(value * 0.9, 1), round(value * 1.1, 1)),
             ))
         else:
             predicates.append(Predicate(
-                source="nutrition",
+                source=source,
                 field=nutrient,
                 operator=op,
                 values=(value,),
@@ -220,15 +225,64 @@ def _category_predicates(tag_result: dict) -> list[Predicate]:
         field = item.get("field")
         value = item.get("value")
         operator = item.get("operator") or "="
+        source = item.get("source") or "base"
         if not field or value is None:
             continue
         predicates.append(Predicate(
-            source="base",
+            source=str(source),
             field=str(field),
             operator=str(operator),
             values=(value,),
         ))
     return predicates
+
+
+def _ingredient_quantity_predicates(text: str) -> list[Predicate]:
+    if not (
+        re.search(r"\bingredient\s+quantity\b", text)
+        or re.search(r"\bquantity\s+(?:available|present|listed)\b", text)
+    ):
+        return []
+    return [Predicate(
+        source="ingredients",
+        field="quantity",
+        operator="LIKE",
+        values=("%",),
+    )]
+
+
+def _instruction_text_predicates(tag_result: dict, text: str) -> list[Predicate]:
+    if not _instruction_scope(text):
+        return []
+    values: list[Any] = []
+    action_values = [
+        item.get("action")
+        for item in tag_result.get("actions") or []
+        if isinstance(item, dict) and item.get("action")
+    ]
+    if len(action_values) > 1:
+        action_values = [
+            value for value in action_values
+            if str(value).strip().lower() not in {"cook"}
+        ]
+    values.extend(action_values)
+    values.extend(tag_result.get("utensils") or [])
+    return [
+        Predicate(
+            source="instructions",
+            field="steps",
+            operator="LIKE",
+            values=(_transform_filter_value(value, "LIKE", {"value_transform": "contains"}),),
+        )
+        for value in _unique_strings(values)
+    ]
+
+
+def _instruction_scope(text: str) -> bool:
+    return bool(re.search(
+        r"\b(?:instruction|instructions|step|steps|cooking\s+steps?)\b",
+        text,
+    ))
 
 
 def _semantic_filter_predicates(

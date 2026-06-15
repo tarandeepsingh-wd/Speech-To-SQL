@@ -57,23 +57,32 @@ NUTRITION_COLUMNS = {
 
 def generated_sql(query: str) -> dict[str, Any]:
     from speech_to_sql.m2_nlu.entity_tagger import tag_entities
+    from speech_to_sql.m3_query_ir.intent_preparer import prepare_intent
     from speech_to_sql.m4_sql.sql_query_builder import build_sql_query
 
     tags = tag_entities(query)
     tags["transcript"] = query
-    compiled = build_sql_query(tags, transcript=query)
+    prepared = prepare_intent(tags, transcript=query)
+    compiled = build_sql_query(prepared, transcript=query)
     return {
         "intent": {
-            "ingredients": tags.get("ingredients", []),
-            "dietary_styles": tags.get("dietary_styles", []),
-            "utensils": tags.get("utensils", []),
-            "actions": tags.get("actions", []),
-            "category_filters": tags.get("category_filters", []),
-            "nutrition_filters": tags.get("nutrition_filters", []),
-            "ingredient_logic": tags.get("ingredient_logic", {}),
+            "ingredients": _normalized_ingredients_for_display(prepared),
+            "dietary_styles": prepared.get("dietary_styles", []),
+            "utensils": prepared.get("utensils", []),
+            "actions": prepared.get("actions", []),
+            "category_filters": prepared.get("category_filters", []),
+            "nutrition_filters": prepared.get("nutrition_filters", []),
+            "ingredient_logic": prepared.get("ingredient_logic", {}),
         },
         "sql": compiled,
     }
+
+
+def _normalized_ingredients_for_display(intent: dict[str, Any]) -> list[Any]:
+    logic = intent.get("ingredient_logic") or {}
+    if "include" in logic or "exclude" in logic:
+        return list(logic.get("include") or []) + list(logic.get("exclude") or [])
+    return list(intent.get("ingredients") or [])
 
 
 def rows_for_sql(
@@ -148,10 +157,10 @@ def verify_generated_result(
         conn.row_factory = sqlite3.Row
         _verify_ingredients(conn, checks, intent, rows)
         _verify_excluded_ingredients(conn, checks, intent, rows)
+        _verify_nutrition_filters(conn, checks, intent, rows)
+        _verify_category_filters(conn, checks, intent, rows)
 
     _verify_dietary_styles(checks, intent, rows)
-    _verify_nutrition_filters(checks, intent, rows)
-    _verify_category_filters(checks, intent, rows)
     _verify_utensils(checks, intent, rows)
 
     return {
@@ -287,6 +296,7 @@ def _verify_dietary_styles(
 
 
 def _verify_nutrition_filters(
+    conn: sqlite3.Connection,
     checks: list[dict[str, Any]],
     intent: dict[str, Any],
     rows: list[dict[str, Any]],
@@ -304,20 +314,37 @@ def _verify_nutrition_filters(
         nutrient = str(item.get("nutrient") or "").strip()
         operator = str(item.get("operator") or "").strip()
         expected = item.get("value")
-        column = _nutrition_column(nutrient, rows[0])
+        source = _nutrition_filter_source(item)
+        column = (
+            _ingredient_nutrition_column(nutrient)
+            if source == "ingredient_nutrition"
+            else _nutrition_column(nutrient, rows[0])
+        )
         if not column or expected is None or not operator:
             skipped.append(item)
             continue
-        for row in rows:
-            actual = _number(row.get(column))
-            if actual is None or not _compare(actual, operator, float(expected)):
-                failures.append({
-                    "recipe_id": _recipe_id(row),
-                    "nutrient": nutrient,
-                    "column": column,
-                    "actual": row.get(column),
-                    "expected": f"{operator} {expected}",
-                })
+        if source == "ingredient_nutrition":
+            _verify_ingredient_nutrition_filter(
+                conn,
+                failures,
+                rows,
+                nutrient,
+                column,
+                operator,
+                float(expected),
+            )
+        else:
+            for row in rows:
+                actual = _number(row.get(column))
+                if actual is None or not _compare(actual, operator, float(expected)):
+                    failures.append({
+                        "recipe_id": _recipe_id(row),
+                        "source": source,
+                        "nutrient": nutrient,
+                        "column": column,
+                        "actual": row.get(column),
+                        "expected": f"{operator} {expected}",
+                    })
     _add_check(
         checks,
         "nutrition_filters",
@@ -335,7 +362,62 @@ def _verify_nutrition_filters(
         )
 
 
+def _verify_ingredient_nutrition_filter(
+    conn: sqlite3.Connection,
+    failures: list[dict[str, Any]],
+    rows: list[dict[str, Any]],
+    nutrient: str,
+    column: str,
+    operator: str,
+    expected: float,
+) -> None:
+    for row in rows:
+        recipe_id = _recipe_id(row)
+        values = _ingredient_nutrition_values(conn, recipe_id, column)
+        if any(_compare(value, operator, expected) for value in values):
+            continue
+        failures.append({
+            "recipe_id": recipe_id,
+            "source": "ingredient_nutrition",
+            "nutrient": nutrient,
+            "column": column,
+            "actual_values": values[:8],
+            "expected": f"any ingredient {operator} {expected}",
+        })
+
+
+def _ingredient_nutrition_values(
+    conn: sqlite3.Connection,
+    recipe_id: int | None,
+    column: str,
+) -> list[float]:
+    if recipe_id is None:
+        return []
+    values: list[float] = []
+    for row in conn.execute(
+        f"""
+        SELECT `{column}`
+        FROM RecipeDB_ingredient_nutrition
+        WHERE recipe_no = ? OR Recipe_id = ?
+        """,
+        [recipe_id, recipe_id],
+    ):
+        value = _number(row[0])
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def _nutrition_filter_source(item: dict[str, Any]) -> str:
+    for key in ("table_source", "relation", "relation_source", "source"):
+        value = str(item.get(key) or "").strip()
+        if value in {"nutrition", "ingredient_nutrition"}:
+            return value
+    return "nutrition"
+
+
 def _verify_category_filters(
+    conn: sqlite3.Connection,
     checks: list[dict[str, Any]],
     intent: dict[str, Any],
     rows: list[dict[str, Any]],
@@ -349,17 +431,22 @@ def _verify_category_filters(
         return
     failures = []
     for item in filters:
+        source = str(item.get("source") or "base")
         field = str(item.get("field"))
         expected = str(item.get("value", "")).lower()
-        for row in rows:
-            actual = str(row.get(field, "")).lower()
-            if actual != expected:
-                failures.append({
-                    "recipe_id": _recipe_id(row),
-                    "field": field,
-                    "actual": row.get(field),
-                    "expected": item.get("value"),
-                })
+        if source == "ingredient_flavor":
+            _verify_ingredient_flavor_filter(conn, failures, rows, field, expected, item)
+        else:
+            for row in rows:
+                actual = str(row.get(field, "")).lower()
+                if actual != expected:
+                    failures.append({
+                        "recipe_id": _recipe_id(row),
+                        "source": source,
+                        "field": field,
+                        "actual": row.get(field),
+                        "expected": item.get("value"),
+                    })
     _add_check(
         checks,
         "category_filters",
@@ -367,6 +454,58 @@ def _verify_category_filters(
         "Every returned row satisfies cuisine/category filter(s).",
         failures,
     )
+
+
+def _verify_ingredient_flavor_filter(
+    conn: sqlite3.Connection,
+    failures: list[dict[str, Any]],
+    rows: list[dict[str, Any]],
+    field: str,
+    expected: str,
+    item: dict[str, Any],
+) -> None:
+    column = {
+        "dietrx_category": "Dietrx_Category",
+        "flavordb_category": "flavordb_category",
+        "generic_name": "generic_name",
+        "ingredient": "ingredient",
+    }.get(field, field)
+    for row in rows:
+        recipe_id = _recipe_id(row)
+        values = _ingredient_flavor_values(conn, recipe_id, column)
+        if expected in {value.lower() for value in values}:
+            continue
+        failures.append({
+            "recipe_id": recipe_id,
+            "source": "ingredient_flavor",
+            "field": field,
+            "actual_values": values[:8],
+            "expected": item.get("value"),
+        })
+
+
+def _ingredient_flavor_values(
+    conn: sqlite3.Connection,
+    recipe_id: int | None,
+    column: str,
+) -> list[str]:
+    if recipe_id is None:
+        return []
+    values: list[str] = []
+    for row in conn.execute(
+        f"""
+        SELECT ifl.`{column}`
+        FROM RecipeDB_ingredient_phrase AS ip
+        JOIN RecipeDB_ingredient_flavor AS ifl
+          ON ip.ing_id = ifl.IngID
+        WHERE ip.recipe_no = ? OR ip.Recipe_id = ?
+        """,
+        [recipe_id, recipe_id],
+    ):
+        value = str(row[0] or "").strip()
+        if value and value not in values:
+            values.append(value)
+    return values
 
 
 def _verify_utensils(
@@ -406,7 +545,7 @@ def _verify_utensils(
 
 def _required_ingredients(intent: dict[str, Any]) -> list[str]:
     logic = intent.get("ingredient_logic") or {}
-    values = logic.get("include") or intent.get("ingredients") or []
+    values = logic.get("include") if "include" in logic else intent.get("ingredients") or []
     return _unique_lower(values)
 
 
@@ -473,6 +612,10 @@ def _nutrition_column(nutrient: str, row: dict[str, Any]) -> str | None:
     if nutrient in row:
         return nutrient
     return lowered_keys.get(nutrient.lower())
+
+
+def _ingredient_nutrition_column(nutrient: str) -> str | None:
+    return NUTRITION_COLUMNS.get(nutrient.lower(), nutrient)
 
 
 def _number(value: Any) -> float | None:
@@ -601,8 +744,9 @@ def _format_nutrition_filters(filters: list[dict[str, Any]]) -> str:
     for item in filters:
         if not isinstance(item, dict):
             continue
+        source = item.get("table_source") or item.get("relation") or item.get("source") or "nutrition"
         parts.append(
-            f"{item.get('nutrient')} {item.get('operator')} {item.get('value')}"
+            f"{source}.{item.get('nutrient')} {item.get('operator')} {item.get('value')}"
         )
     return ", ".join(parts) if parts else "[]"
 

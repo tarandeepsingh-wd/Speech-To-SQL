@@ -63,8 +63,12 @@ def _enrich_nutrition_filters(
         if isinstance(item, dict)
     ]
     existing = {
-        link_nutrition_field(item.get("nutrient"), recipe_config=recipe_config, schema=schema)
-        for item in filters
+        nutrient
+        for nutrient in (
+            link_nutrition_field(item.get("nutrient"), recipe_config=recipe_config, schema=schema)
+            for item in filters
+        )
+        if nutrient
     }
     consumed_terms = list(tag_result.get("_consumed_nutrition_terms") or [])
 
@@ -77,7 +81,10 @@ def _enrich_nutrition_filters(
             recipe_config=recipe_config,
             schema=schema,
         )
-        if not nutrient or nutrient in existing:
+        if not nutrient:
+            continue
+        replacement = _generic_presence_filter_index(filters, nutrient, recipe_config, schema)
+        if nutrient in existing and replacement is None:
             continue
         added = {
             "nutrient": nutrient,
@@ -85,7 +92,10 @@ def _enrich_nutrition_filters(
             "value": rule["value"],
             "source": "intent_enrichment",
         }
-        filters.append(added)
+        if replacement is None:
+            filters.append(added)
+        else:
+            filters[replacement] = {**filters[replacement], **added}
         existing.add(nutrient)
         consumed_terms.extend(matched_terms)
         consumed_terms.append(str(rule["nutrient"]))
@@ -97,6 +107,30 @@ def _enrich_nutrition_filters(
 
     tag_result["nutrition_filters"] = filters
     tag_result["_consumed_nutrition_terms"] = _unique_terms(consumed_terms)
+
+
+def _generic_presence_filter_index(
+    filters: list[dict[str, Any]],
+    nutrient: str,
+    recipe_config: dict[str, Any],
+    schema: dict[str, Any],
+) -> int | None:
+    for index, item in enumerate(filters):
+        resolved = link_nutrition_field(
+            item.get("nutrient"),
+            recipe_config=recipe_config,
+            schema=schema,
+        )
+        if resolved != nutrient:
+            continue
+        try:
+            value = float(item.get("value"))
+        except (TypeError, ValueError):
+            continue
+        operator = str(item.get("operator") or "").strip()
+        if operator == ">" and value == 0:
+            return index
+    return None
 
 
 def _enrich_time_filters(

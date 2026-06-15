@@ -76,6 +76,7 @@ DIETARY_STYLE_LOOKUP = {
 
 _NUTRIENT_MAP = {
     "calorie": "calories", "calories": "calories", "cal": "calories",
+    "cals": "calories", "calor": "calories",
     "kcal": "calories",
     "protein": "protein", "proteins": "protein",
     "fat": "fat", "fats": "fat",
@@ -387,6 +388,7 @@ def _dynamic_nutrient_presence_patterns() -> tuple[tuple[str, str, re.Pattern, b
 
 
 def _cue_in_prefix(prefix: str, cues: list[str]) -> bool:
+    prefix = _normalize_schema_key(prefix)
     for cue in cues:
         tokens = re.findall(r"[a-z0-9]+", cue)
         if not tokens:
@@ -627,6 +629,8 @@ def _mask_claimed_spans(text: str, extra_spans: list | None = None) -> str:
         for m in pattern.finditer(text.lower()):
             if pattern in _NUTRITION_PATTERNS and not _valid_nutrition_match(pattern, m):
                 continue
+            if pattern in _NUTRITION_PATTERNS and not _normalize_nutrient(m.group("nutrient")):
+                continue
             for i in range(m.start(), m.end()):
                 if i < len(chars):
                     chars[i] = " "
@@ -721,6 +725,8 @@ def _detect_categories(text: str) -> list:
     category_synonyms = _category_synonyms()
 
     for term in sorted(category_synonyms.keys(), key=len, reverse=True):
+        if _is_nutrition_term(term):
+            continue
         pattern = re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
         for m in pattern.finditer(text_lower):
             positions = set(range(m.start(), m.end()))
@@ -752,12 +758,22 @@ def _load_cuisine_category_synonyms() -> dict[str, str]:
         return _CUISINE_CATEGORY_CACHE
 
     aliases = payload.get("cuisine_aliases", {})
-    _CUISINE_CATEGORY_CACHE = {
+    cuisine_terms = {
         str(term).lower().strip(): "cuisine"
         for term in aliases
         if str(term).strip()
     }
+    flavor_terms = {
+        str(term).lower().strip(): "ingredient_flavor"
+        for term in payload.get("ingredient_flavor_aliases", {})
+        if str(term).strip()
+    }
+    _CUISINE_CATEGORY_CACHE = {**cuisine_terms, **flavor_terms}
     return _CUISINE_CATEGORY_CACHE
+
+
+def _is_nutrition_term(term: str) -> bool:
+    return _normalize_nutrient(term) is not None
 
 
 # ---------------------------------------------------------
@@ -779,6 +795,8 @@ def _detect_dietary_style_matches(text: str) -> list:
     used       = set()
 
     for term in _STYLE_TERMS:
+        if _is_nutrition_qualifier(term):
+            continue
         p   = re.escape(term).replace(r"\ ", r"[\s-]").replace("\\-", "[\\s-]")
         pat = re.compile(r"\b" + p + r"\b", re.IGNORECASE)
         for m in pat.finditer(text_lower):
@@ -802,7 +820,11 @@ def _detect_dietary_style_matches(text: str) -> list:
             phrase = text_lower[start:end + 1]
             if len(phrase.replace(" ", "").replace("-", "")) < 4:
                 continue
+            if width == 1 and phrase in {"free"}:
+                continue
             if width == 1 and _is_known_ingredient_term(phrase):
+                continue
+            if _is_nutrition_qualifier(phrase):
                 continue
             match = process.extractOne(
                 phrase,
@@ -811,6 +833,8 @@ def _detect_dietary_style_matches(text: str) -> list:
                 score_cutoff=88,
             )
             if not match:
+                continue
+            if _is_nutrition_qualifier(match[0]):
                 continue
             used |= positions
             found.append({
@@ -825,6 +849,30 @@ def _detect_dietary_styles(text: str) -> list:
     return list(dict.fromkeys(
         match["style"] for match in _detect_dietary_style_matches(text)
     ))
+
+
+@lru_cache(maxsize=1)
+def _nutrition_qualifier_terms() -> set[str]:
+    try:
+        from speech_to_sql.common.config import load_recipe_db_config
+
+        payload = load_recipe_db_config()
+    except (OSError, json.JSONDecodeError):
+        return set()
+
+    terms: set[str] = set()
+    for rule in payload.get("intent_enrichment", {}).get("nutrition_qualifiers", []):
+        if not isinstance(rule, dict):
+            continue
+        for term in rule.get("terms", []):
+            normalized = _normalize_schema_key(str(term))
+            if normalized:
+                terms.add(normalized)
+    return terms
+
+
+def _is_nutrition_qualifier(term: str) -> bool:
+    return _normalize_schema_key(term) in _nutrition_qualifier_terms()
 
 
 # ---------------------------------------------------------
@@ -879,6 +927,11 @@ def tag_entities(text: str) -> dict:
     # independent from the SQL operator layer while avoiding known false hits.
     claimed_spans = [m["span"] for m in utensil_matches]
     claimed_spans.extend(m["span"] for m in dietary_matches)
+    claimed_spans.extend(
+        m["span"]
+        for m in action_matches
+        if not _is_known_ingredient_term(str(m.get("action") or ""))
+    )
     masked = _mask_claimed_spans(text, claimed_spans)
     ingredient_matches = extract_ingredients(masked)
     ingredient_matches = rerank_ingredient_matches(text, ingredient_matches)

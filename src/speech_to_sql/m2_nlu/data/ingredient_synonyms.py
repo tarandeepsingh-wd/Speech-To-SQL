@@ -625,6 +625,7 @@ SYNONYMS = {
     "senagapindi": "chickpea flour",
 
     # Rice Flour
+    "rice flour": "rice",
     "chawal ka atta": "rice flour",
     "rice powder": "rice flour",
 
@@ -845,7 +846,7 @@ SYNONYMS = {
     "murgi": "chicken",
     "murg": "chicken",
     "murgh": "chicken",
-    "chicken breast": "chicken breast",
+    "chicken breast": "chicken",
     "chicken thigh": "chicken thigh",
     "chicken thighs": "chicken thigh",
     "chicken drumstick": "chicken",

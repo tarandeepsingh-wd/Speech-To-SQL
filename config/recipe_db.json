@@ -236,9 +236,12 @@
   },
   "intent_enrichment": {
     "nutrition_qualifiers": [
-      {"terms": ["low carb", "low carbohydrate"], "nutrient": "carbs", "operator": "<=", "value": 50},
+      {"terms": ["low carb", "low carbs", "low carbohydrate", "low carbohydrates"], "nutrient": "carbs", "operator": "<=", "value": 50},
       {"terms": ["low calorie", "low calories", "low kcal"], "nutrient": "calories", "operator": "<=", "value": 500},
       {"terms": ["high protein", "protein rich"], "nutrient": "protein", "operator": ">=", "value": 20},
+      {"terms": ["high fiber", "high-fiber", "fiber rich", "fibre rich"], "nutrient": "fiber", "operator": ">=", "value": 5},
+      {"terms": ["low fat", "low-fat"], "nutrient": "fat", "operator": "<=", "value": 3},
+      {"terms": ["low sodium", "low-sodium", "low salt"], "nutrient": "sodium", "operator": "<=", "value": 140},
       {"terms": ["low sugar", "low sugars", "sugar free", "sugar-free"], "nutrient": "sugar", "operator": "<=", "value": 10}
     ],
     "time_patterns": {
@@ -249,6 +252,23 @@
   },
   "category_types": {
     "cuisine": ["region", "cuisine", "continent", "sub_region", "subregion"]
+  },
+  "ingredient_flavor_aliases": {
+    "allium": {"field": "flavordb_category", "value": "allium"},
+    "citrus": {"field": "flavordb_category", "value": "citrus"},
+    "leafy green": {"field": "flavordb_category", "value": "leafy green"},
+    "leafy greens": {"field": "flavordb_category", "value": "leafy green"},
+    "fish": {"field": "flavordb_category", "value": "fish"},
+    "seafood": {"field": "dietrx_category", "value": "Seafood"},
+    "vegetable": {"field": "dietrx_category", "value": "Vegetable"},
+    "vegetables": {"field": "dietrx_category", "value": "Vegetable"},
+    "spice": {"field": "dietrx_category", "value": "Spice"},
+    "spices": {"field": "dietrx_category", "value": "Spice"},
+    "herb": {"field": "dietrx_category", "value": "Herb"},
+    "herbs": {"field": "dietrx_category", "value": "Herb"},
+    "fruit": {"field": "dietrx_category", "value": "Fruit"},
+    "legume": {"field": "dietrx_category", "value": "Legume"},
+    "cereal": {"field": "dietrx_category", "value": "Cereal"}
   },
   "response_field_aliases": {
     "calories": ["Calories", "calories"],
@@ -296,9 +316,7 @@
     "quick",
     "fast",
     "shortest",
-    "longest",
-    "high protein",
-    "low calorie"
+    "longest"
   ],
   "sort_direction_cues": {
     "desc": ["highest", "most", "maximum", "max", "descending", "top", "high"],
@@ -308,7 +326,7 @@
     "desc": ["from most to least", "from highest to lowest", "from greatest to least", "most to least", "highest to lowest", "greatest to least"],
     "asc": ["from least to most", "from lowest to highest", "from least to greatest", "least to most", "lowest to highest", "least to greatest"]
   },
-  "protein_desc_cues": ["high protein", "most protein", "highest protein"],
+  "protein_desc_cues": ["most protein", "highest protein"],
   "sql_order_columns": {
     "protein": "protein_g",
     "calorie": "calories",

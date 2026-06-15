@@ -496,6 +496,7 @@ def _format_nutrition_filters(filters: list[dict]) -> str:
             "operator": item.get("operator"),
             "value": item.get("value"),
             "group": item.get("nutrient_group"),
+            "table_source": item.get("table_source"),
         })
     return _json_inline(compact)
 
@@ -668,7 +669,8 @@ def _plain_meaning(result: dict) -> str:
 def _nutrition_filter_meaning(item: dict) -> str:
     if item.get("nutrient_group"):
         return f"group {item.get('nutrient_group')} present"
-    return f"{item.get('nutrient')} {item.get('operator')} {item.get('value')}"
+    source = item.get("table_source") or "nutrition"
+    return f"{source}.{item.get('nutrient')} {item.get('operator')} {item.get('value')}"
 
 
 def _sql_strategy(plan: dict, query: str | None) -> str:

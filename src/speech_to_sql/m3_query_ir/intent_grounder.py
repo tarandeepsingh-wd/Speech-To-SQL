@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from speech_to_sql.common.config import load_sql_schema_config
+from speech_to_sql.m3_query_ir.nutrition_scope import nutrition_filter_source
 from speech_to_sql.m3_query_ir.schema_registry import SchemaRegistry, load_schema_registry
 from speech_to_sql.m3_query_ir.sql_ir import Predicate
 
@@ -126,13 +127,18 @@ def _ground_nutrition_filters(
     errors: list[str],
 ) -> None:
     allowed_operators = set(schema.get("allowed_operators", []))
-    relation = registry.relation("nutrition") or {}
     for index, item in enumerate(tag_result.get("nutrition_filters") or []):
         if not isinstance(item, dict):
             errors.append(f"nutrition_filters[{index}] must be an object")
             continue
+        source = nutrition_filter_source(item, schema=schema)
+        relation = registry.relation(source) or {}
+        if not relation:
+            errors.append(f"nutrition_filters[{index}] uses unknown source {source!r}")
+            continue
         group = str(item.get("nutrient_group") or "").strip()
         if group:
+            relation = registry.relation("nutrition") or relation
             group_config = registry.nutrition_group(group)
             if not group_config:
                 errors.append(f"Unknown nutrition group {group!r}")
@@ -158,17 +164,17 @@ def _ground_nutrition_filters(
             float(item["value"])
         except (KeyError, TypeError, ValueError):
             errors.append(f"nutrition_filters[{index}] has non-numeric value")
-        predicate = Predicate("nutrition", nutrient, "=", (0,))
+        predicate = Predicate(source, nutrient, "=", (0,))
         column = registry.predicate_column(predicate)
         if not column:
-            errors.append(f"Unknown nutrition field {nutrient!r}")
+            errors.append(f"Unknown {source} field {nutrient!r}")
             continue
         evidence.append(GroundingEvidence(
-            "nutrition",
+            source,
             nutrient,
             relation.get("table", registry.base_table["name"]),
             column,
-            "sql_schema.relations.nutrition",
+            f"sql_schema.relations.{source}",
         ))
 
 
@@ -246,16 +252,18 @@ def _ground_category_filters(
             errors.append(f"category_filters[{index}] uses unsupported operator {operator!r}")
         if not isinstance(value, (str, int, float, bool)) or str(value).strip() == "":
             errors.append(f"category_filters[{index}] has invalid value")
-        column = registry.base_column(field)
+        source = str(item.get("source") or "base").strip() or "base"
+        relation = registry.relation(source) if source != "base" else None
+        column = registry.base_column(field) if source == "base" else registry.predicate_column(Predicate(source, field, "=", (value,)))
         if not column:
-            errors.append(f"Unknown category field {field!r}")
+            errors.append(f"Unknown {source} category field {field!r}")
             continue
         evidence.append(GroundingEvidence(
-            "category",
+            source if source != "base" else "category",
             field,
-            registry.base_table["name"],
+            (relation or {}).get("table", registry.base_table["name"]),
             column,
-            "recipe_db.cuisine_aliases",
+            f"sql_schema.relations.{source}" if source != "base" else "recipe_db.cuisine_aliases",
         ))
 
 

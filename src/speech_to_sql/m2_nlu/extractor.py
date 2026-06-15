@@ -223,6 +223,7 @@ _RISKY_CORRECTIONS: dict = {
 # Add more entries here as new ASR failure patterns are found.
 # ----------------------------------------------------------
 _SAFE_CORRECTIONS: dict = {
+    r"\bchick\b": "chicken",
     r"\bkepsikam\b": "capsicum",
     r"\bkepsecum\b": "capsicum",
     r"\bkapsikam\b": "capsicum",

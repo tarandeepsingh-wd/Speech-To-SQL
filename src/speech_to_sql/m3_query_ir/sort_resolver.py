@@ -71,15 +71,25 @@ def _best_config_key(text: str, terms_by_key: dict[str, list[str]]) -> str | Non
 
 
 def _contains_config_term(text: str, terms: list[str]) -> bool:
-    return any(re.search(rf"\b{re.escape(term)}\b", text) for term in terms)
+    return any(_config_term_positions(text, term) for term in terms)
 
 
 def _last_config_term_position(text: str, terms: list[str]) -> int | None:
     positions = [
-        match.start()
+        position
         for term in terms
-        for match in re.finditer(rf"\b{re.escape(term)}\b", text)
+        for position in _config_term_positions(text, term)
     ]
     if not positions:
         return None
     return max(positions)
+
+
+def _config_term_positions(text: str, term: str) -> list[int]:
+    positions = []
+    for match in re.finditer(rf"\b{re.escape(term)}\b", text):
+        prefix = text[max(0, match.start() - 3):match.start()]
+        if term in {"least", "most"} and prefix == "at ":
+            continue
+        positions.append(match.start())
+    return positions

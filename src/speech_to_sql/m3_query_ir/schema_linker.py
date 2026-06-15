@@ -61,6 +61,7 @@ def link_tag_result(
         unresolved,
     )
     linked["category_filters"] = _link_categories(
+        linked,
         linked.get("categories") or [],
         recipe_config,
         schema,
@@ -184,14 +185,17 @@ def _link_time_filters(
 
 
 def _link_categories(
+    tag_result: dict[str, Any],
     categories: list[dict[str, Any]],
     recipe_config: dict[str, Any],
     schema: dict[str, Any],
     links: list[SchemaLink],
     unresolved: list[dict[str, str]],
 ) -> list[dict[str, Any]]:
-    alias_index = _cuisine_alias_index(recipe_config)
+    cuisine_alias_index = _cuisine_alias_index(recipe_config)
+    flavor_alias_index = _ingredient_flavor_alias_index(recipe_config)
     base_columns = schema["base_columns"]
+    flavor_columns = schema.get("relations", {}).get("ingredient_flavor", {}).get("columns", {})
     filters: list[dict[str, Any]] = []
     for item in categories:
         if not isinstance(item, dict):
@@ -199,10 +203,28 @@ def _link_categories(
         original = item.get("term") or item.get("value") or item.get("text")
         if _resolve_alias(original, _nutrition_alias_index(recipe_config, schema)):
             continue
-        resolved = _resolve_cuisine_alias(original, alias_index)
+        if _term_is_part_of_ingredient(original, tag_result):
+            continue
+
+        flavor_filter = _resolve_cuisine_alias(original, flavor_alias_index)
+        if flavor_filter:
+            field = str(flavor_filter.get("field") or "")
+            value = flavor_filter.get("value")
+            if field not in flavor_columns or value is None:
+                _record_unresolved(unresolved, "ingredient_flavor", original)
+                continue
+            filters.append({
+                "source": "ingredient_flavor",
+                "field": field,
+                "operator": "=",
+                "value": value,
+                "term": str(original),
+            })
+            _record_link(links, "ingredient_flavor", original, field, "recipe_db.ingredient_flavor_aliases")
+            continue
+
+        resolved = _resolve_cuisine_alias(original, cuisine_alias_index)
         if not resolved:
-            if original:
-                _record_unresolved(unresolved, "category", original)
             continue
         for field, value in resolved.items():
             if field not in base_columns:
@@ -224,6 +246,11 @@ def _normalize_ingredient_logic(tag_result: dict[str, Any]) -> dict[str, Any]:
         _normalize_key(term)
         for term in tag_result.get("_consumed_nutrition_terms") or []
     }
+    consumed.update(
+        _normalize_key(item.get("term") or item.get("value") or item.get("text"))
+        for item in tag_result.get("category_filters") or []
+        if isinstance(item, dict)
+    )
     include = logic.get("include") or tag_result.get("ingredients") or []
     exclude = logic.get("exclude") or []
     logic["include"] = [
@@ -267,6 +294,30 @@ def _cuisine_alias_index(recipe_config: dict[str, Any]) -> dict[str, dict[str, s
         for source, target in recipe_config.get("cuisine_aliases", {}).items()
         if source and isinstance(target, dict)
     }
+
+
+def _ingredient_flavor_alias_index(recipe_config: dict[str, Any]) -> dict[str, dict[str, str]]:
+    return {
+        _normalize_key(source): dict(target)
+        for source, target in recipe_config.get("ingredient_flavor_aliases", {}).items()
+        if source and isinstance(target, dict)
+    }
+
+
+def _term_is_part_of_ingredient(term: Any, tag_result: dict[str, Any]) -> bool:
+    normalized = _normalize_key(str(term or ""))
+    if not normalized:
+        return False
+    ingredient_values: list[Any] = []
+    ingredient_values.extend(tag_result.get("ingredients") or [])
+    logic = tag_result.get("ingredient_logic") or {}
+    ingredient_values.extend(logic.get("include") or [])
+    ingredient_values.extend(logic.get("exclude") or [])
+    for ingredient in ingredient_values:
+        ingredient_key = _normalize_key(str(ingredient or ""))
+        if ingredient_key != normalized and re.search(rf"\b{re.escape(normalized)}\b", ingredient_key):
+            return True
+    return False
 
 
 def _base_alias_index(

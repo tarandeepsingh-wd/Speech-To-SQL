@@ -5,6 +5,7 @@ from typing import Any
 from speech_to_sql.common.config import load_recipe_db_config, load_sql_schema_config
 from speech_to_sql.m3_query_ir.intent_enricher import enrich_tag_result
 from speech_to_sql.m3_query_ir.intent_grounder import ground_intent
+from speech_to_sql.m3_query_ir.nutrition_scope import assign_nutrition_sources
 from speech_to_sql.m3_query_ir.schema_linker import link_tag_result
 
 
@@ -30,6 +31,11 @@ def prepare_intent(
         prepared,
         transcript=transcript,
         recipe_config=recipe_config,
+        schema=schema,
+    )
+    prepared = assign_nutrition_sources(
+        prepared,
+        transcript=transcript,
         schema=schema,
     )
     prepared = ground_intent(prepared, schema=schema)

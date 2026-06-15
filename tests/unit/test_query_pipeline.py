@@ -315,10 +315,118 @@ def test_text_to_sql_uses_low_sugar_enrichment_without_category_conflict():
     tags = tag_entities("low sugar recipes")
     sql = build_sql_query(tags, transcript="low sugar recipes")
 
-    assert tags["categories"]
+    assert tags["categories"] == []
     assert "r.`sugars, total (g)` <= ?" in sql["query"]
     assert sql["params"] == [10]
     assert sql["validation"]["ok"] is True
+
+
+def test_mixed_recipe_and_ingredient_nutrition_uses_scoped_tables():
+    query = "Show recipes where the full recipe has low carbs but at least one ingredient has high protein."
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert tags["dietary_styles"] == []
+    assert nutrition["carbs"]["table_source"] == "nutrition"
+    assert nutrition["carbs"]["operator"] == "<="
+    assert nutrition["protein"]["table_source"] == "ingredient_nutrition"
+    assert nutrition["protein"]["operator"] == ">="
+    assert sql["validation"]["ok"] is True
+    assert "r.`carbohydrate, by difference (g)` <= ?" in sql["query"]
+    assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
+    assert "inut1.`protein (g)` >= ?" in sql["query"]
+    assert "ORDER BY" not in sql["query"]
+
+
+def test_ingredient_level_fat_filter_is_not_recipe_level_or_category():
+    query = "Find recipes with recipe-level cholesterol below 20 mg but an ingredient that contains fat."
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert tags["categories"] == []
+    assert nutrition["cholesterol"]["table_source"] == "nutrition"
+    assert nutrition["fat"]["table_source"] == "ingredient_nutrition"
+    assert sql["validation"]["ok"] is True
+    assert "r.`cholesterol (mg)` < ?" in sql["query"]
+    assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
+    assert "inut1.`total lipid (fat) (g)` > ?" in sql["query"]
+
+
+def test_high_fiber_recipe_with_ingredient_thiamin_scopes_each_nutrient():
+    query = "Show high-fiber recipes where lentil contributes thiamin at the ingredient level."
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert nutrition["fiber"]["table_source"] == "nutrition"
+    assert nutrition["fiber"]["operator"] == ">="
+    assert nutrition["thiamin"]["table_source"] == "ingredient_nutrition"
+    assert sql["validation"]["ok"] is True
+    assert "r.`fiber, total dietary (g)` >= ?" in sql["query"]
+    assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
+    assert "inut1.`thiamin (mg)` > ?" in sql["query"]
+
+
+def test_seafood_category_and_ingredient_level_cholesterol_use_correct_sources():
+    query = "Find recipes under 500 calories that use an ingredient from the seafood category and have ingredient-level cholesterol."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+    nutrition = {item["nutrient"]: item for item in prepared["nutrition_filters"]}
+
+    assert nutrition["calories"]["table_source"] == "nutrition"
+    assert nutrition["cholesterol"]["table_source"] == "ingredient_nutrition"
+    assert prepared["category_filters"] == [
+        {
+            "source": "ingredient_flavor",
+            "field": "dietrx_category",
+            "operator": "=",
+            "value": "Seafood",
+            "term": "seafood",
+        }
+    ]
+    assert sql["validation"]["ok"] is True
+    assert "r.`calories` < ?" in sql["query"]
+    assert "`RecipeDB_ingredient_nutrition`" in sql["query"]
+    assert "`RecipeDB_ingredient_flavor`" in sql["query"]
+
+
+def test_flavor_category_and_instruction_mentions_use_joined_tables():
+    query = "Show recipes that use garlic, where garlic is categorized as an allium, and the instructions mention saute."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["garlic"]
+    assert prepared["category_filters"][0]["source"] == "ingredient_flavor"
+    assert prepared["category_filters"][0]["field"] == "flavordb_category"
+    assert sql["validation"]["ok"] is True
+    assert "`RecipeDB_ingredient_phrase`" in sql["query"]
+    assert "`RecipeDB_ingredient_flavor`" in sql["query"]
+    assert "`RecipeDB_instructions`" in sql["query"]
+    assert "ins1.`steps` LIKE ?" in sql["query"]
+    assert "%saute%" in sql["params"]
+
+
+def test_quantity_available_and_cooking_step_mentions_use_phrase_and_instruction_tables():
+    query = "Show recipes with ingredient quantity available in the ingredient phrase and cooking steps that mention bake."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == []
+    assert sql["validation"]["ok"] is True
+    assert "`RecipeDB_ingredient_phrase`" in sql["query"]
+    assert "ip1.`quantity` LIKE ?" in sql["query"]
+    assert "`RecipeDB_instructions`" in sql["query"]
+    assert "ins1.`steps` LIKE ?" in sql["query"]
+    assert "%bake%" in sql["params"]
+    assert "%cook%" not in sql["params"]
 
 
 def test_schema_linker_resolves_aliases_without_code_field_names():
