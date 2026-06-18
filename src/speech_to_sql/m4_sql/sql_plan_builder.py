@@ -146,6 +146,7 @@ def _nutrition_group_condition(
     predicate: Predicate,
     registry: SchemaRegistry,
     relation: dict[str, Any],
+    alias: str | None = None,
 ) -> SqlCondition | None:
     group = registry.nutrition_group(predicate.field)
     if not group:
@@ -162,7 +163,7 @@ def _nutrition_group_condition(
         column = columns.get(str(field))
         if not column:
             return None
-        parts.append(f"{registry.column_sql(registry.base_alias, column)} > ?")
+        parts.append(f"{registry.column_sql(alias or registry.base_alias, column)} > ?")
         params.append(values[0])
     if not parts:
         return None
@@ -210,11 +211,18 @@ def _exists_relation_condition(
         else relation["alias"]
     )
     alias = f"{alias_prefix}{relation_counts[predicate.source]}"
-    column = registry.predicate_column(predicate)
-    if not column:
-        return None, None
-
-    filter_condition = _relation_match_condition(alias, predicate, registry, relation)
+    if predicate.source == "nutrition" and registry.nutrition_group(predicate.field):
+        filter_condition = _nutrition_group_condition(
+            predicate,
+            registry,
+            relation,
+            alias=alias,
+        )
+    else:
+        column = registry.predicate_column(predicate)
+        if not column:
+            return None, None
+        filter_condition = _relation_match_condition(alias, predicate, registry, relation)
     if not filter_condition:
         return None, None
 

@@ -11,7 +11,8 @@ def post_filter(recipes: list[dict], tag_result: dict) -> list[dict]:
     config = load_recipe_db_config()
     tag_result = prepare_intent(tag_result, recipe_config=config)
     logic = tag_result.get("ingredient_logic") or {}
-    include = _normalize_terms(logic.get("include") or tag_result.get("ingredients") or [])
+    include_source = logic.get("include") if "include" in logic else tag_result.get("ingredients")
+    include = _normalize_terms(include_source or [])
     exclude = _normalize_terms(logic.get("exclude") or [])
     include_operator = logic.get("include_operator") or "AND"
     dietary_styles = tag_result.get("dietary_styles") or []

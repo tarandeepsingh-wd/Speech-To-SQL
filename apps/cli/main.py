@@ -409,6 +409,7 @@ def _intent_for_verifier(intent: dict) -> dict[str, Any]:
         "actions": intent.get("actions", []),
         "category_filters": intent.get("category_filters", []),
         "nutrition_filters": intent.get("nutrition_filters", []),
+        "time_filters": intent.get("time_filters", []),
         "ingredient_logic": intent.get("ingredient_logic", {}),
         "raw_spans": intent.get("raw_spans", []),
         "_transcript": intent.get("transcript") or intent.get("query"),
@@ -524,6 +525,7 @@ def _print_prepared_intent(intent: dict) -> None:
     _print_kv("Schema links", _json_inline(intent.get("_schema_links", [])))
     _print_kv("Enrichments", _json_inline(intent.get("_intent_enrichments", [])))
     _print_kv("Category filters", _json_inline(intent.get("category_filters", [])))
+    _print_kv("Time filters", _json_inline(intent.get("time_filters", [])))
 
 
 def _print_query_ir(query_ir: dict) -> None:

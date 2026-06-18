@@ -14,8 +14,8 @@ DEFAULT_SCHEMA_SQL = PROJECT_ROOT / "config" / "schema.sql"
 DEFAULT_SCHEMA_PDF = PROJECT_ROOT / "docs" / "Recipe_db2.0 schema.pdf"
 
 PDF_TABLE_MAP = {
-    "ingredient_nutrition": "RecipeDB_ingredient_nutrition",
-    "micronutrients": "RecipeDB_micronutrients_v1",
+    "ingredient_nutrition": "ingredient_nutrition",
+    "micronutrients": "micronutrients",
 }
 PDF_SECTION_ORDER = [
     "ingredient_flavor",
@@ -198,7 +198,7 @@ def _expected_relation_columns(
     base_fields: dict[str, str],
 ) -> set[str]:
     if source == "nutrition":
-        return {column for column, field_type in base_fields.items() if field_type == "double"}
+        return set(fields)
     if source == "dietary":
         return {
             column for column in base_fields

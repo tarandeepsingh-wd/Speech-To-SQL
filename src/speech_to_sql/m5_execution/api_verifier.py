@@ -150,7 +150,7 @@ def _evaluate_text_predicate(text: str, predicate: Predicate) -> _Evaluation:
         return _Evaluation(None, f"{predicate.source}.{predicate.field} has no values to verify.")
 
     matches = [_contains_term(text, value) for value in values]
-    if predicate.operator.upper() == "=":
+    if predicate.operator.upper() in {"=", "LIKE"}:
         passed = all(matches)
     elif predicate.operator.upper() == "IN":
         passed = any(matches)
@@ -180,10 +180,21 @@ def _evaluate_base_predicate(
     schema: dict[str, Any],
 ) -> _Evaluation:
     field = schema.get("base_columns", {}).get(predicate.field, predicate.field)
-    value = _field_float(recipe, field, config)
-    if value is None:
-        return _Evaluation(None, f"Configured API field for base.{predicate.field} was missing or non-numeric.")
-    return _compare_numeric_value(value, predicate)
+    operator = predicate.operator.upper()
+    if operator in {"<", "<=", ">", ">=", "BETWEEN"}:
+        value = _field_float(recipe, predicate.field, config)
+        if value is None and field != predicate.field:
+            value = _field_float(recipe, field, config)
+        if value is None:
+            return _Evaluation(None, f"Configured API field for base.{predicate.field} was missing or non-numeric.")
+        return _compare_numeric_value(value, predicate)
+
+    text = _field_text(recipe, predicate.field, config)
+    if not text and field != predicate.field:
+        text = _field_text(recipe, field, config)
+    if not text:
+        return _Evaluation(None, f"Configured API field for base.{predicate.field} was missing or empty.")
+    return _evaluate_text_predicate(text, predicate)
 
 
 def _evaluate_dietary_predicate(
@@ -264,6 +275,23 @@ def _field_float(
         if field in recipe:
             return _to_float(recipe.get(field))
     return None
+
+
+def _field_text(
+    recipe: dict[str, Any],
+    logical_field: str,
+    config: dict[str, Any],
+) -> str:
+    parts: list[str] = []
+    for field in _response_field_candidates(logical_field, config):
+        value = recipe.get(field)
+        if isinstance(value, str):
+            parts.append(value)
+        elif isinstance(value, list):
+            parts.extend(_flatten_list_text(value, config))
+        elif value not in (None, ""):
+            parts.append(str(value))
+    return _normalize_text(" ".join(parts))
 
 
 def _response_field_candidates(logical_field: str, config: dict[str, Any]) -> list[str]:

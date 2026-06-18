@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -9,6 +10,10 @@ import requests
 
 from speech_to_sql.common.config import load_recipe_db_config
 from speech_to_sql.m5_execution.query_planner import ApiQueryPlan
+
+
+_REQUEST_LOCK = threading.Lock()
+_LAST_REQUEST_AT = 0.0
 
 
 @dataclass
@@ -39,8 +44,20 @@ class RecipeDBClient:
             or config["default_base_url"]
         ).rstrip("/")
         self.api_key = api_key if api_key is not None else os.getenv(config["api_key_env"])
-        self.timeout_seconds = timeout_seconds or int(request_config["timeout_seconds"])
-        self.ttl_seconds = ttl_seconds or int(request_config["ttl_seconds"])
+        self.timeout_seconds = (
+            timeout_seconds
+            if timeout_seconds is not None
+            else int(request_config["timeout_seconds"])
+        )
+        self.ttl_seconds = (
+            ttl_seconds if ttl_seconds is not None else int(request_config["ttl_seconds"])
+        )
+        self.min_interval_seconds = float(
+            os.getenv(
+                "RDB2_MIN_REQUEST_INTERVAL_SECONDS",
+                request_config.get("min_interval_seconds", 0),
+            )
+        )
         self._cache: dict[tuple[str, str, tuple[tuple[str, str], ...]], tuple[float, dict[str, Any]]] = {}
 
     def execute(self, plan: ApiQueryPlan) -> ApiResult:
@@ -66,6 +83,7 @@ class RecipeDBClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
         try:
+            self._throttle()
             if plan.method.upper() == "GET":
                 response = requests.get(
                     plan.url(self.base_url),
@@ -119,6 +137,17 @@ class RecipeDBClient:
                 recipes=[],
                 error=f"Invalid JSON response: {exc}",
             )
+
+    def _throttle(self) -> None:
+        if self.min_interval_seconds <= 0:
+            return
+        global _LAST_REQUEST_AT
+        with _REQUEST_LOCK:
+            now = time.time()
+            wait_seconds = self.min_interval_seconds - (now - _LAST_REQUEST_AT)
+            if wait_seconds > 0:
+                time.sleep(wait_seconds)
+            _LAST_REQUEST_AT = time.time()
 
 
 def extract_recipes(data: Any) -> list[dict[str, Any]]:

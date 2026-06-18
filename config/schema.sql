@@ -2,7 +2,7 @@
 -- Only physical columns listed in that schema file are included here.
 -- Relationship notes below use only columns that exist in those tables.
 
-CREATE TABLE `RecipeDB_ingredient_flavor` (
+CREATE TABLE `ingredient_flavor` (
   `_id` TEXT,
   `ingid` TEXT,
   `ingredient` TEXT,
@@ -17,7 +17,7 @@ CREATE TABLE `RecipeDB_ingredient_flavor` (
   `diet_rx_link` TEXT
 );
 
-CREATE TABLE `RecipeDB_ingredient_nutrition` (
+CREATE TABLE `ingredient_nutrition` (
   `_id` TEXT,
   `recipe_id` BIGINT,
   `ndb_id` BIGINT,
@@ -173,7 +173,7 @@ CREATE TABLE `RecipeDB_ingredient_nutrition` (
   `adjusted protein (g)` TEXT
 );
 
-CREATE TABLE `RecipeDB_ingredient_phrase` (
+CREATE TABLE `ingredient_phrase` (
   `_id` TEXT,
   `recipe_no` TEXT,
   `ingredient_phrase` TEXT,
@@ -189,13 +189,13 @@ CREATE TABLE `RecipeDB_ingredient_phrase` (
   `df` TEXT
 );
 
-CREATE TABLE `RecipeDB_instructions` (
+CREATE TABLE `instructions` (
   `_id` TEXT,
   `recipe_id` TEXT,
   `steps` TEXT
 );
 
-CREATE TABLE `RecipeDB_micronutrients_v1` (
+CREATE TABLE `micronutrients` (
   `_id` TEXT,
   `recipe_index` BIGINT,
   `recipe_id` BIGINT,
@@ -394,9 +394,9 @@ CREATE TABLE `recipes` (
 );
 
 -- Relationship contract used by config/sql_schema.json
--- recipe_profile_to_recipes_by_recipe_id: recipes.recipe_id -> RecipeDB_micronutrients_v1.recipe_id [one_to_one_or_many_to_one, schema]
--- recipe_to_ingredient_phrase_by_recipe_no: RecipeDB_ingredient_phrase.recipe_no -> RecipeDB_micronutrients_v1.recipe_id [many_to_one, schema]
--- recipe_to_ingredient_nutrition_by_recipe_id: RecipeDB_ingredient_nutrition.recipe_id -> RecipeDB_micronutrients_v1.recipe_id [many_to_one, schema]
--- recipe_to_instructions: RecipeDB_instructions.recipe_id -> RecipeDB_micronutrients_v1.recipe_id [one_or_many_to_one, schema]
--- ingredient_phrase_to_flavor: RecipeDB_ingredient_phrase.ing_id -> RecipeDB_ingredient_flavor.ingid [many_to_one, schema]
--- ingredient_phrase_to_ingredient_nutrition: RecipeDB_ingredient_phrase.ndb_id -> RecipeDB_ingredient_nutrition.ndb_id [many_to_many, schema]
+-- micronutrients_to_recipes_by_recipe_id: micronutrients.recipe_id -> recipes.recipe_id [one_to_one_or_many_to_one, schema]
+-- ingredient_phrase_to_recipes_by_recipe_no: ingredient_phrase.recipe_no -> recipes.recipe_id [many_to_one, schema]
+-- ingredient_nutrition_to_recipes_by_recipe_id: ingredient_nutrition.recipe_id -> recipes.recipe_id [many_to_one, schema]
+-- instructions_to_recipes_by_recipe_id: instructions.recipe_id -> recipes.recipe_id [one_or_many_to_one, schema]
+-- ingredient_phrase_to_flavor: ingredient_phrase.ing_id -> ingredient_flavor.ingid [many_to_one, schema]
+-- ingredient_phrase_to_ingredient_nutrition: ingredient_phrase.ndb_id -> ingredient_nutrition.ndb_id [many_to_many, schema]

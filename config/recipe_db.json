@@ -4,7 +4,9 @@
   "default_base_url": "http://cosylab.iiitd.edu.in:6969",
   "request": {
     "timeout_seconds": 15,
-    "ttl_seconds": 600
+    "ttl_seconds": 600,
+    "max_pages_per_plan": 5,
+    "min_interval_seconds": 2.5
   },
   "response": {
     "recipe_list_paths": ["data", "recipes", "payload.data", "payload.recipes"],
@@ -258,6 +260,21 @@
     "citrus": {"field": "flavordb_category", "value": "citrus"},
     "leafy green": {"field": "flavordb_category", "value": "leafy green"},
     "leafy greens": {"field": "flavordb_category", "value": "leafy green"},
+    "root vegetable": {"field": "flavordb_category", "value": "root vegetable"},
+    "root vegetables": {"field": "flavordb_category", "value": "root vegetable"},
+    "nightshade": {"field": "flavordb_category", "value": "nightshade"},
+    "nightshades": {"field": "flavordb_category", "value": "nightshade"},
+    "grain": {"field": "flavordb_category", "value": "grain"},
+    "grains": {"field": "flavordb_category", "value": "grain"},
+    "pulse": {"field": "flavordb_category", "value": "pulse"},
+    "pulses": {"field": "flavordb_category", "value": "pulse"},
+    "oil": {"field": "flavordb_category", "value": "oil"},
+    "oils": {"field": "flavordb_category", "value": "oil"},
+    "sweetener": {"field": "flavordb_category", "value": "sweetener"},
+    "sweeteners": {"field": "flavordb_category", "value": "sweetener"},
+    "liquid": {"field": "flavordb_category", "value": "liquid"},
+    "liquids": {"field": "flavordb_category", "value": "liquid"},
+    "poultry": {"field": "flavordb_category", "value": "poultry"},
     "fish": {"field": "flavordb_category", "value": "fish"},
     "seafood": {"field": "dietrx_category", "value": "Seafood"},
     "vegetable": {"field": "dietrx_category", "value": "Vegetable"},
@@ -282,7 +299,13 @@
     "time": ["total_time", "cook_time", "prep_time"],
     "total_time": ["total_time"],
     "cook_time": ["cook_time"],
-    "prep_time": ["prep_time"]
+    "prep_time": ["prep_time"],
+    "recipe_title": ["Recipe_title", "title", "recipe_title"],
+    "region": ["Region", "region"],
+    "sub_region": ["Sub_region", "SubRegion", "sub_region", "subRegion"],
+    "continent": ["Continent", "continent"],
+    "processes": ["Processes", "processes"],
+    "utensils": ["Utensils", "utensils"]
   },
   "identity_fields": ["Recipe_id", "recipe_id", "id", "_id"],
   "dedupe_fallback_fields": {

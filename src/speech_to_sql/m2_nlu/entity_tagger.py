@@ -412,6 +412,17 @@ def _suffix_mentions_presence_context(suffix: str, suffix_terms: list[str]) -> b
     )
 
 
+def _ingredient_phrase_context(prefix: str) -> bool:
+    normalized = _normalize_schema_key(prefix)
+    return bool(
+        re.search(
+            r"\bingredient\s+phrases?"
+            r"(?:\s+(?:contains?|including|includes?|mention(?:s|ed)?|with|has|have))?$",
+            normalized,
+        )
+    )
+
+
 def _dynamic_nutrient_presence_matches(text: str) -> list[dict]:
     config = _schema_nutrition_presence_config()
     if not config:
@@ -441,6 +452,9 @@ def _dynamic_nutrient_presence_matches(text: str) -> list[dict]:
 
         prefix = text_lower[max(0, start - 64):start]
         suffix = text_lower[end:end + 40]
+        if _ingredient_phrase_context(prefix):
+            continue
+
         connector_context = saw_presence and re.search(r"(?:\band\b|\bor\b|,)\s*$", prefix)
         if requires_broad_cue:
             if not (_cue_in_prefix(prefix, broad_cues) or connector_context):

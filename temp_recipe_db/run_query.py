@@ -56,13 +56,26 @@ NUTRITION_COLUMNS = {
 
 def generated_sql(query: str) -> dict[str, Any]:
     from speech_to_sql.m2_nlu.entity_tagger import tag_entities
+    from speech_to_sql.common.config import load_recipe_db_config
     from speech_to_sql.m3_query_ir.intent_preparer import prepare_intent
+    from speech_to_sql.m3_query_ir.time_resolver import resolve_time_filter
     from speech_to_sql.m4_sql.sql_query_builder import build_sql_query
 
     tags = tag_entities(query)
     tags["transcript"] = query
     prepared = prepare_intent(tags, transcript=query)
     compiled = build_sql_query(prepared, transcript=query)
+    time_filters = list(prepared.get("time_filters") or [])
+    if not time_filters:
+        resolved_time = resolve_time_filter(prepared, query.lower(), load_recipe_db_config())
+        if resolved_time:
+            field, min_value, max_value = resolved_time
+            time_filters.append({
+                "field": field,
+                "min": min_value,
+                "max": max_value,
+                "source": "time_resolver",
+            })
     public_intent = {
         "ingredients": _normalized_ingredients_for_display(prepared),
         "dietary_styles": prepared.get("dietary_styles", []),
@@ -70,6 +83,7 @@ def generated_sql(query: str) -> dict[str, Any]:
         "actions": prepared.get("actions", []),
         "category_filters": prepared.get("category_filters", []),
         "nutrition_filters": prepared.get("nutrition_filters", []),
+        "time_filters": time_filters,
         "ingredient_logic": prepared.get("ingredient_logic", {}),
     }
     verifier_intent = {
@@ -164,6 +178,7 @@ def verify_generated_result(
         _verify_ingredients(conn, checks, intent, rows)
         _verify_excluded_ingredients(conn, checks, intent, rows)
         _verify_nutrition_filters(conn, checks, intent, rows)
+        _verify_time_filters(conn, checks, intent, rows)
         _verify_category_filters(conn, checks, intent, rows)
         _verify_dietary_styles(conn, checks, intent, rows)
         _verify_instruction_terms(conn, checks, intent, rows)
@@ -377,14 +392,18 @@ def _verify_nutrition_filters(
             )
         else:
             for row in rows:
-                actual = _number(row.get(column))
+                actual_value = row.get(column)
+                actual = _number(actual_value)
+                if actual is None:
+                    actual = _recipe_nutrition_value(conn, _recipe_id(row), column)
+                    actual_value = actual
                 if actual is None or not _compare(actual, operator, float(expected)):
                     failures.append({
                         "recipe_id": _recipe_id(row),
                         "source": source,
                         "nutrient": nutrient,
                         "column": column,
-                        "actual": row.get(column),
+                        "actual": actual_value,
                         "expected": f"{operator} {expected}",
                     })
     _add_check(
@@ -402,6 +421,63 @@ def _verify_nutrition_filters(
             "Some non-numeric or presence-style nutrition filters were not row-checked.",
             skipped,
         )
+
+
+def _verify_time_filters(
+    conn: sqlite3.Connection,
+    checks: list[dict[str, Any]],
+    intent: dict[str, Any],
+    rows: list[dict[str, Any]],
+) -> None:
+    filters = [
+        item
+        for item in intent.get("time_filters", []) or []
+        if isinstance(item, dict)
+    ]
+    if not filters:
+        return
+
+    failures = []
+    for item in filters:
+        field = str(item.get("field") or "total_time")
+        min_value = _number(item.get("min"))
+        max_value = _number(item.get("max"))
+        for row in rows:
+            actual_value = row.get(field)
+            actual = _number(actual_value)
+            if actual is None:
+                actual = _recipe_nutrition_value(conn, _recipe_id(row), field)
+                actual_value = actual
+            if actual is None:
+                failures.append({
+                    "recipe_id": _recipe_id(row),
+                    "field": field,
+                    "actual": actual_value,
+                    "expected": item,
+                })
+                continue
+            if min_value is not None and actual < min_value:
+                failures.append({
+                    "recipe_id": _recipe_id(row),
+                    "field": field,
+                    "actual": actual,
+                    "expected": f">= {min_value}",
+                })
+            if max_value is not None and actual > max_value:
+                failures.append({
+                    "recipe_id": _recipe_id(row),
+                    "field": field,
+                    "actual": actual,
+                    "expected": f"<= {max_value}",
+                })
+
+    _add_check(
+        checks,
+        "time_filters",
+        not failures,
+        "Every returned row satisfies the time filter(s).",
+        failures,
+    )
 
 
 def _verify_ingredient_nutrition_filter(
@@ -439,7 +515,7 @@ def _ingredient_nutrition_values(
     for row in conn.execute(
         f"""
         SELECT `{column}`
-        FROM RecipeDB_ingredient_nutrition
+        FROM ingredient_nutrition
         WHERE recipe_id = ?
         """,
         [recipe_id],
@@ -448,6 +524,27 @@ def _ingredient_nutrition_values(
         if value is not None:
             values.append(value)
     return values
+
+
+def _recipe_nutrition_value(
+    conn: sqlite3.Connection,
+    recipe_id: int | None,
+    column: str,
+) -> float | None:
+    if recipe_id is None:
+        return None
+    try:
+        row = conn.execute(
+            f"""
+            SELECT `{column}`
+            FROM micronutrients
+            WHERE recipe_id = ?
+            """,
+            [recipe_id],
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    return _number(row[0]) if row else None
 
 
 def _nutrition_filter_source(item: dict[str, Any]) -> str:
@@ -537,8 +634,8 @@ def _ingredient_flavor_values(
     for row in conn.execute(
         f"""
         SELECT ifl.`{column}`
-        FROM RecipeDB_ingredient_phrase AS ip
-        JOIN RecipeDB_ingredient_flavor AS ifl
+        FROM ingredient_phrase AS ip
+        JOIN ingredient_flavor AS ifl
           ON ip.ing_id = ifl.ingid
         WHERE ip.recipe_no = ?
         """,
@@ -628,7 +725,7 @@ def _instruction_steps_for_recipe(conn: sqlite3.Connection, recipe_id: int | Non
     rows = conn.execute(
         """
         SELECT steps
-        FROM RecipeDB_instructions
+        FROM instructions
         WHERE recipe_id = ?
         """,
         [recipe_id],
@@ -728,7 +825,7 @@ def _ingredients_for_recipe(conn: sqlite3.Connection, recipe_id: int | None) -> 
     for row in conn.execute(
         """
         SELECT ingredient, ingredient_phrase
-        FROM RecipeDB_ingredient_phrase
+        FROM ingredient_phrase
         WHERE recipe_no = ?
         """,
         [recipe_id],
@@ -755,7 +852,7 @@ def _truthy(value: Any) -> bool:
 def _nutrition_column(nutrient: str, row: dict[str, Any]) -> str | None:
     lowered_keys = {key.lower(): key for key in row}
     expected = NUTRITION_COLUMNS.get(nutrient.lower())
-    if expected and expected in row:
+    if expected:
         return expected
     if nutrient in row:
         return nutrient

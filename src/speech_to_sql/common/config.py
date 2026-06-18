@@ -12,10 +12,32 @@ CONFIG_DIR = PROJECT_ROOT / "config"
 
 _CONFIG_PATH = CONFIG_DIR / "recipe_db.json"
 _SQL_SCHEMA_PATH = CONFIG_DIR / "sql_schema.json"
+_ENV_LOADED = False
+
+
+def load_project_env() -> None:
+    global _ENV_LOADED
+    if _ENV_LOADED:
+        return
+    _ENV_LOADED = True
+
+    env_path = PROJECT_ROOT / ".env"
+    if not env_path.exists():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        os.environ[key] = value.strip().strip('"').strip("'")
 
 
 @lru_cache(maxsize=4)
 def load_recipe_db_config(config_path: str | None = None) -> dict[str, Any]:
+    load_project_env()
     path = Path(
         config_path
         or os.getenv("RDB2_CONFIG_PATH", "")
@@ -27,6 +49,7 @@ def load_recipe_db_config(config_path: str | None = None) -> dict[str, Any]:
 
 @lru_cache(maxsize=4)
 def load_sql_schema_config(config_path: str | None = None) -> dict[str, Any]:
+    load_project_env()
     path = Path(
         config_path
         or os.getenv("SPEECH_TO_SQL_SCHEMA_PATH", "")

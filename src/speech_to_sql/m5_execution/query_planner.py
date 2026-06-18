@@ -198,7 +198,8 @@ def _ingredient_category_title_plan(
     config: dict[str, Any],
 ) -> ApiQueryPlan | None:
     logic = tag_result.get("ingredient_logic") or {}
-    include = _unique_strings(logic.get("include") or tag_result.get("ingredients") or [])
+    include_source = logic.get("include") if "include" in logic else tag_result.get("ingredients")
+    include = _unique_strings(include_source or [])
     exclude = _unique_strings(logic.get("exclude") or [])
     include_categories, exclude_categories = _category_filters(tag_result, text, config)
     title = _title_query(tag_result, text)
@@ -355,12 +356,31 @@ def _category_filters(
     cuisine_types = set(config["category_types"]["cuisine"])
     include: list[str] = []
     exclude: list[str] = []
+
+    for item in tag_result.get("category_filters", []) or []:
+        if not isinstance(item, dict):
+            continue
+        if item.get("source") != "ingredient_flavor":
+            continue
+        if item.get("field") != "dietrx_category":
+            continue
+        value = item.get("value")
+        if value in (None, ""):
+            continue
+        term = str(item.get("term") or value)
+        if _is_excluded_near_term(text, term):
+            exclude.append(str(value))
+        else:
+            include.append(str(value))
+
     for item in tag_result.get("categories", []) or []:
         category = item.get("category")
         term = item.get("term")
         if not category:
             continue
         if str(category).lower() in cuisine_types:
+            continue
+        if str(category).lower() == "ingredient_flavor":
             continue
         if term and _is_excluded_near_term(text, str(term)):
             exclude.append(str(category))

@@ -612,11 +612,11 @@ def seed_recipes(conn: sqlite3.Connection) -> None:
     recipes.extend(generate_recipe_rows(len(recipes), TOTAL_RECIPE_ROWS))
 
     for recipe in recipes:
-        insert_row(conn, "RecipeDB_micronutrients_v1", recipe)
-        insert_row(conn, "recipes", recipe_as_legacy_row(recipe))
+        insert_row(conn, "micronutrients", recipe)
+        insert_row(conn, "recipes", recipe_as_recipes_row(recipe))
 
 
-def recipe_as_legacy_row(recipe: dict[str, object]) -> dict[str, object]:
+def recipe_as_recipes_row(recipe: dict[str, object]) -> dict[str, object]:
     return {
         "_id": recipe["_id"],
         "recipe_id": str(recipe["recipe_id"]),
@@ -714,7 +714,7 @@ def seed_ingredients(conn: sqlite3.Connection) -> None:
     ingredient_meta = INGREDIENT_META
 
     for ingredient, (ing_id, _ndb_id, category, generic_name) in ingredient_meta.items():
-        insert_row(conn, "RecipeDB_ingredient_flavor", {
+        insert_row(conn, "ingredient_flavor", {
             "_id": f"flavor_{ing_id}",
             "ingid": ing_id,
             "ingredient": ingredient,
@@ -727,7 +727,7 @@ def seed_ingredients(conn: sqlite3.Connection) -> None:
     for recipe_id, ingredients in recipe_ingredients.items():
         for ingredient in ingredients:
             ing_id, ndb_id, _category, _generic_name = ingredient_meta[ingredient]
-            insert_row(conn, "RecipeDB_ingredient_phrase", {
+            insert_row(conn, "ingredient_phrase", {
                 "_id": f"ip{row_number:03d}",
                 "recipe_no": recipe_id,
                 "ingredient_phrase": f"1 serving {ingredient}",
@@ -742,7 +742,7 @@ def seed_ingredients(conn: sqlite3.Connection) -> None:
                 "temp": "",
                 "df": "",
             })
-            insert_row(conn, "RecipeDB_ingredient_nutrition", ingredient_nutrition_row(
+            insert_row(conn, "ingredient_nutrition", ingredient_nutrition_row(
                 row_number,
                 recipe_id,
                 ingredient,
@@ -803,7 +803,7 @@ def seed_instructions(conn: sqlite3.Connection) -> None:
     }
     steps.update(generated_instruction_steps())
     for recipe_id, text in steps.items():
-        insert_row(conn, "RecipeDB_instructions", {
+        insert_row(conn, "instructions", {
             "_id": f"ins{recipe_id}",
             "recipe_id": recipe_id,
             "steps": text,
@@ -850,11 +850,11 @@ def main() -> None:
     print(f"Created {db_path}")
     with sqlite3.connect(db_path) as conn:
         for table in [
-            "RecipeDB_micronutrients_v1",
-            "RecipeDB_ingredient_phrase",
-            "RecipeDB_ingredient_nutrition",
-            "RecipeDB_ingredient_flavor",
-            "RecipeDB_instructions",
+            "micronutrients",
+            "ingredient_phrase",
+            "ingredient_nutrition",
+            "ingredient_flavor",
+            "instructions",
             "recipes",
         ]:
             count = conn.execute(f"SELECT COUNT(*) FROM {quote_identifier(table)}").fetchone()[0]
