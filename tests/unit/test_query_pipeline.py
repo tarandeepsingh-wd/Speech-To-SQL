@@ -335,6 +335,12 @@ def test_text_to_sql_uses_pdf_enriched_nutrition_columns():
     assert sql["validation"]["ok"] is True
 
 
+def test_nutrition_presence_does_not_mask_unresolved_numeric_comparator():
+    tags = tag_entities("recipes have calories greater than banana")
+
+    assert tags["nutrition_filters"] == []
+
+
 def test_text_to_sql_uses_low_sugar_enrichment_without_category_conflict():
     tags = tag_entities("low sugar recipes")
     sql = build_sql_query(tags, transcript="low sugar recipes")
@@ -1120,8 +1126,32 @@ def test_sql_builder_uses_enriched_between_minutes_filter():
         transcript="recipes between 20 and 40 minutes with garlic",
     )
 
-    assert "n1.`total_time` BETWEEN ? AND ?" in sql["query"]
+    assert "r.`total_time` BETWEEN ? AND ?" in sql["query"]
     assert sql["params"] == ["garlic", "%garlic%", 20.0, 40.0]
+
+
+def test_sql_builder_handles_not_more_than_minutes_as_base_time_upper_bound():
+    query = (
+        "GIVE ME THE FOOD ITEMS THAT CAN BE PREPARED IN NOT MORE THAN "
+        "30 MINS AND HAVE CALORIES LESS THAN 500"
+    )
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["time_filters"] == [
+        {
+            "field": "total_time",
+            "min": 0,
+            "max": 30.0,
+            "source": "intent_enrichment",
+        }
+    ]
+    assert "n1.`calories` < ?" in sql["query"]
+    assert "r.`total_time` <= ?" in sql["query"]
+    assert "n2.`total_time`" not in sql["query"]
+    assert sql["params"] == [500.0, 30.0]
 
 
 def test_api_verifier_confirms_matching_recipe_against_ir():

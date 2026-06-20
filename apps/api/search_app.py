@@ -641,37 +641,15 @@ def api_search():
         return jsonify({"error": "query is required"}), 400
 
     try:
-        # Try full pipeline with M2 NLU tagging.
-        try:
-            from speech_to_sql.m2_nlu.entity_tagger import tag_entities
-            tag_result = tag_entities(query)
-            tag_result["transcript"] = query
-        except ImportError:
-            # Fallback: minimal tag_result so SQL generation can still run.
-            tag_result = {
-                "transcript": query,
-                "ingredients": [],
-                "dietary_styles": [],
-                "categories": [],
-                "utensils": [],
-                "cooking_actions": [],
-                "nutrition_filters": [],
-                "ingredient_logic": {
-                    "include": [],
-                    "exclude": [],
-                    "include_operator": "AND",
-                    "exclude_operator": "AND",
-                    "connectors": [],
-                    "ambiguous": False,
-                },
-            }
+        from speech_to_sql.m5_execution.search import search_text
 
-        from speech_to_sql.m5_execution.search import search_recipes
-        result = search_recipes(
-            tag_result,
-            transcript=query,
+        result = search_text(
+            query,
             execute=execute,
+            max_api_calls=3,
+            fetch_limit=50,
         )
+        tag_result = result.get("tag_result", {})
 
         # Build intent summary for the UI
         intent = {
@@ -697,8 +675,63 @@ def api_search():
             "recipes": result.get("recipes", []),
             "count": result.get("count", 0),
             "executed": result.get("executed", False),
+            "input_query": result.get("input_query"),
+            "normalized_query": result.get("normalized_query"),
+            "normalization": result.get("normalization", {}),
         })
 
+    except Exception as exc:
+        traceback.print_exc()
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/feedback", methods=["POST"])
+def api_feedback():
+    body = request.get_json(force=True, silent=True) or {}
+    original_query = (body.get("original_query") or "").strip()
+    corrected_query = (body.get("corrected_query") or "").strip()
+    predicted = body.get("predicted_ingredients") or []
+    corrected = body.get("corrected_ingredients") or []
+
+    if not original_query:
+        return jsonify({"error": "original_query is required"}), 400
+    if not corrected_query and not corrected:
+        return jsonify({"error": "no correction provided"}), 400
+
+    try:
+        from speech_to_sql.m2_nlu.adaptive_lexicon import (
+            derive_transcript_corrections,
+            feedback_summary,
+            reset_adaptive_cache,
+        )
+        from speech_to_sql.m2_nlu.feedback_logger import (
+            log_ingredient_feedback,
+            log_transcript_feedback,
+        )
+
+        corrected_query = corrected_query or original_query
+        corrections = derive_transcript_corrections(original_query, corrected_query)
+        log_transcript_feedback(
+            original_query=original_query,
+            corrected_query=corrected_query,
+            predicted_ingredients=predicted,
+            corrected_ingredients=corrected,
+            corrections=corrections,
+            source="flask-ui",
+        )
+        if corrected:
+            log_ingredient_feedback(
+                query=corrected_query,
+                predicted=predicted,
+                corrected_ingredients=corrected,
+                source="flask-ui",
+            )
+        reset_adaptive_cache()
+        return jsonify({
+            "status": "saved",
+            "corrections": corrections,
+            "summary": feedback_summary(),
+        })
     except Exception as exc:
         traceback.print_exc()
         return jsonify({"error": str(exc)}), 500

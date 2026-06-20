@@ -191,56 +191,15 @@ for _term in ALL_KNOWN_TERMS:
         METAPHONE_INDEX[_secondary].append(_term)
 
 
-# ---------------------------------------------------------
-# ASR CORRECTIONS DICTIONARY
-# ---------------------------------------------------------
-
-_RECIPE_CONTEXT_WORDS = {
-    "recipe", "cook", "add", "use", "need", "tablespoon", "teaspoon",
-    "cup", "cups", "mix", "stir", "ingredient", "pinch", "dash",
-    "fresh", "dried", "ground", "whole", "chopped", "minced",
-    "bake", "roast", "fry", "boil", "simmer", "grill",
-}
-
-_RISKY_CORRECTIONS: dict = {
-    r"\bflower\b":  "flour",
-    r"\btime\b":    "thyme",
-    r"\bsalary\b":  "celery",
-    r"\bleak\b":    "leek",
-    r"\bplumb\b":   "plum",
-}
-
-# ASR variants that are common enough to rescue explicitly.
-#
-# WHY: Some ASR transcriptions are too far from the canonical
-# form for any phonetic algorithm (metaphone, g2p) to bridge.
-# "kepsikam" and "kepsecum" share no metaphone code with
-# "capsicum", and g2p distance is too large to pass the
-# consonant-skeleton threshold. These are unambiguous - no
-# English word resembles them - so a direct safe correction
-# is the right fix.
-#
-# Add more entries here as new ASR failure patterns are found.
-# ----------------------------------------------------------
-_SAFE_CORRECTIONS: dict = {
-    r"\bchick\b": "chicken",
-    r"\bkepsikam\b": "capsicum",
-    r"\bkepsecum\b": "capsicum",
-    r"\bkapsikam\b": "capsicum",
-    r"\bkapsicum\b": "capsicum",
-}
-
-
 def asr_normalize(text: str) -> str:
     result = text
 
-    for pattern, replacement in _SAFE_CORRECTIONS.items():
-        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+    try:
+        from speech_to_sql.m2_nlu.adaptive_lexicon import normalize_noisy_text
 
-    tokens = set(result.lower().split())
-    if tokens & _RECIPE_CONTEXT_WORDS:
-        for pattern, replacement in _RISKY_CORRECTIONS.items():
-            result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+        result = normalize_noisy_text(result)["text"]
+    except Exception:
+        pass
 
     return result
 

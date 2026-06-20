@@ -13,7 +13,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from speech_to_sql.m2_nlu.entity_tagger import tag_entities
-from speech_to_sql.m2_nlu.feedback_logger import log_ingredient_feedback
+from speech_to_sql.m2_nlu.adaptive_lexicon import (
+    derive_transcript_corrections,
+    feedback_summary,
+    reset_adaptive_cache,
+)
+from speech_to_sql.m2_nlu.feedback_logger import log_ingredient_feedback, log_transcript_feedback
 from speech_to_sql.m2_nlu.sql_ops import extract_sql_operators, predict_sql_clause_labels
 
 
@@ -31,6 +36,7 @@ app.add_middleware(
         "http://localhost:5000",
         "http://127.0.0.1:5000",
     ],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,6 +61,14 @@ class SqlOperatorRequest(BaseModel):
 
 class IngredientFeedbackRequest(BaseModel):
     query: str
+    predicted_ingredients: list[str] = Field(default_factory=list)
+    corrected_ingredients: list[str] = Field(default_factory=list)
+    source: str = "api"
+
+
+class SearchFeedbackRequest(BaseModel):
+    original_query: str
+    corrected_query: str = ""
     predicted_ingredients: list[str] = Field(default_factory=list)
     corrected_ingredients: list[str] = Field(default_factory=list)
     source: str = "api"
@@ -145,6 +159,46 @@ def ingredient_feedback_endpoint(payload: IngredientFeedbackRequest) -> dict:
         source=payload.source,
     )
     return {"status": "saved"}
+
+
+@app.post("/feedback/search")
+def search_feedback_endpoint(payload: SearchFeedbackRequest) -> dict:
+    """Save transcript and ingredient corrections from the UI."""
+    original_query = payload.original_query.strip()
+    corrected_query = payload.corrected_query.strip()
+    if not original_query:
+        raise HTTPException(status_code=400, detail="Original query cannot be empty.")
+    if not corrected_query and not payload.corrected_ingredients:
+        raise HTTPException(status_code=400, detail="No correction was provided.")
+
+    corrected_query = corrected_query or original_query
+    corrections = derive_transcript_corrections(original_query, corrected_query)
+    log_transcript_feedback(
+        original_query=original_query,
+        corrected_query=corrected_query,
+        predicted_ingredients=payload.predicted_ingredients,
+        corrected_ingredients=payload.corrected_ingredients,
+        corrections=corrections,
+        source=payload.source,
+    )
+    if payload.corrected_ingredients:
+        log_ingredient_feedback(
+            query=corrected_query,
+            predicted=payload.predicted_ingredients,
+            corrected_ingredients=payload.corrected_ingredients,
+            source=payload.source,
+        )
+    reset_adaptive_cache()
+    return {
+        "status": "saved",
+        "corrections": corrections,
+        "summary": feedback_summary(),
+    }
+
+
+@app.get("/feedback/summary")
+def feedback_summary_endpoint() -> dict:
+    return feedback_summary()
 
 
 @app.get("/health")

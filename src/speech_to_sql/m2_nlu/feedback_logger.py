@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -7,6 +8,8 @@ FEEDBACK_DIR = Path(__file__).parent / "data" / "feedback"
 SQL_FEEDBACK_FILE = FEEDBACK_DIR / "sql_operator_feedback.jsonl"
 SQL_CLAUSE_FEEDBACK_FILE = FEEDBACK_DIR / "sql_clause_feedback.jsonl"
 INGREDIENT_FEEDBACK_FILE = FEEDBACK_DIR / "ingredient_feedback.jsonl"
+TRANSCRIPT_FEEDBACK_FILE = FEEDBACK_DIR / "transcript_feedback.jsonl"
+TRANSCRIPT_FEEDBACK_FILE_ENV = "SPEECH_TO_SQL_TRANSCRIPT_FEEDBACK_FILE"
 
 
 def _append_jsonl(path: Path, row: dict) -> None:
@@ -73,4 +76,31 @@ def log_ingredient_feedback(
         "query": query,
         "predicted": predicted,
         "corrected_ingredients": corrected_ingredients,
+    })
+
+
+def log_transcript_feedback(
+    original_query: str,
+    corrected_query: str,
+    predicted_ingredients: list[str] | None = None,
+    corrected_ingredients: list[str] | None = None,
+    corrections: list[dict] | None = None,
+    source: str = "manual",
+) -> None:
+    """
+    Store a user-approved transcript correction.
+
+    The adaptive lexicon consumes these rows at runtime. This keeps the
+    correction layer data-driven: the pipeline learns from explicit user
+    corrections instead of adding new hardcoded spelling maps.
+    """
+    target_file = Path(os.getenv(TRANSCRIPT_FEEDBACK_FILE_ENV) or TRANSCRIPT_FEEDBACK_FILE)
+    _append_jsonl(target_file, {
+        "source": source,
+        "original_query": original_query,
+        "corrected_query": corrected_query,
+        "predicted_ingredients": predicted_ingredients or [],
+        "corrected_ingredients": corrected_ingredients or [],
+        "corrections": corrections or [],
+        "approved": True,
     })

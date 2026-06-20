@@ -6,6 +6,7 @@ from pathlib import Path
 from rapidfuzz import fuzz, process
 
 from speech_to_sql.m2_nlu.extractor import extract_ingredients, extract_utensils
+from speech_to_sql.m2_nlu.adaptive_lexicon import normalize_noisy_text
 from speech_to_sql.m2_nlu.data.db_loader import DB_ACTIONS, DB_INGREDIENTS
 from speech_to_sql.m2_nlu.data.ingredient_synonyms import CATEGORY_SYNONYMS, canonicalize_ingredient
 from speech_to_sql.m2_nlu.intent_sql_mapper import build_sql_filter_plan
@@ -320,6 +321,87 @@ def _dynamic_nutrition_matches(text: str) -> list[dict]:
     return found
 
 
+_NUTRITION_CONTINUATION_PATTERN = re.compile(
+    rf"(?:^|\b(?:but|and|or)\b|[,;])\s+"
+    rf"(?:(?:also|still|should|must|be|is|are|to|remain|have|has)\s+){{0,4}}"
+    rf"(?P<op>{_OPERATOR_WORD_PATTERN})\s+"
+    rf"(?P<value>\d+(?:\.\d+)?)\s*"
+    rf"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
+    re.IGNORECASE,
+)
+
+_TIME_SCOPE_BOUNDARY_PATTERN = re.compile(
+    rf"\b(?:{_OPERATOR_WORD_PATTERN})\s+\d+(?:\.\d+)?\s*"
+    r"(?:min|mins|minute|minutes|hr|hrs|hour|hours)\b|"
+    r"\b(?:prep|prepare|prepares|prepared|preparing|preparation|"
+    r"cook|cooks|cooked|cooking|ready|time|duration)\b",
+    re.IGNORECASE,
+)
+
+
+def _nutrition_scope_boundaries(text: str) -> list[tuple[int, int]]:
+    text_lower = text.lower()
+    boundaries = []
+
+    for _alias, _nutrient, pattern, _requires_broad_cue in _dynamic_nutrient_presence_patterns():
+        for match in pattern.finditer(text_lower):
+            boundaries.append(match.span())
+
+    for match in _TIME_SCOPE_BOUNDARY_PATTERN.finditer(text_lower):
+        boundaries.append(match.span())
+
+    boundaries.sort()
+    return boundaries
+
+
+def _nutrition_scope_end(text: str, start: int) -> int:
+    for boundary_start, _boundary_end in _nutrition_scope_boundaries(text):
+        if boundary_start > start:
+            return boundary_start
+    return len(text)
+
+
+def _looks_like_time_continuation(text: str, end: int) -> bool:
+    suffix = text[end:end + 16]
+    return bool(
+        re.match(
+            r"\s*(?:min|mins|minute|minutes|hr|hrs|hour|hours)\b",
+            suffix,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _dynamic_nutrition_continuation_matches(
+    text: str,
+    base_matches: list[dict] | None = None,
+) -> list[dict]:
+    found = []
+    text_lower = text.lower()
+    base_matches = base_matches or _dynamic_nutrition_matches(text)
+    for base in base_matches:
+        scope_start = base["span"][1]
+        scope_end = _nutrition_scope_end(text_lower, scope_start)
+        scope_text = text_lower[scope_start:scope_end]
+        for match in _NUTRITION_CONTINUATION_PATTERN.finditer(scope_text):
+            end = scope_start + match.end()
+            if _looks_like_time_continuation(text_lower, end):
+                continue
+            op_text = re.sub(r"\s+", " ", match.group("op").lower()).strip()
+            try:
+                value = float(match.group("value"))
+            except (TypeError, ValueError):
+                continue
+            found.append({
+                "span": (scope_start + match.start(), end),
+                "nutrient": base["nutrient"],
+                "operator": _OP_MAP.get(op_text, "="),
+                "value": value,
+            })
+    found.sort(key=lambda item: item["span"])
+    return found
+
+
 @lru_cache(maxsize=1)
 def _dynamic_nutrition_group_patterns() -> tuple[tuple[str, dict, re.Pattern], ...]:
     patterns = []
@@ -412,6 +494,17 @@ def _suffix_mentions_presence_context(suffix: str, suffix_terms: list[str]) -> b
     )
 
 
+def _suffix_mentions_numeric_comparison(suffix: str) -> bool:
+    return bool(
+        re.match(
+            rf"^\s*(?:(?:is|are|was|were|has|have|contains?|with|of)\s+)?"
+            rf"(?:{_OPERATOR_WORD_PATTERN})\b",
+            suffix,
+            re.IGNORECASE,
+        )
+    )
+
+
 def _ingredient_phrase_context(prefix: str) -> bool:
     normalized = _normalize_schema_key(prefix)
     return bool(
@@ -453,6 +546,8 @@ def _dynamic_nutrient_presence_matches(text: str) -> list[dict]:
         prefix = text_lower[max(0, start - 64):start]
         suffix = text_lower[end:end + 40]
         if _ingredient_phrase_context(prefix):
+            continue
+        if _suffix_mentions_numeric_comparison(suffix):
             continue
 
         connector_context = saw_presence and re.search(r"(?:\band\b|\bor\b|,)\s*$", prefix)
@@ -513,7 +608,12 @@ def _detect_nutrition_filters(text: str) -> list:
     seen_semantic = set()
     used_positions: set[int] = set()
 
-    for item in _dynamic_nutrition_matches(text):
+    dynamic_numeric_matches = _dynamic_nutrition_matches(text)
+    dynamic_numeric_matches.extend(
+        _dynamic_nutrition_continuation_matches(text, dynamic_numeric_matches)
+    )
+
+    for item in dynamic_numeric_matches:
         nutrient = item["nutrient"]
         operator = item["operator"]
         value = item["value"]
@@ -631,6 +731,11 @@ def _mask_claimed_spans(text: str, extra_spans: list | None = None) -> str:
     """
     chars = list(text)
     for item in _dynamic_nutrition_matches(text):
+        start, end = item["span"]
+        for i in range(start, end):
+            if i < len(chars):
+                chars[i] = " "
+    for item in _dynamic_nutrition_continuation_matches(text):
         start, end = item["span"]
         for i in range(start, end):
             if i < len(chars):
@@ -968,6 +1073,10 @@ def tag_entities(text: str) -> dict:
     the Module 4 SQL builder. The legacy SQL plan fields are retained for older
     demos and debugging.
     """
+    original_text = text
+    normalization = normalize_noisy_text(text)
+    text = normalization["text"]
+
     with ThreadPoolExecutor(max_workers=6) as executor:
         futures = {
             executor.submit(_detect_dietary_style_matches, text): "dietary",
@@ -1025,4 +1134,7 @@ def tag_entities(text: str) -> dict:
         "sql_filter_plan":   sql_filter_plan,
         "unified_sql_plan":  unified_sql_plan,
         "raw_spans":         ingredient_matches + utensil_matches,
+        "_original_query":   original_text,
+        "_normalized_query": text,
+        "_asr_corrections":  normalization["corrections"],
     }

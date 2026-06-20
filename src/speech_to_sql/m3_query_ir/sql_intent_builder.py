@@ -209,11 +209,13 @@ def _time_predicates(
         return []
     field, min_value, max_value = time_filter
     if min_value is not None and max_value is not None:
-        return [Predicate("nutrition", field, "BETWEEN", (float(min_value), float(max_value)))]
+        if float(min_value) == 0:
+            return [Predicate("base", field, "<=", (float(max_value),))]
+        return [Predicate("base", field, "BETWEEN", (float(min_value), float(max_value)))]
     if min_value is not None:
-        return [Predicate("nutrition", field, ">=", (float(min_value),))]
+        return [Predicate("base", field, ">=", (float(min_value),))]
     if max_value is not None:
-        return [Predicate("nutrition", field, "<=", (float(max_value),))]
+        return [Predicate("base", field, "<=", (float(max_value),))]
     return []
 
 

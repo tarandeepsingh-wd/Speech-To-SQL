@@ -28,10 +28,11 @@ def search_text(
     from speech_to_sql.m2_nlu.entity_tagger import tag_entities
 
     tag_result = tag_entities(query)
-    tag_result["transcript"] = query
-    return search_recipes(
+    pipeline_query = tag_result.get("_normalized_query") or query
+    tag_result["transcript"] = pipeline_query
+    result = search_recipes(
         tag_result,
-        transcript=query,
+        transcript=pipeline_query,
         api_key=api_key,
         base_url=base_url,
         max_api_calls=max_api_calls,
@@ -39,6 +40,13 @@ def search_text(
         final_limit=final_limit,
         execute=execute,
     )
+    result["input_query"] = query
+    result["normalized_query"] = pipeline_query
+    result["normalization"] = {
+        "changed": pipeline_query != query,
+        "corrections": tag_result.get("_asr_corrections", []),
+    }
+    return result
 
 
 def search_recipes(
@@ -63,6 +71,7 @@ def search_recipes(
         return {
             "recipes": [],
             "count": 0,
+            "tag_result": tag_result,
             "plans": [plan.as_dict() for plan in plans],
             "selected_plans": [plan.as_dict() for plan in selected_plans],
             "sql": sql_debug,
@@ -88,6 +97,7 @@ def search_recipes(
     return {
         "recipes": ranked,
         "count": len(ranked),
+        "tag_result": tag_result,
         "plans": [plan.as_dict() for plan in plans],
         "selected_plans": [plan.as_dict() for plan in selected_plans],
         "filters_applied": [plan.label for plan in selected_plans],
