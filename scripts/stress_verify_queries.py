@@ -351,8 +351,8 @@ def _case_time_instruction_ingredient(case_id: int, bp: dict[str, Any], lead: st
         case_id,
         "time_instruction_ingredient",
         query,
-        required_tables=("recipes", "micronutrients", "ingredient_phrase", "instructions"),
-        forbidden_tables=("ingredient_nutrition", "ingredient_flavor"),
+        required_tables=("recipes", "ingredient_phrase", "instructions"),
+        forbidden_tables=("micronutrients", "ingredient_nutrition", "ingredient_flavor"),
     )
 
 

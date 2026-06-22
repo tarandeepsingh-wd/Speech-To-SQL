@@ -306,3 +306,34 @@ def test_schema_normalizer_keeps_general_modal_word_near_numeric_filter(monkeypa
         correction["source"] != "should"
         for correction in result["_asr_corrections"]
     )
+
+
+def test_schema_normalizer_does_not_rewrite_instruction_action_as_operator(monkeypatch, tmp_path):
+    monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
+    reset_adaptive_cache()
+
+    result = tag_entities(
+        "Give me recipes under 60 minutes where the steps mention boil "
+        "and the ingredient phrase contains tomato."
+    )
+
+    assert "steps mention boil" in result["_normalized_query"]
+    assert "steps mention below" not in result["_normalized_query"]
+    assert any(
+        action["action"] == "boil" and action["type"] == "state_change"
+        for action in result["actions"]
+    )
+
+
+def test_schema_normalizer_does_not_rewrite_ingredient_phrase_object_to_placeholder(monkeypatch, tmp_path):
+    monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
+    reset_adaptive_cache()
+
+    result = normalize_noisy_text(
+        "Show recipes under 60 minutes where the steps mention stir "
+        "and the ingredient phrase contains water."
+    )
+
+    assert "ingredient phrase contains water" in result["text"]
+    assert "contains pattern" not in result["text"]
+    assert result["corrections"] == []

@@ -262,6 +262,23 @@ def test_nlu_recovers_diet_typo_and_resets_negation_scope():
     assert "milk" in warnings
 
 
+def test_nlu_does_not_treat_at_least_one_ingredient_as_recipe_nutrition_continuation():
+    result = tag_entities(
+        "Return recipes with lentil where the full recipe has cholesterol below "
+        "100 mg but at least one ingredient has thiamin above 0.2 mg."
+    )
+
+    assert result["nutrition_filters"] == [
+        {"nutrient": "cholesterol", "operator": "<", "value": 100.0},
+        {"nutrient": "thiamin", "operator": ">", "value": 0.2},
+    ]
+
+    sql = build_sql_query(result, transcript=result["_normalized_query"])
+
+    assert "n2.`cholesterol (mg)` >= ?" not in sql["query"]
+    assert sql["validation"]["ok"] is True
+
+
 def test_dummy_db_verifier_treats_semantic_conflict_zero_rows_as_expected():
     compiled = {
         "validation": {
@@ -544,6 +561,22 @@ def test_ingredient_phrase_contains_nutrient_word_stays_ingredient_filter():
     assert "`ingredient_phrase`" in sql["query"]
     assert "`instructions`" in sql["query"]
     assert "`micronutrients`" not in sql["query"]
+
+
+def test_time_instruction_and_water_phrase_keep_required_joins():
+    query = "Show recipes under 60 minutes where the steps mention stir and the ingredient phrase contains water."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["water"]
+    assert [action["action"] for action in prepared["actions"]] == ["stir"]
+    assert sql["validation"]["ok"] is True
+    assert "`recipes` AS r" in sql["query"]
+    assert "`ingredient_phrase`" in sql["query"]
+    assert "`instructions`" in sql["query"]
+    assert "`micronutrients`" not in sql["query"]
+    assert "%water%" in sql["params"]
+    assert "%stir%" in sql["params"]
 
 
 def test_generated_flavor_aliases_use_ingredient_flavor_join():

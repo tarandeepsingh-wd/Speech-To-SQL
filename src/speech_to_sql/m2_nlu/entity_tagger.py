@@ -372,6 +372,17 @@ def _looks_like_time_continuation(text: str, end: int) -> bool:
     )
 
 
+def _looks_like_quantity_of_entity(text: str, end: int) -> bool:
+    suffix = text[end:end + 32]
+    return bool(
+        re.match(
+            r"\s*(?:ingredients?|recipes?|dishes?|items?)\b",
+            suffix,
+            re.IGNORECASE,
+        )
+    )
+
+
 def _dynamic_nutrition_continuation_matches(
     text: str,
     base_matches: list[dict] | None = None,
@@ -386,6 +397,8 @@ def _dynamic_nutrition_continuation_matches(
         for match in _NUTRITION_CONTINUATION_PATTERN.finditer(scope_text):
             end = scope_start + match.end()
             if _looks_like_time_continuation(text_lower, end):
+                continue
+            if not match.group("unit") and _looks_like_quantity_of_entity(text_lower, end):
                 continue
             op_text = re.sub(r"\s+", " ", match.group("op").lower()).strip()
             try:

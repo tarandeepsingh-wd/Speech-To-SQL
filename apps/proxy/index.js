@@ -13,14 +13,18 @@ app.get('/', (req, res) => {
   res.json({ status: 'Speech-to-SQL Node proxy running' });
 });
 
-// Proxy route: forwards queries to the Python API.
-app.post('/api/query', async (req, res) => {
+// Proxy route: forwards app API calls to the Python ML/SQL service.
+app.use('/api', async (req, res) => {
   try {
     const axios = require('axios');
-    const response = await axios.post(
-      `${PYTHON_API}/query`,
-      req.body
-    );
+    const response = await axios({
+      method: req.method,
+      url: `${PYTHON_API}${req.originalUrl.replace(/^\/api/, '')}`,
+      data: req.body,
+      params: req.query,
+      validateStatus: () => true,
+    });
+    res.status(response.status);
     res.json(response.data);
   } catch (err) {
     res.status(500).json({ error: err.message });

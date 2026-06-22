@@ -741,6 +741,10 @@ def _should_apply_phrase(
 
     if candidate.kind == "sql_operator":
         if candidate.operator_type == "COMPARE":
+            if _instruction_mention_context(text, span):
+                return False
+            if _rewrites_literal_to_placeholder(phrase, candidate.term):
+                return False
             return (
                 same_phrase_start
                 and _near_number_or_numeric_field(text, span, fuzzy_domain=True)
@@ -795,6 +799,8 @@ def _operator_context_supports(
     same_start: bool,
 ) -> bool:
     if candidate.operator_type != "COMPARE":
+        return False
+    if _instruction_mention_context(text, span):
         return False
     if not _near_number_or_numeric_field(text, span):
         return False
@@ -883,6 +889,30 @@ def _near_number_or_time_unit(text: str, span: tuple[int, int]) -> bool:
     if re.search(r"\d", window):
         return True
     return bool(re.search(r"\b(?:minute|minutes|min|mins|hour|hours|hr|hrs)\b", window))
+
+
+def _instruction_mention_context(text: str, span: tuple[int, int]) -> bool:
+    prefix = _normalize_term(text[max(0, span[0] - 64):span[0]])
+    return bool(
+        re.search(
+            r"\b(?:instruction|instructions|step|steps|cooking steps|recipe steps)"
+            r"(?:\s+\w+){0,3}\s+"
+            r"(?:mention|mentions|mentioned|contain|contains|include|includes|has|have)\s*$",
+            prefix,
+        )
+    )
+
+
+def _rewrites_literal_to_placeholder(source: str, target: str) -> bool:
+    source_tokens = source.split()
+    target_tokens = target.split()
+    if len(source_tokens) != len(target_tokens):
+        return False
+    placeholders = {"pattern", "value", "field", "column"}
+    return any(
+        target_token in placeholders and source_token != target_token
+        for source_token, target_token in zip(source_tokens, target_tokens)
+    )
 
 
 def _context_window(text: str, span: tuple[int, int], radius: int = 48) -> str:
