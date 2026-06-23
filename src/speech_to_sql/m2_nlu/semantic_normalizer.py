@@ -363,6 +363,7 @@ def _normalize_phrase_terms(text: str) -> dict[str, Any]:
     tokens = _token_spans(text)
     updates = []
     used_positions: set[int] = set()
+    protected_spans = _exact_phrase_spans(text)
     for width in range(MAX_PHRASE_TOKENS, 1, -1):
         for index in range(0, len(tokens) - width + 1):
             window = tokens[index:index + width]
@@ -372,6 +373,8 @@ def _normalize_phrase_terms(text: str) -> dict[str, Any]:
             end = window[-1].end
             positions = set(range(start, end))
             if positions & used_positions:
+                continue
+            if _overlaps_any((start, end), protected_spans):
                 continue
 
             surface = text[start:end]

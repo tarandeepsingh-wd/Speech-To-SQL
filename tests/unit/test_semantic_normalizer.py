@@ -69,6 +69,22 @@ def test_schema_normalizer_protects_valid_operator_phrase(monkeypatch, tmp_path)
     ]
 
 
+def test_schema_normalizer_protects_negated_comparison_phrase(monkeypatch, tmp_path):
+    monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
+    reset_adaptive_cache()
+
+    result = tag_entities("show recipes with garlic not less than 333 calories")
+
+    assert result["_normalized_query"] == "show recipes with garlic not less than 333 calories"
+    assert result["nutrition_filters"] == [
+        {"nutrient": "calories", "operator": ">=", "value": 333.0}
+    ]
+    assert all(
+        correction["target"] not in {"not equals", "time"}
+        for correction in result["_asr_corrections"]
+    )
+
+
 def test_schema_normalizer_does_not_rewrite_operator_noise_without_numeric_context(monkeypatch, tmp_path):
     monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
     reset_adaptive_cache()

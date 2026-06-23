@@ -1187,6 +1187,62 @@ def test_sql_builder_handles_not_more_than_minutes_as_base_time_upper_bound():
     assert sql["params"] == [500.0, 30.0]
 
 
+def test_sql_builder_handles_not_more_than_calories_with_include_and_exclude():
+    query = (
+        "Give me the recipies which does not contain onion but should contain "
+        "garlic having not more than 333 calories"
+    )
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["garlic"]
+    assert prepared["ingredient_logic"]["exclude"] == ["onion"]
+    assert prepared["nutrition_filters"][0]["nutrient"] == "calories"
+    assert prepared["nutrition_filters"][0]["operator"] == "<="
+    assert prepared["nutrition_filters"][0]["value"] == 333.0
+    assert "n1.`calories` <= ?" in sql["query"]
+    assert "n1.`calories` > ?" not in sql["query"]
+    assert sql["params"] == ["garlic", "%garlic%", "onion", "%onion%", 333.0]
+
+
+def test_sql_builder_handles_not_less_than_calories_as_lower_bound():
+    query = "Give me recipes with garlic not less than 333 calories"
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["garlic"]
+    assert prepared["nutrition_filters"][0]["nutrient"] == "calories"
+    assert prepared["nutrition_filters"][0]["operator"] == ">="
+    assert prepared["nutrition_filters"][0]["value"] == 333.0
+    assert "n1.`calories` >= ?" in sql["query"]
+    assert "n1.`calories` < ?" not in sql["query"]
+    assert sql["params"] == ["garlic", "%garlic%", 333.0]
+
+
+def test_sql_builder_handles_not_less_than_minutes_as_base_time_lower_bound():
+    query = "recipes with garlic that take not less than 30 minutes"
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["time_filters"] == [
+        {
+            "field": "total_time",
+            "min": 30.0,
+            "max": None,
+            "source": "intent_enrichment",
+        }
+    ]
+    assert "r.`total_time` >= ?" in sql["query"]
+    assert "r.`total_time` <= ?" not in sql["query"]
+    assert sql["params"] == ["garlic", "%garlic%", 30.0]
+
+
 def test_api_verifier_confirms_matching_recipe_against_ir():
     config = load_recipe_db_config()
     ingredient_list_field = next(field for field in config["search_text_fields"] if field == "ingredients")

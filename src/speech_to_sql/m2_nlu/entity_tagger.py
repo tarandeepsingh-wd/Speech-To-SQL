@@ -205,7 +205,8 @@ def _normalize_schema_key(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^a-zA-Z0-9]+", " ", value.lower())).strip()
 
 _NUTRITION_PATTERN = re.compile(
-    r"(?P<op>under|below|less than|at most|"
+    r"(?P<op>not less than|no less than|not more than|no more than|"
+    r"under|below|less than|at most|"
     r"over|above|more than|greater than|higher than|larger than|at least|"
     r"around|about|approximately)?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
@@ -217,7 +218,8 @@ _NUTRITION_PATTERN = re.compile(
 _NUTRITION_NUTRIENT_FIRST_PATTERN = re.compile(
     r"(?P<nutrient>[a-z][a-z-]*)\s*"
     r"(?:se\s+)?(?:is|are|was|were|has|have|contains?|with|of)?\s*"
-    r"(?P<op>under|below|less than|at most|"
+    r"(?P<op>not less than|no less than|not more than|no more than|"
+    r"under|below|less than|at most|"
     r"over|above|more than|greater than|higher than|larger than|at least|"
     r"around|about|approximately)?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
@@ -233,6 +235,8 @@ _NUTRIENT_AFTER_PATTERN = re.compile(
 )
 
 _OP_MAP = {
+    "not less than": ">=", "no less than": ">=",
+    "not more than": "<=", "no more than": "<=",
     "under": "<", "below": "<", "less than": "<", "at most": "<=",
     "over": ">",  "above": ">", "more than": ">", "greater than": ">",
     "higher than": ">", "larger than": ">", "at least": ">=",
@@ -240,6 +244,7 @@ _OP_MAP = {
     None: "=",
 }
 _OPERATOR_WORD_PATTERN = (
+    r"not\s+less\s+than|no\s+less\s+than|not\s+more\s+than|no\s+more\s+than|"
     r"under|below|less\s+than|at\s+most|"
     r"over|above|more\s+than|greater\s+than|higher\s+than|larger\s+than|at\s+least|"
     r"around|about|approximately"
