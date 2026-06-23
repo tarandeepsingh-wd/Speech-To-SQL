@@ -205,6 +205,16 @@ def test_schema_normalizer_does_not_convert_food_words_that_sound_like_numbers(m
     assert result["corrections"] == []
 
 
+def test_schema_normalizer_does_not_convert_preposition_for_to_four(monkeypatch, tmp_path):
+    monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
+    reset_adaptive_cache()
+
+    result = normalize_noisy_text("fetch recipes with lemon juice and sugar for review")
+
+    assert result["text"] == "fetch recipes with lemon juice and sugar for review"
+    assert result["corrections"] == []
+
+
 def test_schema_normalizer_repairs_noisy_presence_cues_before_nutrients(monkeypatch, tmp_path):
     monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
     reset_adaptive_cache()
@@ -335,6 +345,23 @@ def test_schema_normalizer_does_not_rewrite_instruction_action_as_operator(monke
 
     assert "steps mention boil" in result["_normalized_query"]
     assert "steps mention below" not in result["_normalized_query"]
+    assert any(
+        action["action"] == "boil" and action["type"] == "state_change"
+        for action in result["actions"]
+    )
+
+
+def test_schema_normalizer_does_not_rewrite_mentioning_action_as_operator(monkeypatch, tmp_path):
+    monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
+    reset_adaptive_cache()
+
+    result = tag_entities(
+        "Show dishes under 60 minutes with cooking steps mentioning boil "
+        "and the ingredient phrase contains pasta."
+    )
+
+    assert "steps mentioning boil" in result["_normalized_query"]
+    assert "steps mentioning below" not in result["_normalized_query"]
     assert any(
         action["action"] == "boil" and action["type"] == "state_change"
         for action in result["actions"]

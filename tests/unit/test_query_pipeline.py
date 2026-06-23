@@ -563,6 +563,55 @@ def test_ingredient_phrase_contains_nutrient_word_stays_ingredient_filter():
     assert "`micronutrients`" not in sql["query"]
 
 
+def test_plain_ingredient_pair_with_sugar_does_not_become_nutrition_filter():
+    query = "Fetch recipes with lemon juice and sugar for review."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["lemon juice", "sugar"]
+    assert prepared["nutrition_filters"] == []
+    assert sql["validation"]["ok"] is True
+    assert "`ingredient_phrase`" in sql["query"]
+    assert "`micronutrients`" not in sql["query"]
+
+
+def test_having_calorie_filter_does_not_create_fuzzy_asafoetida():
+    query = "Search for recipes with tomato having no more than 600 calories for testing."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["tomato"]
+    assert prepared["nutrition_filters"][0]["operator"] == "<="
+    assert "asafoetida" not in sql["params"]
+
+
+def test_project_suffix_words_do_not_become_instruction_actions():
+    query = "List dishes where the steps mention saute for a pipeline check."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert [item["action"] for item in prepared["actions"]] == ["saute"]
+    assert sql["params"] == ["%saute%"]
+
+
+def test_project_suffix_words_do_not_become_ingredients():
+    query = "Can you show meals whose instructions mention boil for a dummy data run."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == []
+    assert sql["validation"]["ok"] is True
+    assert "date" not in sql["params"]
+
+
+def test_relative_clause_word_does_not_stick_to_ingredient():
+    query = "Get me dishes with chicken that take no less than 5 minutes for validation."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["chicken"]
+    assert prepared["time_filters"][0]["field"] == "total_time"
+
+
 def test_time_instruction_and_water_phrase_keep_required_joins():
     query = "Show recipes under 60 minutes where the steps mention stir and the ingredient phrase contains water."
     prepared = prepare_intent(tag_entities(query), transcript=query)
@@ -579,6 +628,22 @@ def test_time_instruction_and_water_phrase_keep_required_joins():
     assert "%stir%" in sql["params"]
 
 
+def test_long_project_context_does_not_drop_exact_ingredient_phrase_match():
+    query = (
+        "Bring back menu recipes under 60 minutes where where instructions contain stir "
+        "and the ingredient phrase contains water from the local sample."
+    )
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["water"]
+    assert [action["action"] for action in prepared["actions"]] == ["stir"]
+    assert sql["validation"]["ok"] is True
+    assert "`ingredient_phrase`" in sql["query"]
+    assert "`instructions`" in sql["query"]
+    assert "%water%" in sql["params"]
+
+
 def test_generated_flavor_aliases_use_ingredient_flavor_join():
     query = "Find vegan recipes with carrot where carrot is categorized as root vegetable."
     prepared = prepare_intent(tag_entities(query), transcript=query)
@@ -590,6 +655,16 @@ def test_generated_flavor_aliases_use_ingredient_flavor_join():
     assert prepared["category_filters"][0]["value"] == "root vegetable"
     assert sql["validation"]["ok"] is True
     assert "`ingredient_flavor`" in sql["query"]
+
+
+def test_flavor_category_context_does_not_extract_flavor_as_ingredient():
+    query = "Show recipes with tomato where tomato has flavor category nightshade for testing."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["tomato"]
+    assert prepared["category_filters"][0]["value"] == "nightshade"
+    assert "flavor" not in sql["params"]
 
 
 def test_limit_cue_does_not_become_instruction_action():
@@ -1081,6 +1156,30 @@ def test_non_recipe_root_fails_closed_for_unsupported_cross_root_filter():
     assert any("cannot be rendered from root 'ingredients'" in error for error in sql["validation"]["errors"])
 
 
+def test_food_item_query_with_scoped_ingredient_and_steps_stays_recipe_root():
+    query = (
+        "Show food items under 60 minutes where the steps mention stir "
+        "and the ingredient phrase contains sugar."
+    )
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert sql["validation"]["ok"] is True
+    assert sql["ir"]["root"] == "recipe"
+    assert sql["query"].startswith("SELECT DISTINCT r.* FROM `recipes` AS r")
+    assert "`ingredient_phrase`" in sql["query"]
+    assert "`instructions`" in sql["query"]
+
+
+def test_food_item_instruction_only_query_returns_recipes():
+    query = "Show food items where the steps mention stir."
+    sql = build_sql_query(tag_entities(query), transcript=query)
+
+    assert sql["validation"]["ok"] is True
+    assert sql["ir"]["root"] == "recipe"
+    assert sql["query"].startswith("SELECT r.* FROM `recipes` AS r")
+
+
 def test_sql_builder_uses_schema_linker_for_alias_inputs():
     tag_result = {
         "nutrition_filters": [{"nutrient": "kcal", "operator": "<", "value": 300}],
@@ -1159,7 +1258,7 @@ def test_sql_builder_uses_enriched_between_minutes_filter():
         transcript="recipes between 20 and 40 minutes with garlic",
     )
 
-    assert "r.`total_time` BETWEEN ? AND ?" in sql["query"]
+    assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) BETWEEN ? AND ?" in sql["query"]
     assert sql["params"] == ["garlic", "%garlic%", 20.0, 40.0]
 
 
@@ -1182,7 +1281,7 @@ def test_sql_builder_handles_not_more_than_minutes_as_base_time_upper_bound():
         }
     ]
     assert "n1.`calories` < ?" in sql["query"]
-    assert "r.`total_time` <= ?" in sql["query"]
+    assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) <= ?" in sql["query"]
     assert "n2.`total_time`" not in sql["query"]
     assert sql["params"] == [500.0, 30.0]
 
@@ -1238,7 +1337,7 @@ def test_sql_builder_handles_not_less_than_minutes_as_base_time_lower_bound():
             "source": "intent_enrichment",
         }
     ]
-    assert "r.`total_time` >= ?" in sql["query"]
+    assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) >= ?" in sql["query"]
     assert "r.`total_time` <= ?" not in sql["query"]
     assert sql["params"] == ["garlic", "%garlic%", 30.0]
 

@@ -63,6 +63,8 @@ def _select_exprs(tag_result: dict, schema: dict[str, Any], root: str) -> list[S
 
 def _root_name(text: str, schema: dict[str, Any]) -> str:
     default = schema.get("default_root", "recipe")
+    if _recipe_retrieval_context(text):
+        return default
     roots = schema.get("roots", {})
     matched = []
     for name, root in roots.items():
@@ -78,6 +80,16 @@ def _root_name(text: str, schema: dict[str, Any]) -> str:
     ):
         return default
     return best
+
+
+def _recipe_retrieval_context(text: str) -> bool:
+    return bool(re.search(
+        r"\b(?:recipe|recipes|recipe entries|dish|dishes|meal|meals|"
+        r"food item|food items|cooking record|cooking records|"
+        r"recipedb item|recipedb items|menu recipe|menu recipes)\b",
+        text,
+        re.IGNORECASE,
+    ))
 
 
 def _ingredient_predicates(tag_result: dict) -> list[Predicate]:

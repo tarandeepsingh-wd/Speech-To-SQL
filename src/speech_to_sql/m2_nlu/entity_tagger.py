@@ -608,6 +608,8 @@ def _valid_nutrition_match(pattern, match) -> bool:
     leading = _normalize_nutrient(match.group("nutrient"))
     if not leading:
         return False
+    if not (match.group("op") or match.group("unit")):
+        return False
     trailing_unit = (match.group("unit") or "").lower()
     if trailing_unit in _CALORIE_TERMS and leading != "calories":
         return False
@@ -789,6 +791,16 @@ def _mask_claimed_spans(text: str, extra_spans: list | None = None) -> str:
 # ---------------------------------------------------------
 
 _ACTION_TERMS = sorted(DB_ACTIONS.keys(), key=len, reverse=True)
+_NON_QUERY_ACTION_TERMS = {
+    "check",
+    "clean",
+    "dry",
+    "note",
+    "repeat",
+    "smoke",
+    "test",
+    "take",
+}
 
 
 def _detect_actions(text: str) -> list:
@@ -797,6 +809,8 @@ def _detect_actions(text: str) -> list:
     used_positions = set()
 
     for action in _ACTION_TERMS:
+        if action in _NON_QUERY_ACTION_TERMS:
+            continue
         pattern = re.compile(r"\b" + re.escape(action) + r"\b", re.IGNORECASE)
         for m in pattern.finditer(text_lower):
             positions = set(range(m.start(), m.end()))
@@ -811,9 +825,11 @@ def _detect_actions(text: str) -> list:
 
     for token_m in re.finditer(r"\b[\w-]+\b", text_lower):
         token = token_m.group()
-        if token in DB_ACTIONS:
+        if token in DB_ACTIONS or token in _NON_QUERY_ACTION_TERMS:
             continue
         for base in _action_base_candidates(token):
+            if base in _NON_QUERY_ACTION_TERMS:
+                continue
             if base in DB_ACTIONS:
                 positions = set(range(token_m.start(), token_m.end()))
                 if positions & used_positions:

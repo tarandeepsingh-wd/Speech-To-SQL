@@ -68,12 +68,12 @@ COMMON_WORDS_BLACKLIST = {
     "dish", "meal", "prep", "step", "stir", "pour", "chop",
     "give","tell", "show", "add", "put", "cut", "slice", "serve",
     "contain", "include", "use", "need", "want", "like", "make", "take",
-    "items", "ingredients", "utensils", "tools", "equipment",
+    "items", "entries", "records", "ingredients", "ingredient", "utensils", "tools", "equipment",
     "food","those", "these", "any", "all", "some", "many", "few", "several",
     "me","and", "or", "but", "if", "then", "when", "while", "before", "after",
     "dice", "mince", "mix",  "fold", "cool", "rest", "toss",
     "make", "take", "just", "some", "this", "that", "with",
-    "from", "have", "will", "need", "want", "like", "used",
+    "from", "have", "has", "having", "will", "need", "want", "like", "used",
     "then", "when", "also", "into", "onto", "over", "done",
     "well", "very", "more", "less", "much", "many",
     "each", "both", "such", "most", "same", "next", "last",
@@ -81,7 +81,15 @@ COMMON_WORDS_BLACKLIST = {
     "one", "two", "three", "four", "five", "six", "seven",
     "eight", "nine", "ten", "half", "quarter",
     "a", "an", "the", "this", "that", "these", "those",
-    "singh",
+    "singh", "category", "flavor", "database", "review", "testing", "demo",
+    "tonight", "menu", "plan", "check", "validation", "verifier", "dry",
+    "smoke", "clean", "repeat", "note", "walkthrough", "handoff",
+    "data", "dummy", "run", "runs", "local", "sample", "pipeline", "module",
+    "sql", "query", "table", "row", "result", "schema", "athena", "github",
+    "terminal", "output", "screenshot", "workbench", "evidence", "correctness",
+    "professor", "teammate", "project", "class", "lab", "notebook", "workbook",
+    "viva", "meeting", "progress", "update", "implementation", "regression",
+    "final", "broad", "detailed", "careful", "robust", "reproducible",
     "cups", "tbsp", "tsp",  "gram", "grams", "ounce", "pound",
     "piece", "pieces", "slice", "slices", "bunch", "pinch",
 }
@@ -255,11 +263,15 @@ def _is_blocked_ingredient(text: str, canonical: str) -> bool:
     text = text.lower().strip()
     canonical = canonical.lower().strip()
     spacy_stops = _get_spacy_stops()
+    text_tokens = text.split()
+    canonical_tokens = canonical.split()
     return (
         text.startswith("no ") or
         canonical.startswith("no ") or
         text in COMMON_WORDS_BLACKLIST or
         canonical in COMMON_WORDS_BLACKLIST or
+        (len(text_tokens) > 1 and text_tokens[-1] in COMMON_WORDS_BLACKLIST) or
+        (len(canonical_tokens) > 1 and canonical_tokens[-1] in COMMON_WORDS_BLACKLIST) or
         text in spacy_stops or
         canonical in spacy_stops
     )

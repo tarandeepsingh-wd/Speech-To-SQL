@@ -93,6 +93,7 @@ def _base_condition(
     return _column_condition(
         registry.column_sql(registry.base_alias, column),
         predicate,
+        registry,
     )
 
 
@@ -114,6 +115,7 @@ def _root_source_condition(
     return _column_condition(
         registry.column_sql(plan.from_alias, column),
         filter_predicate,
+        registry,
     )
 
 
@@ -139,7 +141,7 @@ def _same_table_relation_condition(
             values,
             predicate.source,
         )
-    return _column_condition(column_sql, predicate)
+    return _column_condition(column_sql, predicate, registry)
 
 
 def _nutrition_group_condition(
@@ -755,6 +757,7 @@ def _relation_match_condition(
         return _column_condition(
             registry.column_sql(alias, column),
             filter_predicate,
+            registry,
         )
 
     operator = predicate.operator.upper()
@@ -766,6 +769,7 @@ def _relation_match_condition(
         return _column_condition(
             registry.column_sql(alias, column),
             filter_predicate,
+            registry,
         )
 
     values = tuple(predicate.values)
@@ -898,19 +902,47 @@ def _normalized_predicate(predicate: Predicate, relation: dict[str, Any]) -> Pre
     )
 
 
-def _column_condition(column_sql: str, predicate: Predicate) -> SqlCondition | None:
+def _column_condition(
+    column_sql: str,
+    predicate: Predicate,
+    registry: SchemaRegistry | None = None,
+) -> SqlCondition | None:
     operator = predicate.operator.upper()
     values = tuple(predicate.values)
+    expression = _predicate_expression(column_sql, predicate, registry)
     if operator == "BETWEEN" and len(values) == 2:
-        return SqlCondition(f"{column_sql} BETWEEN ? AND ?", values, predicate.source)
+        return SqlCondition(f"{expression} BETWEEN ? AND ?", values, predicate.source)
     if operator == "IN" and values:
         placeholders = ", ".join("?" for _ in values)
-        return SqlCondition(f"{column_sql} IN ({placeholders})", values, predicate.source)
+        return SqlCondition(f"{expression} IN ({placeholders})", values, predicate.source)
     if operator == "LIKE" and len(values) == 1:
-        return SqlCondition(f"{column_sql} LIKE ?", values, predicate.source)
+        return SqlCondition(f"{expression} LIKE ?", values, predicate.source)
     if operator in {"<", "<=", "=", ">=", ">"} and len(values) == 1:
-        return SqlCondition(f"{column_sql} {operator} ?", values, predicate.source)
+        return SqlCondition(f"{expression} {operator} ?", values, predicate.source)
     return None
+
+
+def _predicate_expression(
+    column_sql: str,
+    predicate: Predicate,
+    registry: SchemaRegistry | None,
+) -> str:
+    if not registry:
+        return column_sql
+    item = registry.predicate_catalog_item(predicate)
+    if not item or item.get("operator_profile") != "numeric":
+        return column_sql
+    table = str(item.get("table") or "")
+    column = str(item.get("column") or "")
+    column_type = (
+        registry.schema.get("collections", {})
+        .get(table, {})
+        .get("fields", {})
+        .get(column)
+    )
+    if str(column_type).lower() not in {"string", "text"}:
+        return column_sql
+    return f"CAST(NULLIF({column_sql}, '') AS DOUBLE)"
 
 
 def _order_expression(field: str, registry: SchemaRegistry) -> str | None:

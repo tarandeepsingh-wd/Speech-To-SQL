@@ -15,6 +15,7 @@ MODEL_DIR = Path(__file__).parent / "models" / "ingredient_reranker"
 MODEL_FILE = MODEL_DIR / "model.pkl"
 DEFAULT_THRESHOLD = 0.50
 FEATURE_SCHEMA_VERSION = 3
+TRUSTED_EXACT_LAYERS = {"exact_aho", "exact_component"}
 
 NUMERIC_FEATURE_NAMES = [
     "extractor_score",
@@ -244,6 +245,18 @@ def _predict_probability(payload: dict, features: list[float]) -> float:
     return float(model.predict([features])[0])
 
 
+def _is_trusted_exact_match(match: dict) -> bool:
+    layer = str(match.get("layer") or "")
+    source = str(match.get("source") or "")
+    canonical = str(match.get("canonical") or "").lower().strip()
+    surface = str(match.get("text") or "").lower().strip()
+    if layer not in TRUSTED_EXACT_LAYERS:
+        return False
+    if source in {"db", "synonym"}:
+        return canonical in DB_INGREDIENTS
+    return bool(canonical and canonical == surface and canonical in DB_INGREDIENTS)
+
+
 def rerank_ingredient_matches(query: str, matches: list[dict]) -> list[dict]:
     """
     Filter candidate ingredients with a trained candidate classifier.
@@ -262,6 +275,6 @@ def rerank_ingredient_matches(query: str, matches: list[dict]) -> list[dict]:
         probability = _predict_probability(payload, features)
         enriched = dict(match)
         enriched["reranker_confidence"] = round(probability, 3)
-        if probability >= cutoff:
+        if probability >= cutoff or _is_trusted_exact_match(match):
             kept.append(enriched)
     return kept

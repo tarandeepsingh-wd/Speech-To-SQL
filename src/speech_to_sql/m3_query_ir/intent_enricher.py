@@ -192,9 +192,13 @@ def _time_field_from_text(
     recipe_config: dict[str, Any],
     schema: dict[str, Any],
 ) -> str:
-    terms = recipe_config["time_fields"]["terms"]
-    for term, field in sorted(terms.items(), key=lambda item: len(item[0]), reverse=True):
-        if _contains_any_term(text, [term]):
+    explicit_patterns = (
+        (r"\b(?:cook|cooking|cook_time)\s+time\b|\bcook_time\b", "cook_time"),
+        (r"\b(?:prep|prepare|prepared|preparation|prep_time)\s+time\b|\bprep_time\b", "prep_time"),
+        (r"\b(?:total|overall|total_time)\s+time\b|\btotal_time\b", "total_time"),
+    )
+    for pattern, field in explicit_patterns:
+        if re.search(pattern, text):
             return link_base_field(field, recipe_config=recipe_config, schema=schema) or field
     return recipe_config["time_fields"]["default"]
 

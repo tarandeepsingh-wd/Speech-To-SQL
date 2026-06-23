@@ -129,8 +129,8 @@ def _normalize_spoken_numbers(text: str) -> dict[str, Any]:
             parsed = _parse_number_phrase(window)
             if not parsed:
                 continue
-            value, confidence, has_scale_or_tens = parsed
-            if not _number_context_supports(text, (start, end), has_scale_or_tens):
+            value, confidence, has_scale_or_tens, has_fuzzy_token = parsed
+            if not _number_context_supports(text, (start, end), has_scale_or_tens, has_fuzzy_token):
                 continue
             source = text[start:end]
             best = (start, end, source, str(value), confidence)
@@ -176,17 +176,21 @@ def _normalize_spoken_numbers(text: str) -> dict[str, Any]:
     }
 
 
-def _parse_number_phrase(tokens: list[TokenSpan]) -> tuple[int, float, bool] | None:
+def _parse_number_phrase(tokens: list[TokenSpan]) -> tuple[int, float, bool, bool] | None:
     if not tokens:
+        return None
+    if len(tokens) == 1 and _normalize_term(tokens[0].text) in {"for"}:
         return None
 
     parsed_tokens = []
     fuzzy_scores = []
+    fuzzy_flags = []
     for token in tokens:
         normalized = _normalize_term(token.text)
         if normalized in NUMBER_CONNECTORS:
             parsed_tokens.append(("connector", 0, normalized))
             fuzzy_scores.append(100.0)
+            fuzzy_flags.append(False)
             continue
         parsed = _canonical_number_token(normalized)
         if not parsed:
@@ -194,13 +198,16 @@ def _parse_number_phrase(tokens: list[TokenSpan]) -> tuple[int, float, bool] | N
         kind, value, canonical, score = parsed
         parsed_tokens.append((kind, value, canonical))
         fuzzy_scores.append(score)
+        fuzzy_flags.append(normalized not in NUMBER_WORDS)
 
     while parsed_tokens and parsed_tokens[0][0] == "connector":
         parsed_tokens.pop(0)
         fuzzy_scores.pop(0)
+        fuzzy_flags.pop(0)
     while parsed_tokens and parsed_tokens[-1][0] == "connector":
         parsed_tokens.pop()
         fuzzy_scores.pop()
+        fuzzy_flags.pop()
     if not parsed_tokens:
         return None
     if len(parsed_tokens) == 1 and parsed_tokens[0][0] != "value":
@@ -243,7 +250,12 @@ def _parse_number_phrase(tokens: list[TokenSpan]) -> tuple[int, float, bool] | N
         return None
     if len(parsed_tokens) == 1 and min(fuzzy_scores or [100.0]) < 100 and value < 20:
         return None
-    return value, min(fuzzy_scores) if fuzzy_scores else 100.0, has_scale_or_tens
+    return (
+        value,
+        min(fuzzy_scores) if fuzzy_scores else 100.0,
+        has_scale_or_tens,
+        any(fuzzy_flags),
+    )
 
 
 def _canonical_number_token(token: str) -> tuple[str, int, str, float] | None:
@@ -298,6 +310,7 @@ def _number_context_supports(
     text: str,
     span: tuple[int, int],
     has_scale_or_tens: bool,
+    has_fuzzy_token: bool,
 ) -> bool:
     window = _context_window(text, span, radius=52).lower()
     if re.search(r"\d", window):
@@ -305,6 +318,8 @@ def _number_context_supports(
     if _near_number_unit(window):
         return True
     if _near_numeric_domain_token(window):
+        if has_fuzzy_token and not has_scale_or_tens and not _near_compare_expression(window):
+            return False
         return True
     if _near_compare_expression(window):
         return True
@@ -900,7 +915,7 @@ def _instruction_mention_context(text: str, span: tuple[int, int]) -> bool:
         re.search(
             r"\b(?:instruction|instructions|step|steps|cooking steps|recipe steps)"
             r"(?:\s+\w+){0,3}\s+"
-            r"(?:mention|mentions|mentioned|contain|contains|include|includes|has|have)\s*$",
+            r"(?:mention|mentions|mentioned|mentioning|contain|contains|containing|include|includes|including|has|have)\s*$",
             prefix,
         )
     )
