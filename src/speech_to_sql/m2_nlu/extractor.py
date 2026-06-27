@@ -9,9 +9,11 @@ from metaphone import doublemetaphone
 from Levenshtein import distance as levenshtein_distance
 from rapidfuzz import process, fuzz
 
-from speech_to_sql.m2_nlu.automaton import INGREDIENT_AUTOMATON, UTENSIL_AUTOMATON
-from speech_to_sql.m2_nlu.data.db_loader import DB_INGREDIENTS, DB_UTENSILS
+from speech_to_sql.m2_nlu.automaton import ACTION_AUTOMATON, INGREDIENT_AUTOMATON, UTENSIL_AUTOMATON
+from speech_to_sql.m2_nlu.data.db_loader import DB_ACTIONS, DB_INGREDIENTS, DB_UTENSILS
+from speech_to_sql.m2_nlu.entity_confidence import accepts_match, match_confidence
 from speech_to_sql.m2_nlu.data.ingredient_synonyms import SYNONYMS, canonicalize_ingredient
+from speech_to_sql.m2_nlu.data.utensil_synonyms import UTENSIL_SYNONYMS
 
 # ---------------------------------------------------------
 # CONSTANTS
@@ -27,6 +29,8 @@ GREY_ZONE_LOW   = 78
 GREY_ZONE_RATIO = 0.35
 
 METAPHONE_FUZZY_THRESHOLD = 70
+VOCAB_FUZZY_THRESHOLD = 88
+VOCAB_METAPHONE_FUZZY_THRESHOLD = 74
 
 VALID_POS = {"NOUN", "PROPN", "ADJ", "X"}
 
@@ -66,11 +70,11 @@ COMMON_WORDS_BLACKLIST = {
     # -- general --------------------------------------------
     "food", "good", "cook", "heat", "bake", "boil", "fry",
     "dish", "meal", "prep", "step", "stir", "pour", "chop",
-    "give","tell", "show", "add", "put", "cut", "slice", "serve",
+    "give","tell", "show", "try", "find", "back", "add", "put", "cut", "slice", "serve",
     "contain", "include", "use", "need", "want", "like", "make", "take",
     "items", "entries", "records", "ingredients", "ingredient", "utensils", "tools", "equipment",
     "food","those", "these", "any", "all", "some", "many", "few", "several",
-    "me","and", "or", "but", "if", "then", "when", "while", "before", "after",
+    "me","and", "or", "but", "if", "then", "than", "when", "while", "before", "after",
     "dice", "mince", "mix",  "fold", "cool", "rest", "toss",
     "make", "take", "just", "some", "this", "that", "with",
     "from", "have", "has", "having", "will", "need", "want", "like", "used",
@@ -197,6 +201,159 @@ for _term in ALL_KNOWN_TERMS:
         METAPHONE_INDEX[_primary].append(_term)
     if _secondary:
         METAPHONE_INDEX[_secondary].append(_term)
+
+
+def _compact_term(term: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", _term_key(term))
+
+
+def _consonant_key(term: str) -> str:
+    return re.sub(r"[aeiou\s]", "", _term_key(term))
+
+
+def _single_adjacent_transposition(left: str, right: str) -> bool:
+    left = left.replace(" ", "")
+    right = right.replace(" ", "")
+    if len(left) != len(right) or left == right or len(left) < 2:
+        return False
+    diffs = [index for index, pair in enumerate(zip(left, right)) if pair[0] != pair[1]]
+    if len(diffs) != 2 or diffs[1] != diffs[0] + 1:
+        return False
+    first, second = diffs
+    return left[first] == right[second] and left[second] == right[first]
+
+
+def _frequency_value(metadata) -> int:
+    if isinstance(metadata, dict):
+        metadata = metadata.get("frequency", 0)
+    try:
+        return int(metadata)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _looks_like_noisy_vocab_alias(alias: str, canonical: str, alias_frequency: int, canonical_frequency: int) -> bool:
+    if alias == canonical or canonical_frequency <= alias_frequency:
+        return False
+    compact_alias = _compact_term(alias)
+    compact_canonical = _compact_term(canonical)
+    if not compact_alias or not compact_canonical:
+        return False
+    if compact_alias == compact_canonical:
+        return True
+    length_ratio = min(len(compact_alias), len(compact_canonical)) / max(len(compact_alias), len(compact_canonical))
+    if length_ratio < 0.72:
+        return False
+    frequency_ratio = canonical_frequency / max(alias_frequency, 1)
+    if frequency_ratio < 40.0:
+        return False
+    edit_distance = levenshtein_distance(compact_alias, compact_canonical)
+    edit_ratio = edit_distance / max(len(compact_alias), len(compact_canonical), 1)
+    if edit_distance <= 2 and edit_ratio <= 0.28:
+        return True
+    if _single_adjacent_transposition(compact_alias, compact_canonical):
+        return True
+    alias_codes = {code for code in doublemetaphone(alias) if code}
+    canonical_codes = {code for code in doublemetaphone(canonical) if code}
+    return bool(
+        alias_codes & canonical_codes
+        and fuzz.WRatio(alias, canonical) >= 90
+        and edit_ratio <= 0.34
+    )
+
+
+def _canonicalize_by_frequency(terms: dict, aliases: dict[str, str] | None = None) -> dict[str, str]:
+    frequencies = {
+        _term_key(term): _frequency_value(metadata)
+        for term, metadata in terms.items()
+        if _term_key(term)
+    }
+    canonical_by_term = {term: term for term in frequencies}
+
+    compact_groups: dict[str, list[str]] = defaultdict(list)
+    for term in frequencies:
+        compact_groups[_compact_term(term)].append(term)
+    for group in compact_groups.values():
+        if len(group) < 2:
+            continue
+        strongest = max(group, key=lambda item: (frequencies[item], -len(item), item))
+        for term in group:
+            canonical_by_term[term] = strongest
+
+    ordered_terms = sorted(frequencies, key=lambda item: frequencies[item], reverse=True)
+    for term in ordered_terms:
+        current = canonical_by_term[term]
+        current_frequency = frequencies[current]
+        for candidate in ordered_terms:
+            if candidate == term:
+                continue
+            candidate_frequency = frequencies[candidate]
+            if candidate_frequency <= current_frequency:
+                break
+            if _looks_like_noisy_vocab_alias(term, candidate, frequencies[term], candidate_frequency):
+                canonical_by_term[term] = candidate
+                break
+
+    for alias, canonical in (aliases or {}).items():
+        alias_key = _term_key(alias)
+        canonical_key = _term_key(canonical)
+        if alias_key and canonical_key in canonical_by_term:
+            canonical_by_term[alias_key] = canonical_by_term[canonical_key]
+
+    return canonical_by_term
+
+
+def _build_term_index(canonical_by_term: dict[str, str], frequencies_by_term: dict[str, int]) -> dict:
+    terms = sorted({
+        _term_key(term)
+        for term in canonical_by_term
+        if _term_key(term)
+    })
+    prefix_index: dict = defaultdict(list)
+    metaphone_index: dict = defaultdict(list)
+    consonant_index: dict = defaultdict(list)
+    for term in terms:
+        prefix_index[term[0]].append(term)
+        consonant = _consonant_key(term)
+        if consonant:
+            consonant_index[consonant].append(term)
+        primary, secondary = doublemetaphone(term)
+        if primary:
+            metaphone_index[primary].append(term)
+        if secondary:
+            metaphone_index[secondary].append(term)
+    return {
+        "terms": terms,
+        "term_set": set(terms),
+        "canonical_by_term": canonical_by_term,
+        "frequencies_by_term": frequencies_by_term,
+        "prefix_index": prefix_index,
+        "metaphone_index": metaphone_index,
+        "consonant_index": consonant_index,
+    }
+
+
+def _term_key(term: str) -> str:
+    term = str(term).lower()
+    term = re.sub(r"[^a-zA-Z0-9\s]", " ", term)
+    return re.sub(r"\s+", " ", term).strip()
+
+
+UTENSIL_CANONICAL_BY_TERM = _canonicalize_by_frequency(DB_UTENSILS, UTENSIL_SYNONYMS)
+ACTION_CANONICAL_BY_TERM = _canonicalize_by_frequency(DB_ACTIONS)
+UTENSIL_FREQUENCIES_BY_TERM = {
+    _term_key(term): _frequency_value(metadata)
+    for term, metadata in DB_UTENSILS.items()
+    if _term_key(term)
+}
+ACTION_FREQUENCIES_BY_TERM = {
+    _term_key(term): _frequency_value(metadata)
+    for term, metadata in DB_ACTIONS.items()
+    if _term_key(term)
+}
+
+UTENSIL_TERM_INDEX = _build_term_index(UTENSIL_CANONICAL_BY_TERM, UTENSIL_FREQUENCIES_BY_TERM)
+ACTION_TERM_INDEX = _build_term_index(ACTION_CANONICAL_BY_TERM, ACTION_FREQUENCIES_BY_TERM)
 
 
 def asr_normalize(text: str) -> str:
@@ -844,6 +1001,29 @@ def resolve_token(query: str, threshold: int, mode: str = "unigram"):
 # EXTRACT INGREDIENTS
 # ---------------------------------------------------------
 
+def extract_strong_ingredient_spans(text: str) -> list[dict]:
+    """Return exact ingredient evidence for cross-entity span arbitration."""
+    text_lower = normalize_text(text)
+    matches = []
+    for end_idx, (source, original, canonical) in INGREDIENT_AUTOMATON.iter(text_lower):
+        start_idx = end_idx - len(original) + 1
+        match_text = text_lower[start_idx:end_idx + 1]
+        before = text_lower[start_idx - 1] if start_idx > 0 else " "
+        after = text_lower[end_idx + 1] if end_idx + 1 < len(text_lower) else " "
+        if before not in WORD_BOUNDARIES or after not in WORD_BOUNDARIES:
+            continue
+        if _is_blocked_ingredient(match_text, canonical):
+            continue
+        matches.append({
+            "text": match_text,
+            "canonical": canonical,
+            "span": (start_idx, end_idx),
+            "source": source,
+            "frequency": DB_INGREDIENTS.get(canonical, {}).get("frequency", 0),
+        })
+    return resolve_overlaps(matches)
+
+
 def extract_ingredients(text: str) -> list:
 
     text        = asr_normalize(text)
@@ -986,34 +1166,411 @@ _QUANTITY_WORDS = {
 _QUANTITY_PATTERN = re.compile(r"\b(\d+[\./]?\d*)\s+cup", re.IGNORECASE)
 
 
-def extract_utensils(text: str) -> list:
+def _index_max_tokens(term_index: dict) -> int:
+    return max((len(term.split()) for term in term_index["terms"]), default=1)
 
-    text_lower  = normalize_text(text)
+
+def _is_quantity_cup(text_lower: str, start_idx: int, end_idx: int, canonical: str) -> bool:
+    if canonical != "cup":
+        return False
+    preceding = text_lower[:start_idx].strip().split()
+    if preceding:
+        last_word = preceding[-1].rstrip(".,")
+        if last_word in _QUANTITY_WORDS or last_word.replace(".", "").isdigit():
+            return True
+    return bool(_QUANTITY_PATTERN.search(text_lower[max(0, start_idx - 10): end_idx + 5]))
+
+
+def _term_is_excluded(term: str, excluded_terms: set[str] | None) -> bool:
+    return bool(excluded_terms and term in excluded_terms)
+
+
+def _vocab_metaphone_candidates(query: str, term_index: dict) -> list:
+    pool = set()
+    primary, secondary = doublemetaphone(query)
+    if primary:
+        pool.update(term_index["metaphone_index"].get(primary, []))
+    if secondary:
+        pool.update(term_index["metaphone_index"].get(secondary, []))
+    return list(pool)
+
+
+def _vocab_neighbor_candidates(query: str, term_index: dict) -> list:
+    if not query:
+        return []
+    pool = set()
+    prefix2 = query[:2].lower()
+    two_char_map = {
+        "ch": ["c", "s", "k"],
+        "sh": ["s", "c"],
+        "th": ["t", "d"],
+        "kn": ["n"],
+        "wh": ["w"],
+        "ph": ["f"],
+    }
+    for mapped_char in two_char_map.get(prefix2, []):
+        pool.update(term_index["prefix_index"].get(mapped_char, []))
+    for key in PHONETIC_NEIGHBORS.get(query[0], [query[0]]):
+        pool.update(term_index["prefix_index"].get(key, []))
+    return list(pool)
+
+
+def _metaphone_overlaps(left: str, right: str) -> bool:
+    left_codes = {code for code in doublemetaphone(left) if code}
+    right_codes = {code for code in doublemetaphone(right) if code}
+    return bool(left_codes & right_codes)
+
+
+def _initials_are_compatible(query: str, matched_term: str) -> bool:
+    if not query or not matched_term:
+        return False
+    if query[0] == matched_term[0]:
+        return True
+    query_neighbors = set(PHONETIC_NEIGHBORS.get(query[0], [query[0]]))
+    term_neighbors = set(PHONETIC_NEIGHBORS.get(matched_term[0], [matched_term[0]]))
+    if matched_term[0] in query_neighbors or query[0] in term_neighbors:
+        return True
+    return _metaphone_overlaps(query, matched_term)
+
+
+def _consonant_skeleton_matches(query: str, matched_term: str) -> bool:
+    query_key = _consonant_key(query)
+    term_key = _consonant_key(matched_term)
+    return bool(query_key and query_key == term_key)
+
+
+def _is_plausible_vocab_fuzzy_match(query: str, matched_term: str, score: float, threshold: int) -> bool:
+    if not query or not matched_term:
+        return False
+    compact_query = query.replace(" ", "")
+    compact_term = matched_term.replace(" ", "")
+    length_gap = abs(len(compact_query) - len(compact_term))
+    if len(compact_term) <= 4 and length_gap > 1:
+        return False
+    if length_gap > 2 and (length_gap / max(len(compact_query), len(compact_term), 1)) > 0.3:
+        return False
+    if not _initials_are_compatible(query, matched_term):
+        return False
+    if _single_adjacent_transposition(compact_query, compact_term):
+        return True
+    if _consonant_skeleton_matches(query, matched_term) and score >= GREY_ZONE_LOW:
+        return True
+    if passes_edit_distance(query, matched_term):
+        return True
+    if score < threshold:
+        return False
+    max_ratio = 0.46 if max(len(compact_query), len(compact_term)) <= 5 else 0.36
+    return _edit_ratio(query, matched_term) <= max_ratio
+
+
+def _candidate_frequency(term: str, term_index: dict | None) -> int:
+    if not term_index:
+        return 0
+    canonical = term_index["canonical_by_term"].get(term, term)
+    return int(term_index.get("frequencies_by_term", {}).get(canonical, 0))
+
+
+def _best_vocab_fuzzy_candidate(query: str, candidates: list, threshold: int, term_index: dict | None = None):
+    if not candidates:
+        return None
+    scorer = fuzz.WRatio if len(query.split()) == 1 else fuzz.token_set_ratio
+    compact_query = query.replace(" ", "")
+    results = process.extract(
+        query,
+        candidates,
+        scorer=scorer,
+        score_cutoff=70 if len(compact_query) <= 5 else GREY_ZONE_LOW,
+        limit=12,
+    )
+    plausible = [
+        (term, score, index)
+        for term, score, index in results
+        if _is_plausible_vocab_fuzzy_match(query, term, score, threshold)
+    ]
+    if not plausible:
+        return None
+    return min(
+        plausible,
+        key=lambda item: (
+            not _single_adjacent_transposition(query.replace(" ", ""), item[0].replace(" ", "")),
+            _edit_ratio(query, item[0]),
+            query[:1] != item[0][:1],
+            -fuzz.ratio(query, item[0]),
+            -item[1],
+            abs(len(query) - len(item[0])),
+            -_candidate_frequency(item[0], term_index),
+            not _consonant_skeleton_matches(query, item[0]),
+        ),
+    )
+
+
+def _vocab_metaphone_best(query: str, candidates: list) -> str | None:
+    if not candidates:
+        return None
+    best = min(
+        candidates,
+        key=lambda c: (
+            query[:1] != c[:1],
+            levenshtein_distance(query, c),
+            abs(len(query.replace(" ", "")) - len(c.replace(" ", ""))),
+            -fuzz.WRatio(query, c),
+        ),
+    )
+    if not _is_plausible_vocab_fuzzy_match(query, best, fuzz.WRatio(query, best), VOCAB_FUZZY_THRESHOLD):
+        return None
+    return best
+
+
+def _vocab_metaphone_rerank(query: str, term_index: dict):
+    candidates = _vocab_metaphone_candidates(query, term_index)
+    if not candidates:
+        return None
+
+    query_stripped = _strip_vowels(query)
+    query_vowel_count = _count_vowels(query)
+
+    ranked = sorted(
+        candidates,
+        key=lambda c: (
+            query[:1] != c[:1],
+            levenshtein_distance(query, c),
+            abs(len(query.replace(" ", "")) - len(c.replace(" ", ""))),
+            -fuzz.WRatio(query, c),
+            levenshtein_distance(query_stripped, _strip_vowels(c)),
+            abs(_count_vowels(c) - query_vowel_count),
+            levenshtein_distance(query, c),
+        ),
+    )
+    best = ranked[0]
+    score = fuzz.WRatio(query, best)
+    if not _is_plausible_vocab_fuzzy_match(query, best, score, VOCAB_METAPHONE_FUZZY_THRESHOLD):
+        return None
+    return (best, score, 0)
+
+
+def _is_vocab_fuzzy_noise(query: str) -> bool:
+    if len(query.split()) != 1:
+        return False
+    variants = {query}
+    variants.update(_last_token_variants(query))
+    return any(variant in COMMON_WORDS_BLACKLIST for variant in variants)
+
+
+def _valid_vocab_candidate(query: str, term_index: dict) -> bool:
+    if valid_candidate(query):
+        return True
+    compact = query.replace(" ", "").replace("-", "")
+    if len(compact) < 3 or not compact.isalpha():
+        return False
+    if query in COMMON_WORDS_BLACKLIST:
+        return False
+    consonant = _consonant_key(query)
+    if not consonant or consonant not in term_index["consonant_index"]:
+        return False
+    return len(compact) >= 4 or len(term_index["consonant_index"][consonant]) == 1
+
+
+def _action_base_candidates(token: str) -> list[str]:
+    candidates: list[str] = []
+
+    def add(value: str) -> None:
+        value = _term_key(value)
+        if value and value not in candidates:
+            candidates.append(value)
+
+    add(token)
+    if token.endswith("ing") and len(token) > 4:
+        root = token[:-3]
+        add(root)
+        add(root + "e")
+        if len(root) > 2 and root[-1] == root[-2]:
+            add(root[:-1])
+    if token.endswith("ied") and len(token) > 4:
+        add(token[:-3] + "y")
+    if token.endswith("ed") and len(token) > 3:
+        root = token[:-2]
+        add(root)
+        add(root + "e")
+        if len(root) > 2 and root[-1] == root[-2]:
+            add(root[:-1])
+    return candidates
+
+
+def _morphology_candidates(query: str, kind: str) -> list[str]:
+    candidates = [_term_key(value) for value in _last_token_variants(query)]
+    if kind == "action" and len(query.split()) == 1:
+        candidates.extend(_action_base_candidates(query))
+    return list(dict.fromkeys(candidate for candidate in candidates if candidate and candidate != query))
+
+
+def _vocab_result(kind: str, surface: str, canonical: str, layer: str, score: float):
+    confidence = match_confidence(kind, surface, canonical, layer)
+    if not accepts_match(kind, surface, canonical, layer):
+        return None
+    return {
+        "canonical": canonical,
+        "layer": layer,
+        "score": score,
+        "confidence": confidence,
+    }
+
+
+def _resolve_vocab_term(query: str, term_index: dict, kind: str, excluded_terms: set[str] | None = None):
+    if not _valid_vocab_candidate(query, term_index):
+        return None
+
+    term_set = term_index["term_set"]
+    canonical_by_term = term_index["canonical_by_term"]
+
+    if query in term_set:
+        canonical = canonical_by_term[query]
+        if not _term_is_excluded(canonical, excluded_terms):
+            return _vocab_result(kind, query, canonical, "exact_direct", 100)
+
+    for candidate in _morphology_candidates(query, kind):
+        if candidate in term_set:
+            if kind == "utensil" and candidate in COMMON_WORDS_BLACKLIST:
+                continue
+            canonical = canonical_by_term[candidate]
+            if not _term_is_excluded(canonical, excluded_terms):
+                return _vocab_result(kind, query, canonical, "exact_morphology", 100)
+
+    if _is_vocab_fuzzy_noise(query):
+        return None
+
+    meta_candidates = _vocab_metaphone_candidates(query, term_index)
+    neighbor_pool = _vocab_neighbor_candidates(query, term_index)
+    combined_pool = list(dict.fromkeys([*meta_candidates, *neighbor_pool]))
+    result = _best_vocab_fuzzy_candidate(
+        query,
+        combined_pool,
+        VOCAB_METAPHONE_FUZZY_THRESHOLD,
+        term_index,
+    )
+    if result:
+        matched_term, score, _ = result
+        canonical = canonical_by_term[matched_term]
+        if not _term_is_excluded(canonical, excluded_terms):
+            layer = "metaphone_fuzzy" if matched_term in meta_candidates else "neighbor_fuzzy"
+            return _vocab_result(kind, query, canonical, layer, score)
+
+    if meta_candidates:
+        matched_term = _vocab_metaphone_best(query, meta_candidates)
+        if matched_term:
+            canonical = canonical_by_term[matched_term]
+            if not _term_is_excluded(canonical, excluded_terms):
+                edit_dist = levenshtein_distance(query, matched_term)
+                word_len = max(len(query), len(matched_term))
+                return _vocab_result(
+                    kind,
+                    query,
+                    canonical,
+                    "metaphone_edit",
+                    round((1 - edit_dist / word_len) * 100),
+                )
+
+    return None
+
+
+def _iter_token_windows(text_lower: str, max_width: int):
+    tokens = list(re.finditer(r"\b[a-z0-9]+\b", text_lower))
+    for width in range(min(max_width, len(tokens)), 0, -1):
+        for index in range(0, len(tokens) - width + 1):
+            start = tokens[index].start()
+            end = tokens[index + width - 1].end() - 1
+            phrase = " ".join(token.group() for token in tokens[index:index + width])
+            yield phrase, start, end
+
+
+def _extract_vocab_matches(
+    text: str,
+    automaton,
+    term_index: dict,
+    kind: str,
+    excluded_terms: set[str] | None = None,
+) -> list:
+    text_lower = normalize_text(text)
     raw_matches = []
+    matched_positions: set[int] = set()
 
-    for end_idx, (source, original, canonical) in UTENSIL_AUTOMATON.iter(text_lower):
+    def already_matched(start: int, end: int) -> bool:
+        return bool(set(range(start, end + 1)) & matched_positions)
+
+    def append_match(match: dict) -> None:
+        raw_matches.append(match)
+        matched_positions.update(range(match["span"][0], match["span"][1] + 1))
+
+    for end_idx, (source, original, canonical) in automaton.iter(text_lower):
         start_idx  = end_idx - len(original) + 1
         match_text = text_lower[start_idx: end_idx + 1]
+        canonical = term_index["canonical_by_term"].get(_term_key(canonical), canonical)
         before = text_lower[start_idx - 1] if start_idx > 0 else " "
         after  = text_lower[end_idx + 1]   if end_idx + 1 < len(text_lower) else " "
 
         if before not in WORD_BOUNDARIES or after not in WORD_BOUNDARIES:
             continue
 
-        if canonical == "cup":
-            preceding = text_lower[:start_idx].strip().split()
-            if preceding:
-                last_word = preceding[-1].rstrip(".,")
-                if last_word in _QUANTITY_WORDS or last_word.replace(".", "").isdigit():
-                    continue
-            if _QUANTITY_PATTERN.search(text_lower[max(0, start_idx - 10): end_idx + 5]):
-                continue
+        if _term_is_excluded(canonical, excluded_terms):
+            continue
+        if kind == "utensil" and _is_quantity_cup(text_lower, start_idx, end_idx, canonical):
+            continue
 
-        raw_matches.append({
+        append_match({
             "text":      match_text,
             "canonical": canonical,
             "span":      (start_idx, end_idx),
             "layer":     "exact_aho",
+            "source":    source,
+            "confidence": match_confidence(kind, match_text, canonical, "exact_aho"),
         })
 
-    return resolve_overlaps(raw_matches)
+    for phrase, start, end in _iter_token_windows(text_lower, _index_max_tokens(term_index)):
+        overlaps_existing = already_matched(start, end)
+        result = _resolve_vocab_term(phrase, term_index, kind, excluded_terms)
+        if not result:
+            continue
+        if overlaps_existing and result["layer"] not in {"exact_direct", "exact_morphology"}:
+            continue
+        if kind == "utensil" and _is_quantity_cup(text_lower, start, end, result["canonical"]):
+            continue
+        append_match({
+            "text":      phrase,
+            "canonical": result["canonical"],
+            "span":      (start, end),
+            "layer":     result["layer"],
+            "score":     result["score"],
+            "confidence": result["confidence"],
+        })
+
+    return deduplicate(resolve_overlaps(raw_matches))
+
+
+def extract_utensils(text: str) -> list:
+    return _extract_vocab_matches(
+        text,
+        UTENSIL_AUTOMATON,
+        UTENSIL_TERM_INDEX,
+        "utensil",
+    )
+
+
+def extract_actions(text: str, excluded_terms: set[str] | None = None) -> list:
+    matches = _extract_vocab_matches(
+        text,
+        ACTION_AUTOMATON,
+        ACTION_TERM_INDEX,
+        "action",
+        excluded_terms=excluded_terms,
+    )
+    return [
+        {
+            "action": match["canonical"],
+            "type": DB_ACTIONS[match["canonical"]]["type"],
+            "span": match["span"],
+            "confidence": match.get("confidence", 1.0),
+            "_text": match["text"],
+            "_layer": match["layer"],
+        }
+        for match in matches
+        if match["canonical"] in DB_ACTIONS
+    ]

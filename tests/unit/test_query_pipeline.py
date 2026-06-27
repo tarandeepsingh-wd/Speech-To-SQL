@@ -332,12 +332,105 @@ def test_text_to_sql_uses_extracted_utensil_and_action_filters():
     tags = tag_entities("fried recipes made in skillet")
     sql = build_sql_query(tags, transcript="fried recipes made in skillet")
 
-    assert {"action": "fry", "type": "state_change", "span": (0, 4)} in tags["actions"]
+    assert any(
+        action["action"] == "fry"
+        and action["type"] == "state_change"
+        and action["span"] == (0, 4)
+        and action["confidence"] >= 0.5
+        for action in tags["actions"]
+    )
     assert tags["utensils"] == ["skillet"]
     assert "r.`utensils` LIKE ?" in sql["query"]
     assert "r.`processes` LIKE ?" in sql["query"]
     assert "%skillet%" in sql["params"]
     assert "%fry%" in sql["params"]
+
+
+def test_misspelled_utensil_uses_csv_vocab_without_ingredient_bleed():
+    tags = tag_entities("recipes made in a skilit with garlic")
+
+    assert tags["utensils"] == ["skillet"]
+    assert tags["ingredients"] == ["garlic"]
+    assert all(span["canonical"] != "skilit" for span in tags["raw_spans"])
+    skillet_span = next(span for span in tags["raw_spans"] if span["canonical"] == "skillet")
+    assert skillet_span["confidence"] >= 0.5
+
+
+def test_short_utensil_typos_use_vocab_confidence_without_ingredient_bleed():
+    oven_tags = tag_entities("recipes made in an ovne with potato")
+    fork_tags = tag_entities("recipes made with a fokr and tomato")
+
+    assert oven_tags["utensils"] == ["oven"]
+    assert oven_tags["ingredients"] == ["potato"]
+    assert fork_tags["utensils"] == ["fork"]
+    assert fork_tags["ingredients"] == ["tomato"]
+
+
+def test_noisy_utensil_csv_rows_return_stronger_canonical():
+    tags = tag_entities("recipes that require a saucpan with onion")
+
+    assert tags["utensils"] == ["saucepan"]
+    assert tags["ingredients"] == ["onion"]
+    assert all(span["canonical"] != "saucpan" for span in tags["raw_spans"])
+
+
+def test_misspelled_instruction_action_uses_csv_vocab_without_ingredient_bleed():
+    query = "Show recipes where instructions mention sautte with tomato."
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert [item["action"] for item in prepared["actions"]] == ["saute"]
+    assert prepared["ingredient_logic"]["include"] == ["tomato"]
+    assert "`instructions`" in sql["query"]
+    assert "%saute%" in sql["params"]
+
+
+def test_instruction_action_context_wins_over_fuzzy_utensil_overlap():
+    tags = tag_entities("recipes where instructions mention seve with tomato")
+
+    assert tags["utensils"] == []
+    assert [item["action"] for item in tags["actions"]] == ["serve"]
+    assert tags["ingredients"] == ["tomato"]
+
+
+def test_utensil_context_wins_over_overlapping_action_candidate():
+    tags = tag_entities("recipes using a whisk with egg")
+
+    assert tags["utensils"] == ["whisk"]
+    assert tags["actions"] == []
+    assert tags["ingredients"] == ["egg"]
+
+
+def test_ingredient_typo_does_not_become_fuzzy_utensil():
+    tags = tag_entities("recipes with paner")
+
+    assert tags["utensils"] == []
+    assert tags["ingredients"]
+
+
+def test_exact_utensil_keeps_ingredient_terms_out_of_other_entity_lanes():
+    tags = tag_entities("mixer cake with butter and sugar")
+
+    assert tags["utensils"] == ["mixer"]
+    assert {"cake", "butter", "sugar"}.issubset(tags["ingredients"])
+    assert tags["actions"] == []
+    mixer_span = next(span for span in tags["raw_spans"] if span["canonical"] == "mixer")
+    assert mixer_span["confidence"] == 1.0
+
+
+def test_utensil_and_normalizer_do_not_displace_exact_ingredients():
+    tags = tag_entities("blender soup with tomato and cream")
+
+    assert tags["utensils"] == ["blender"]
+    assert {"soup", "tomato", "cream"}.issubset(tags["ingredients"])
+    assert "korean" not in tags["ingredients"]
+
+
+def test_wok_remains_csv_backed_utensil():
+    tags = tag_entities("wok fried rice with egg")
+
+    assert tags["utensils"] == ["wok"]
+    assert {"rice", "egg"}.issubset(tags["ingredients"])
 
 
 def test_text_to_sql_uses_pdf_enriched_nutrition_columns():
@@ -709,6 +802,35 @@ def test_instruction_scoped_utensil_does_not_duplicate_base_utensil_filter():
     assert "ins1.`steps` LIKE ?" in sql["query"]
     assert "r.`utensils` LIKE ?" not in sql["query"]
     assert "%skillet%" in sql["params"]
+
+
+def test_later_instruction_clause_does_not_capture_base_utensil_or_time_word():
+    query = (
+        "Find Indian recipes with chicken, garlic, ginger, and tomato that use a saucepan, "
+        "where the instructions mention simmer, and prep time is under 30 minutes."
+    )
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["chicken", "garlic", "ginger", "tomato"]
+    assert prepared["utensils"] == ["saucepan"]
+    assert [item["action"] for item in prepared["actions"]] == ["simmer"]
+    assert prepared["time_filters"] == [
+        {
+            "field": "prep_time",
+            "min": 0,
+            "max": 30.0,
+            "source": "intent_enrichment",
+        }
+    ]
+    assert "n1.`prep_time`" not in sql["query"]
+    assert "r.`utensils` LIKE ?" in sql["query"]
+    assert "r.`processes` LIKE ?" not in sql["query"]
+    assert "ins1.`steps` LIKE ?" in sql["query"]
+    assert "ins2.`steps` LIKE ?" not in sql["query"]
+    assert "%tie%" not in sql["params"]
+    assert sql["params"].count("%simmer%") == 1
+    assert sql["params"].count("%saucepan%") == 1
 
 
 def test_quantity_available_and_cooking_step_mentions_use_phrase_and_instruction_tables():

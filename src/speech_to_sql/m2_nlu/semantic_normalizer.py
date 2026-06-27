@@ -112,7 +112,7 @@ def _normalize_spoken_numbers(text: str) -> dict[str, Any]:
     tokens = _token_spans(text)
     updates = []
     used_positions: set[int] = set()
-    protected_spans = _compare_phrase_spans(text)
+    protected_spans = [*_compare_phrase_spans(text), *_exact_ingredient_spans(text)]
 
     index = 0
     while index < len(tokens):
@@ -378,7 +378,7 @@ def _normalize_phrase_terms(text: str) -> dict[str, Any]:
     tokens = _token_spans(text)
     updates = []
     used_positions: set[int] = set()
-    protected_spans = _exact_phrase_spans(text)
+    protected_spans = [*_exact_phrase_spans(text), *_exact_ingredient_spans(text)]
     for width in range(MAX_PHRASE_TOKENS, 1, -1):
         for index in range(0, len(tokens) - width + 1):
             window = tokens[index:index + width]
@@ -419,7 +419,11 @@ def _normalize_single_tokens(text: str) -> dict[str, Any]:
         return {"text": text, "changed": False, "corrections": []}
 
     updates = []
-    protected_spans = [*_exact_phrase_spans(text), *_compare_phrase_spans(text)]
+    protected_spans = [
+        *_exact_phrase_spans(text),
+        *_compare_phrase_spans(text),
+        *_exact_ingredient_spans(text),
+    ]
     for match in re.finditer(r"\b[a-zA-Z][a-zA-Z-]{2,}\b", text):
         if _overlaps_any(match.span(), protected_spans):
             continue
@@ -450,6 +454,7 @@ def _normalize_role_cues(text: str) -> dict[str, Any]:
     tokens = _token_spans(text)
     updates = []
     used_positions: set[int] = set()
+    protected_spans = _exact_ingredient_spans(text)
     max_width = min(MAX_ROLE_CUE_TOKENS, _max_term_tokens(choices))
     for width in range(max_width, 0, -1):
         for index in range(0, len(tokens) - width + 1):
@@ -458,6 +463,8 @@ def _normalize_role_cues(text: str) -> dict[str, Any]:
             end = window[-1].end
             positions = set(range(start, end))
             if positions & used_positions:
+                continue
+            if _overlaps_any((start, end), protected_spans):
                 continue
 
             surface = text[start:end]
@@ -614,6 +621,28 @@ def _exact_phrase_spans(text: str) -> list[tuple[int, int]]:
         pattern = _phrase_pattern(phrase)
         spans.extend(match.span() for match in pattern.finditer(text))
     return spans
+
+
+def _exact_ingredient_spans(text: str) -> list[tuple[int, int]]:
+    """Protect CSV-backed ingredient literals from schema-term rewrites."""
+    from speech_to_sql.m2_nlu.automaton import INGREDIENT_AUTOMATON
+
+    lower_text = text.lower()
+    candidates: list[tuple[int, int]] = []
+    for end_index, (_source, original, _canonical) in INGREDIENT_AUTOMATON.iter(lower_text):
+        start_index = end_index - len(original) + 1
+        end_index += 1
+        before = lower_text[start_index - 1] if start_index > 0 else " "
+        after = lower_text[end_index] if end_index < len(lower_text) else " "
+        if before.isalnum() or after.isalnum():
+            continue
+        candidates.append((start_index, end_index))
+
+    selected: list[tuple[int, int]] = []
+    for span in sorted(candidates, key=lambda item: item[1] - item[0], reverse=True):
+        if not _overlaps_any(span, selected):
+            selected.append(span)
+    return selected
 
 
 def _compare_phrase_spans(text: str) -> list[tuple[int, int]]:

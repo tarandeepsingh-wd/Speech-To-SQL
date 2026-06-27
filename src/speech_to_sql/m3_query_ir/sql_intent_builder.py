@@ -137,6 +137,11 @@ def _ingredient_predicates(tag_result: dict) -> list[Predicate]:
 def _nutrition_predicates(tag_result: dict) -> list[Predicate]:
     predicates: list[Predicate] = []
     schema = load_sql_schema_config()
+    time_fields = {
+        str(item.get("field") or "").strip().lower()
+        for item in tag_result.get("time_filters", []) or []
+        if isinstance(item, dict) and item.get("field")
+    }
     for nf in tag_result.get("nutrition_filters", []) or []:
         nutrient_group = nf.get("nutrient_group")
         if nutrient_group:
@@ -155,6 +160,8 @@ def _nutrition_predicates(tag_result: dict) -> list[Predicate]:
         nutrient = nf.get("nutrient")
         op = nf.get("operator")
         if not nutrient or not op:
+            continue
+        if str(nutrient).strip().lower() in time_fields:
             continue
         source = nutrition_filter_source(nf, schema=schema)
         try:
@@ -386,9 +393,21 @@ def _span_is_instruction_scoped(text: str, span: Any) -> bool:
     instruction_pattern = r"\b(?:instruction|instructions|step|steps|cooking\s+steps?)\b"
     mention_pattern = r"\b(?:mention|mentions|mentioned|contain|contains|containing|include|includes|including|with|in)\b"
 
-    if re.search(instruction_pattern, prefix) and re.search(mention_pattern, prefix):
+    instruction_matches = list(re.finditer(instruction_pattern, prefix))
+    if instruction_matches:
+        after_instruction = prefix[instruction_matches[-1].end():]
+        local_tokens = re.findall(r"[a-z0-9]+", after_instruction)
+        if len(local_tokens) <= 10 and re.search(mention_pattern, after_instruction):
+            return True
+    if re.search(
+        rf"{instruction_pattern}\s*$",
+        prefix,
+    ):
         return True
-    if re.search(instruction_pattern, suffix) and re.search(mention_pattern, suffix):
+    if re.match(
+        rf"^\s*(?:in|inside|within|from|of)\s+(?:the\s+)?(?:{instruction_pattern})\b",
+        suffix,
+    ):
         return True
     return False
 

@@ -5,9 +5,14 @@ from functools import lru_cache
 from pathlib import Path
 from rapidfuzz import fuzz, process
 
-from speech_to_sql.m2_nlu.extractor import extract_ingredients, extract_utensils
+from speech_to_sql.m2_nlu.extractor import (
+    extract_actions,
+    extract_ingredients,
+    extract_strong_ingredient_spans,
+    extract_utensils,
+)
 from speech_to_sql.m2_nlu.adaptive_lexicon import normalize_noisy_text
-from speech_to_sql.m2_nlu.data.db_loader import DB_ACTIONS, DB_INGREDIENTS
+from speech_to_sql.m2_nlu.data.db_loader import DB_ACTIONS, DB_INGREDIENTS, DB_UTENSILS
 from speech_to_sql.m2_nlu.data.ingredient_synonyms import CATEGORY_SYNONYMS, canonicalize_ingredient
 from speech_to_sql.m2_nlu.intent_sql_mapper import build_sql_filter_plan
 from speech_to_sql.m2_nlu.ingredient_reranker import rerank_ingredient_matches
@@ -790,7 +795,6 @@ def _mask_claimed_spans(text: str, extra_spans: list | None = None) -> str:
 # ACTION / PROCESS DETECTION
 # ---------------------------------------------------------
 
-_ACTION_TERMS = sorted(DB_ACTIONS.keys(), key=len, reverse=True)
 _NON_QUERY_ACTION_TERMS = {
     "check",
     "clean",
@@ -804,70 +808,29 @@ _NON_QUERY_ACTION_TERMS = {
 
 
 def _detect_actions(text: str) -> list:
-    text_lower     = text.lower()
-    found          = []
-    used_positions = set()
+    return extract_actions(text, excluded_terms=_NON_QUERY_ACTION_TERMS)
 
-    for action in _ACTION_TERMS:
-        if action in _NON_QUERY_ACTION_TERMS:
-            continue
-        pattern = re.compile(r"\b" + re.escape(action) + r"\b", re.IGNORECASE)
-        for m in pattern.finditer(text_lower):
-            positions = set(range(m.start(), m.end()))
-            if positions & used_positions:
+
+def _measurement_claimed_spans(text: str) -> list[tuple[int, int]]:
+    spans: list[tuple[int, int]] = []
+    dynamic_matches = _dynamic_nutrition_matches(text)
+    dynamic_matches.extend(_dynamic_nutrition_continuation_matches(text, dynamic_matches))
+    dynamic_matches.extend(_dynamic_nutrition_group_matches(text))
+    dynamic_matches.extend(_dynamic_nutrient_presence_matches(text))
+    spans.extend(tuple(item["span"]) for item in dynamic_matches if item.get("span"))
+
+    for pattern in _NUTRITION_PATTERNS:
+        for match in pattern.finditer(text.lower()):
+            if not _valid_nutrition_match(pattern, match):
                 continue
-            used_positions |= positions
-            found.append({
-                "action": action,
-                "type":   DB_ACTIONS[action]["type"],
-                "span":   (m.start(), m.end() - 1),
-            })
-
-    for token_m in re.finditer(r"\b[\w-]+\b", text_lower):
-        token = token_m.group()
-        if token in DB_ACTIONS or token in _NON_QUERY_ACTION_TERMS:
-            continue
-        for base in _action_base_candidates(token):
-            if base in _NON_QUERY_ACTION_TERMS:
+            if not _normalize_nutrient(match.group("nutrient")):
                 continue
-            if base in DB_ACTIONS:
-                positions = set(range(token_m.start(), token_m.end()))
-                if positions & used_positions:
-                    break
-                used_positions |= positions
-                found.append({
-                    "action": base,
-                    "type":   DB_ACTIONS[base]["type"],
-                    "span":   (token_m.start(), token_m.end() - 1),
-                })
-                break
-
-    return found
-
-
-def _action_base_candidates(token: str) -> list[str]:
-    candidates: list[str] = []
-
-    def add(value: str) -> None:
-        if value and value not in candidates:
-            candidates.append(value)
-
-    add(token)
-    if token.endswith("ing") and len(token) > 4:
-        root = token[:-3]
-        add(root)
-        add(root + "e")
-        if len(root) > 2 and root[-1] == root[-2]:
-            add(root[:-1])
-    if token.endswith("ied") and len(token) > 4:
-        add(token[:-3] + "y")
-    if token.endswith("ed") and len(token) > 3:
-        root = token[:-2]
-        add(root)
-        add(root + "e")
-        if len(root) > 2 and root[-1] == root[-2]:
-            add(root[:-1])
-    return candidates
+            spans.append(match.span())
+    return [
+        (start, end - 1)
+        for start, end in spans
+        if end > start
+    ]
 
 
 def _filter_actions_claimed_by_sql_ops(actions: list[dict], sql_operators: list[dict]) -> list[dict]:
@@ -892,8 +855,148 @@ def _filter_actions_claimed_by_sql_ops(actions: list[dict], sql_operators: list[
     return filtered
 
 
+def _filter_actions_claimed_by_measurements(actions: list[dict], text: str) -> list[dict]:
+    measurement_spans = _measurement_claimed_spans(text)
+    if not measurement_spans:
+        return actions
+
+    filtered = []
+    for action in actions:
+        span = tuple(action.get("span") or ())
+        if len(span) == 2 and any(_span_overlaps(span, claimed) for claimed in measurement_spans):
+            continue
+        filtered.append(action)
+    return filtered
+
+
 def _span_overlaps(left: tuple[int, int], right: tuple[int, int]) -> bool:
     return left[0] <= right[1] and right[0] <= left[1]
+
+
+def _without_ingredient_collisions(
+    matches: list[dict],
+    ingredient_spans: list[dict],
+    entity_kind: str,
+) -> list[dict]:
+    """Resolve exact overlaps by their CSV frequencies before span masking."""
+    if not ingredient_spans:
+        return matches
+
+    def entity_frequency(match: dict) -> int:
+        if entity_kind == "utensil":
+            return int(DB_UTENSILS.get(str(match.get("canonical") or ""), 0))
+        action = str(match.get("action") or "")
+        return int(DB_ACTIONS.get(action, {}).get("frequency", 0))
+
+    accepted = []
+    for match in matches:
+        layer = str(match.get("layer") or match.get("_layer") or "")
+        overlaps = [
+            ingredient for ingredient in ingredient_spans
+            if _span_overlaps(tuple(match["span"]), tuple(ingredient["span"]))
+        ]
+        if not overlaps:
+            accepted.append(match)
+            continue
+        if layer not in {"exact_aho", "exact_direct", "exact_morphology"}:
+            continue
+        if all(entity_frequency(match) > int(ingredient.get("frequency", 0)) for ingredient in overlaps):
+            accepted.append(match)
+    return accepted
+
+
+_ACTION_CONTEXT_RE = re.compile(
+    r"\b(?:instruction|instructions|step|steps|process|method|procedure|procedures)\b.{0,28}$|"
+    r"\b(?:mention|mentions|mentioned|says?|include|includes|including)\s+$",
+    re.IGNORECASE,
+)
+_UTENSIL_CONTEXT_RE = re.compile(
+    r"\b(?:made|cooked|prepared|baked|fried|served)\s+(?:in|with|using)\s+(?:a|an|the)?\s*$|"
+    r"\b(?:use|uses|using|need|needs|require|requires|with|in)\s+(?:a|an|the)?\s*$|"
+    r"\b(?:utensil|utensils|tool|tools|equipment)\s+(?:is|are|as|like)?\s*$",
+    re.IGNORECASE,
+)
+
+
+def _span_context(text: str, span: tuple[int, int], window: int = 56) -> tuple[str, str]:
+    start, end = span
+    return (
+        text[max(0, start - window):start].lower(),
+        text[end + 1:min(len(text), end + 1 + window)].lower(),
+    )
+
+
+def _has_action_context(text: str, span: tuple[int, int]) -> bool:
+    left, right = _span_context(text, span)
+    return bool(
+        _ACTION_CONTEXT_RE.search(left)
+        or re.match(r"\s+(?:in|inside)?\s*(?:the\s+)?(?:instruction|instructions|step|steps)\b", right)
+    )
+
+
+def _has_utensil_context(text: str, span: tuple[int, int]) -> bool:
+    left, _right = _span_context(text, span)
+    return bool(_UTENSIL_CONTEXT_RE.search(left))
+
+
+def _resolve_utensil_action_collisions(
+    text: str,
+    utensils: list[dict],
+    actions: list[dict],
+) -> tuple[list[dict], list[dict]]:
+    if not utensils or not actions:
+        return utensils, actions
+
+    drop_utensils: set[int] = set()
+    drop_actions: set[int] = set()
+    for utensil_index, utensil in enumerate(utensils):
+        utensil_span = tuple(utensil.get("span") or ())
+        if len(utensil_span) != 2:
+            continue
+        utensil_confidence = float(utensil.get("confidence", 1.0))
+        utensil_layer = str(utensil.get("layer") or "")
+        utensil_exact = utensil_layer.startswith("exact")
+        utensil_context = _has_utensil_context(text, utensil_span)
+        action_context = _has_action_context(text, utensil_span)
+
+        for action_index, action in enumerate(actions):
+            action_span = tuple(action.get("span") or ())
+            if len(action_span) != 2 or not _span_overlaps(utensil_span, action_span):
+                continue
+            action_confidence = float(action.get("confidence", 1.0))
+            action_layer = str(action.get("_layer") or "")
+            action_exact = action_layer.startswith("exact")
+
+            if action_context and not utensil_context:
+                drop_utensils.add(utensil_index)
+                continue
+            if utensil_context and not action_context:
+                drop_actions.add(action_index)
+                continue
+            if utensil_exact and not action_exact:
+                drop_actions.add(action_index)
+                continue
+            if action_exact and not utensil_exact:
+                drop_utensils.add(utensil_index)
+                continue
+            if action_confidence > utensil_confidence + 0.10:
+                drop_utensils.add(utensil_index)
+            elif utensil_confidence > action_confidence + 0.10:
+                drop_actions.add(action_index)
+
+    return (
+        [item for index, item in enumerate(utensils) if index not in drop_utensils],
+        [item for index, item in enumerate(actions) if index not in drop_actions],
+    )
+
+
+def _public_action_match(match: dict) -> dict:
+    return {
+        "action": match["action"],
+        "type": match["type"],
+        "span": match["span"],
+        "confidence": match.get("confidence", 1.0),
+    }
 
 
 # ---------------------------------------------------------
@@ -1128,9 +1231,25 @@ def tag_entities(text: str) -> dict:
     dietary_styles = list(dict.fromkeys(m["style"] for m in dietary_matches))
     nutrition_filters = detected["nutrition"]
     sql_operators = detected["sql_ops"]
+    strong_ingredient_spans = extract_strong_ingredient_spans(text)
     action_matches = _filter_actions_claimed_by_sql_ops(detected["actions"], sql_operators)
+    action_matches = _filter_actions_claimed_by_measurements(action_matches, text)
+    action_matches = _without_ingredient_collisions(
+        action_matches,
+        strong_ingredient_spans,
+        "action",
+    )
     categories = detected["categories"]
-    utensil_matches = detected["utensils"]
+    utensil_matches = _without_ingredient_collisions(
+        detected["utensils"],
+        strong_ingredient_spans,
+        "utensil",
+    )
+    utensil_matches, action_matches = _resolve_utensil_action_collisions(
+        text,
+        utensil_matches,
+        action_matches,
+    )
 
     # Mask nutrition, dietary, and utensil spans so ingredient extraction stays
     # independent from the SQL operator layer while avoiding known false hits.
@@ -1159,7 +1278,7 @@ def tag_entities(text: str) -> dict:
     return {
         "ingredients":       ingredients,
         "utensils":          [m["canonical"] for m in utensil_matches],
-        "actions":           action_matches,
+        "actions":           [_public_action_match(match) for match in action_matches],
         "dietary_styles":    dietary_styles,
         "categories":        categories,
         "nutrition_filters": nutrition_filters,

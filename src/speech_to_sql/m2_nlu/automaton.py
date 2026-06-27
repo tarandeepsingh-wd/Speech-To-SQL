@@ -1,11 +1,11 @@
 import ahocorasick
 
-from speech_to_sql.m2_nlu.data.db_loader import DB_INGREDIENTS, DB_UTENSILS
+from speech_to_sql.m2_nlu.data.db_loader import DB_ACTIONS, DB_INGREDIENTS, DB_UTENSILS
 from speech_to_sql.m2_nlu.data.ingredient_synonyms import SYNONYMS, canonicalize_ingredient
 from speech_to_sql.m2_nlu.data.utensil_synonyms import UTENSIL_SYNONYMS
 
-# Ingredients and utensils are separate automatons because they feed different
-# entity types and need different context rules.
+# Ingredients, utensils, and actions are separate automatons because they feed
+# different entity types and need different context rules.
 
 
 def build_ingredient_automaton() -> ahocorasick.Automaton:
@@ -59,6 +59,22 @@ def build_utensil_automaton() -> ahocorasick.Automaton:
     return A
 
 
+def build_action_automaton() -> ahocorasick.Automaton:
+    """
+    Builds an Aho-Corasick automaton over CSV-backed cooking action names.
+    """
+    A = ahocorasick.Automaton()
+
+    for action in DB_ACTIONS:
+        key = action.lower().strip()
+        if key:
+            A.add_word(key, ("db_action", key, key))
+
+    A.make_automaton()
+    return A
+
+
 # Module-level singletons - built once at import
 INGREDIENT_AUTOMATON = build_ingredient_automaton()
 UTENSIL_AUTOMATON    = build_utensil_automaton()
+ACTION_AUTOMATON     = build_action_automaton()
