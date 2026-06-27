@@ -1,0 +1,6 @@
+
+> speech-to-sql-proxy@1.0.0 start
+> node index.js
+
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Node proxy running on http://localhost:5001
