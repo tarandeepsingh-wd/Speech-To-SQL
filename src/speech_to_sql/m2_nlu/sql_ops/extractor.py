@@ -48,6 +48,29 @@ PRIORITY = {
     "ml_clause": 3,
     "fallback_synonym": 4,
 }
+NEGATED_COMPARE_CANONICALS = {
+    "<": ">=",
+    "<=": ">",
+    ">": "<=",
+    ">=": "<",
+}
+NEGATABLE_COMPARE_TERMS = sorted(
+    (
+        term for term, (canonical, op_type) in RULE_TERMS.items()
+        if op_type == "COMPARE" and canonical in NEGATED_COMPARE_CANONICALS
+    ),
+    key=len,
+    reverse=True,
+)
+NEGATABLE_COMPARE_PATTERN = re.compile(
+    r"\b(?:not|no)\s+(?P<term>"
+    + "|".join(
+        r"\s+".join(re.escape(token) for token in re.findall(r"[a-z0-9]+", term))
+        for term in NEGATABLE_COMPARE_TERMS
+    )
+    + r")\b",
+    re.IGNORECASE,
+) if NEGATABLE_COMPARE_TERMS else None
 
 
 @dataclass(frozen=True)
@@ -121,6 +144,25 @@ def _extract_keyword_rules(text: str) -> list[SqlOperator]:
             canonical=canonical,
             type=op_type,
             span=(start, end),
+            layer="rule_keyword",
+            confidence=1.0,
+        ))
+    return results
+
+
+def _extract_negated_comparison_rules(text: str) -> list[SqlOperator]:
+    if NEGATABLE_COMPARE_PATTERN is None:
+        return []
+    lowered = text.lower()
+    results = []
+    for match in NEGATABLE_COMPARE_PATTERN.finditer(lowered):
+        term = re.sub(r"\s+", " ", match.group("term").lower()).strip()
+        canonical, _op_type = RULE_TERMS[term]
+        results.append(SqlOperator(
+            text=text[match.start():match.end()],
+            canonical=NEGATED_COMPARE_CANONICALS[canonical],
+            type="COMPARE",
+            span=(match.start(), match.end() - 1),
             layer="rule_keyword",
             confidence=1.0,
         ))
@@ -312,6 +354,7 @@ def extract_sql_operators(text: str) -> list[dict]:
 
     candidates = []
     candidates.extend(_extract_symbol_rules(text))
+    candidates.extend(_extract_negated_comparison_rules(text))
     candidates.extend(_extract_keyword_rules(text))
     for m in _TOP_N_RE.finditer(text):
         candidates.append(SqlOperator(

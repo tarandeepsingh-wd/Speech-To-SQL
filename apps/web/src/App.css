@@ -235,6 +235,12 @@ h3 {
   padding: 0;
 }
 
+.icon-button.is-listening {
+  background: rgba(255, 204, 74, 0.16);
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
 .run-button {
   background: var(--green);
   border-color: var(--green);

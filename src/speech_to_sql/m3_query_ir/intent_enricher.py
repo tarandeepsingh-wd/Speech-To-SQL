@@ -23,6 +23,54 @@ class IntentEnrichment:
         }
 
 
+_TIME_BASE_OP_MAP = {
+    "less than or equal": "<=",
+    "greater than or equal": ">=",
+    "more than or equal": ">=",
+    "under": "<",
+    "below": "<",
+    "less than": "<",
+    "within": "<=",
+    "at most": "<=",
+    "max": "<=",
+    "maximum": "<=",
+    "over": ">",
+    "above": ">",
+    "more than": ">",
+    "greater than": ">",
+    "higher than": ">",
+    "larger than": ">",
+    "at least": ">=",
+    "min": ">=",
+    "minimum": ">=",
+}
+_TIME_NEGATED_OPERATOR_RE = re.compile(r"^(?:not|no)\s+(.+)$", re.IGNORECASE)
+_TIME_NEGATION_MAP = {
+    "<": ">=",
+    "<=": ">",
+    ">": "<=",
+    ">=": "<",
+}
+
+
+def _operator_pattern(terms: list[str]) -> str:
+    parts = []
+    for term in sorted(terms, key=len, reverse=True):
+        tokens = re.findall(r"[a-z0-9]+", term.lower())
+        if tokens:
+            parts.append(r"\s+".join(re.escape(token) for token in tokens))
+    return "|".join(parts)
+
+
+_TIME_OPERATOR_PATTERN = _operator_pattern(list(_TIME_BASE_OP_MAP))
+_TIME_COMPARISON_PATTERN = re.compile(
+    rf"\b(?P<op>(?:(?:not|no)\s+)?(?:{_TIME_OPERATOR_PATTERN}))\s+"
+    rf"(?P<value>\d+(?:\.\d+)?)\s*"
+    rf"(?:minutes?|mins?|min|hours?|hrs?|hr)\b",
+    re.IGNORECASE,
+)
+
+
 def enrich_tag_result(
     tag_result: dict[str, Any],
     *,
@@ -171,19 +219,28 @@ def _time_filter_from_patterns(
             "max": _normalize_minutes(float(between.group(2)), transcript, recipe_config),
         }
 
-    upper = re.search(patterns["upper"], transcript, re.IGNORECASE)
-    if upper:
-        return {
-            "min": 0,
-            "max": _normalize_minutes(float(upper.group(1)), transcript, recipe_config),
-        }
+    comparison = _TIME_COMPARISON_PATTERN.search(transcript)
+    if comparison:
+        value = _normalize_minutes(float(comparison.group("value")), transcript, recipe_config)
+        operator = _time_operator_from_text(comparison.group("op"))
+        return _time_bounds_from_operator(operator, value)
+    return None
 
-    lower = re.search(patterns["lower"], transcript, re.IGNORECASE)
-    if lower:
-        return {
-            "min": _normalize_minutes(float(lower.group(1)), transcript, recipe_config),
-            "max": None,
-        }
+
+def _time_operator_from_text(op_text: str | None) -> str:
+    normalized = re.sub(r"\s+", " ", (op_text or "").lower()).strip()
+    negated = _TIME_NEGATED_OPERATOR_RE.match(normalized)
+    if negated:
+        operator = _TIME_BASE_OP_MAP.get(negated.group(1).strip())
+        return _TIME_NEGATION_MAP.get(operator, operator or "")
+    return _TIME_BASE_OP_MAP.get(normalized, "")
+
+
+def _time_bounds_from_operator(operator: str, value: float) -> dict[str, float | None] | None:
+    if operator in {"<", "<="}:
+        return {"min": 0, "max": value}
+    if operator in {">", ">="}:
+        return {"min": value, "max": None}
     return None
 
 

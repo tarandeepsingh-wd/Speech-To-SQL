@@ -209,11 +209,65 @@ def _schema_nutrition_presence_config() -> dict:
 def _normalize_schema_key(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^a-zA-Z0-9]+", " ", value.lower())).strip()
 
+
+_BASE_OP_MAP = {
+    "less than or equal": "<=",
+    "greater than or equal": ">=",
+    "more than or equal": ">=",
+    "under": "<",
+    "below": "<",
+    "less than": "<",
+    "at most": "<=",
+    "over": ">",
+    "above": ">",
+    "more than": ">",
+    "greater than": ">",
+    "higher than": ">",
+    "larger than": ">",
+    "at least": ">=",
+    "around": "~",
+    "about": "~",
+    "approximately": "~",
+}
+_NEGATED_OPERATOR_PREFIX_RE = re.compile(r"^(?:not|no)\s+(.+)$", re.IGNORECASE)
+_NEGATED_OPERATOR_MAP = {
+    "<": ">=",
+    "<=": ">",
+    ">": "<=",
+    ">=": "<",
+}
+
+
+def _operator_pattern(terms: list[str]) -> str:
+    parts = []
+    for term in sorted(terms, key=len, reverse=True):
+        tokens = re.findall(r"[a-z0-9]+", term.lower())
+        if tokens:
+            parts.append(r"\s+".join(re.escape(token) for token in tokens))
+    return "|".join(parts)
+
+
+_BASE_OPERATOR_WORD_PATTERN = _operator_pattern(list(_BASE_OP_MAP))
+_OPERATOR_WORD_PATTERN = rf"(?:(?:not|no)\s+)?(?:{_BASE_OPERATOR_WORD_PATTERN})"
+
+
+def _operator_from_text(op_text: str | None, default: str = "=") -> str:
+    normalized = re.sub(r"\s+", " ", (op_text or "").lower()).strip()
+    if not normalized:
+        return default
+
+    negated = _NEGATED_OPERATOR_PREFIX_RE.match(normalized)
+    if negated:
+        base = negated.group(1).strip()
+        operator = _BASE_OP_MAP.get(base)
+        if operator in _NEGATED_OPERATOR_MAP:
+            return _NEGATED_OPERATOR_MAP[operator]
+        return default
+    return _BASE_OP_MAP.get(normalized, default)
+
+
 _NUTRITION_PATTERN = re.compile(
-    r"(?P<op>not less than|no less than|not more than|no more than|"
-    r"under|below|less than|at most|"
-    r"over|above|more than|greater than|higher than|larger than|at least|"
-    r"around|about|approximately)?\s*"
+    rf"(?P<op>{_OPERATOR_WORD_PATTERN})?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
     r"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?\s*"
     r"(?P<nutrient>[a-z][a-z-]*)",
@@ -223,10 +277,7 @@ _NUTRITION_PATTERN = re.compile(
 _NUTRITION_NUTRIENT_FIRST_PATTERN = re.compile(
     r"(?P<nutrient>[a-z][a-z-]*)\s*"
     r"(?:se\s+)?(?:is|are|was|were|has|have|contains?|with|of)?\s*"
-    r"(?P<op>not less than|no less than|not more than|no more than|"
-    r"under|below|less than|at most|"
-    r"over|above|more than|greater than|higher than|larger than|at least|"
-    r"around|about|approximately)?\s*"
+    rf"(?P<op>{_OPERATOR_WORD_PATTERN})?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
     r"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
     re.IGNORECASE,
@@ -237,22 +288,6 @@ _CALORIE_TERMS = {"calorie", "calories", "cal", "kcal"}
 _NUTRIENT_AFTER_PATTERN = re.compile(
     r"^\s*([a-z][a-z-]*)\b",
     re.IGNORECASE,
-)
-
-_OP_MAP = {
-    "not less than": ">=", "no less than": ">=",
-    "not more than": "<=", "no more than": "<=",
-    "under": "<", "below": "<", "less than": "<", "at most": "<=",
-    "over": ">",  "above": ">", "more than": ">", "greater than": ">",
-    "higher than": ">", "larger than": ">", "at least": ">=",
-    "around": "~", "about": "~", "approximately": "~",
-    None: "=",
-}
-_OPERATOR_WORD_PATTERN = (
-    r"not\s+less\s+than|no\s+less\s+than|not\s+more\s+than|no\s+more\s+than|"
-    r"under|below|less\s+than|at\s+most|"
-    r"over|above|more\s+than|greater\s+than|higher\s+than|larger\s+than|at\s+least|"
-    r"around|about|approximately"
 )
 
 
@@ -314,8 +349,7 @@ def _dynamic_nutrition_matches(text: str) -> list[dict]:
                 positions = set(range(match.start(), match.end()))
                 if positions & used_positions:
                     continue
-                op_text = re.sub(r"\s+", " ", (match.group("op") or "").lower()).strip()
-                operator = _OP_MAP.get(op_text, "=")
+                operator = _operator_from_text(match.group("op"))
                 try:
                     value = float(match.group("value"))
                 except (TypeError, ValueError):
@@ -410,7 +444,6 @@ def _dynamic_nutrition_continuation_matches(
                 continue
             if not match.group("unit") and _looks_like_quantity_of_entity(text_lower, end):
                 continue
-            op_text = re.sub(r"\s+", " ", match.group("op").lower()).strip()
             try:
                 value = float(match.group("value"))
             except (TypeError, ValueError):
@@ -418,7 +451,7 @@ def _dynamic_nutrition_continuation_matches(
             found.append({
                 "span": (scope_start + match.start(), end),
                 "nutrient": base["nutrient"],
-                "operator": _OP_MAP.get(op_text, "="),
+                "operator": _operator_from_text(match.group("op")),
                 "value": value,
             })
     found.sort(key=lambda item: item["span"])
@@ -666,12 +699,7 @@ def _detect_nutrition_filters(text: str) -> list:
             nutrient = _normalize_nutrient(m.group("nutrient"))
             if not nutrient:
                 continue
-            op_text = (
-                re.sub(r"\s+", " ", m.group("op").lower()).strip()
-                if m.group("op")
-                else None
-            )
-            operator = _OP_MAP.get(op_text, "=")
+            operator = _operator_from_text(m.group("op"))
             value = float(m.group("value"))
             semantic_key = (nutrient, operator, value, m.span())
             if semantic_key in seen_semantic:
@@ -1089,12 +1117,28 @@ def _is_nutrition_term(term: str) -> bool:
 # ---------------------------------------------------------
 
 _STYLE_TERMS = sorted(DIETARY_STYLE_LOOKUP.keys(), key=len, reverse=True)
+_DIETARY_NEGATION_PREFIX_RE = re.compile(
+    r"(?:^|\s)(?:"
+    r"(?:do|does|did|should|must|can|could|would|is|are|was|were)?\s*not"
+    r"(?:\s+(?:be|being|equal\s+to|equal|equals|contain|contains|containing|include|includes|including|have|has|use|using))?"
+    r"|no|without|exclude|excluding|avoid|minus|non"
+    r")\s*(?:a|an|the|any)?\s*$",
+    re.IGNORECASE,
+)
 
 
 def _is_known_ingredient_term(text: str) -> bool:
     term = text.lower().strip()
     canonical = canonicalize_ingredient(term)
     return term in DB_INGREDIENTS or canonical in DB_INGREDIENTS
+
+
+def _is_negated_dietary_match(text_lower: str, span: tuple[int, int]) -> bool:
+    start, _ = span
+    prefix = text_lower[max(0, start - 96):start]
+    local_clause = re.split(r"\b(?:but|and|or|then)\b|[,;]", prefix)[-1]
+    local_clause = re.sub(r"\s+", " ", local_clause).strip()
+    return bool(_DIETARY_NEGATION_PREFIX_RE.search(local_clause))
 
 
 def _detect_dietary_style_matches(text: str) -> list:
@@ -1115,6 +1159,7 @@ def _detect_dietary_style_matches(text: str) -> list:
             found.append({
                 "style": DIETARY_STYLE_LOOKUP[term],
                 "span": (m.start(), m.end() - 1),
+                "negated": _is_negated_dietary_match(text_lower, (m.start(), m.end() - 1)),
             })
 
     tokens = list(re.finditer(r"\b[a-z][a-z-]*\b", text_lower))
@@ -1148,6 +1193,7 @@ def _detect_dietary_style_matches(text: str) -> list:
             found.append({
                 "style": DIETARY_STYLE_LOOKUP[match[0]],
                 "span": (start, end),
+                "negated": _is_negated_dietary_match(text_lower, (start, end)),
             })
 
     return found
@@ -1197,6 +1243,7 @@ def tag_entities(text: str) -> dict:
             "utensils":          list[str]   - canonical utensil names
             "actions":           list[dict]  - action/type/span matches
             "dietary_styles":    list[str]   - e.g. ["vegan"]
+            "excluded_dietary_styles": list[str] - negated dietary styles
             "categories":        list[dict]  - category synonym matches
             "nutrition_filters": list[dict]  - nutrient/operator/value filters
             "sql_operators":     list[dict]  - SQL operator spans
@@ -1228,7 +1275,12 @@ def tag_entities(text: str) -> dict:
             detected[futures[future]] = future.result()
 
     dietary_matches = detected["dietary"]
-    dietary_styles = list(dict.fromkeys(m["style"] for m in dietary_matches))
+    dietary_styles = list(dict.fromkeys(
+        m["style"] for m in dietary_matches if not m.get("negated")
+    ))
+    excluded_dietary_styles = list(dict.fromkeys(
+        m["style"] for m in dietary_matches if m.get("negated")
+    ))
     nutrition_filters = detected["nutrition"]
     sql_operators = detected["sql_ops"]
     strong_ingredient_spans = extract_strong_ingredient_spans(text)
@@ -1280,6 +1332,7 @@ def tag_entities(text: str) -> dict:
         "utensils":          [m["canonical"] for m in utensil_matches],
         "actions":           [_public_action_match(match) for match in action_matches],
         "dietary_styles":    dietary_styles,
+        "excluded_dietary_styles": excluded_dietary_styles,
         "categories":        categories,
         "nutrition_filters": nutrition_filters,
         "sql_operators":     sql_operators,

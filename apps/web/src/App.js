@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -56,6 +56,9 @@ function App() {
   const [feedbackSummary, setFeedbackSummary] = useState(null);
   const [correctedQuery, setCorrectedQuery] = useState('');
   const [correctedIngredients, setCorrectedIngredients] = useState('');
+  const recognitionRef = useRef(null);
+  const manualSpeechStopRef = useRef(false);
+  const finalTranscriptRef = useRef('');
 
   const tagResult = useMemo(() => result?.tag_result || {}, [result]);
   const sql = useMemo(() => result?.sql || {}, [result]);
@@ -76,6 +79,14 @@ function App() {
     const recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     setSpeechSupported(Boolean(recognition));
     loadFeedbackSummary();
+  }, []);
+
+  useEffect(() => () => {
+    manualSpeechStopRef.current = true;
+    if (recognitionRef.current?.abort) {
+      recognitionRef.current.abort();
+    }
+    recognitionRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -111,7 +122,7 @@ function App() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload.detail || payload.error || 'Query failed');
+        throw new Error(apiErrorMessage(payload, 'Query failed'));
       }
       setQuery(text);
       setResult(payload);
@@ -149,7 +160,7 @@ function App() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload.detail || payload.error || 'Feedback failed');
+        throw new Error(apiErrorMessage(payload, 'Feedback failed'));
       }
       setFeedbackSummary(payload.summary);
       setFeedbackStatus(`Saved ${payload.corrections?.length || 0} correction(s)`);
@@ -169,24 +180,81 @@ function App() {
     }
   }
 
+  function toggleVoiceInput() {
+    if (listening) {
+      stopVoiceInput();
+      return;
+    }
+    startVoiceInput();
+  }
+
+  function stopVoiceInput() {
+    manualSpeechStopRef.current = true;
+    if (recognitionRef.current?.stop) {
+      recognitionRef.current.stop();
+      return;
+    }
+    recognitionRef.current = null;
+    setListening(false);
+  }
+
   function startVoiceInput() {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Recognition) return;
     const recognition = new Recognition();
+    recognitionRef.current = recognition;
+    manualSpeechStopRef.current = false;
+    finalTranscriptRef.current = query.trim();
     recognition.lang = 'en-IN';
-    recognition.interimResults = false;
-    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.continuous = true;
     recognition.onstart = () => {
       setInputMode('speech');
       setListening(true);
     };
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
-    recognition.onresult = (event) => {
-      const transcript = event.results?.[0]?.[0]?.transcript || '';
-      if (transcript) setQuery(transcript);
+    recognition.onend = () => {
+      if (!manualSpeechStopRef.current && recognitionRef.current === recognition) {
+        try {
+          recognition.start();
+          return;
+        } catch {
+          // Browser may reject immediate restarts; fall through to stopped state.
+        }
+      }
+      if (recognitionRef.current === recognition) {
+        recognitionRef.current = null;
+      }
+      setListening(false);
     };
-    recognition.start();
+    recognition.onerror = (event) => {
+      manualSpeechStopRef.current = true;
+      recognitionRef.current = null;
+      setListening(false);
+      setError(event?.error ? `Speech input failed: ${event.error}` : 'Speech input failed');
+    };
+    recognition.onresult = (event) => {
+      let finalText = finalTranscriptRef.current;
+      let interimText = '';
+      for (let index = event.resultIndex || 0; index < event.results.length; index += 1) {
+        const transcript = event.results[index]?.[0]?.transcript || '';
+        if (!transcript) continue;
+        if (event.results[index].isFinal) {
+          finalText = `${finalText} ${transcript}`.trim();
+        } else {
+          interimText = `${interimText} ${transcript}`.trim();
+        }
+      }
+      finalTranscriptRef.current = finalText;
+      const combined = `${finalText} ${interimText}`.trim();
+      if (combined) setQuery(combined);
+    };
+    try {
+      recognition.start();
+    } catch (err) {
+      recognitionRef.current = null;
+      setListening(false);
+      setError(err.message || 'Speech input failed');
+    }
   }
 
   function resetWorkbench() {
@@ -239,12 +307,12 @@ function App() {
           />
           <div className="primary-actions">
             <button
-              className="icon-button"
+              className={`icon-button ${listening ? 'is-listening' : ''}`}
               type="button"
               aria-label={listening ? 'Stop listening' : 'Start voice input'}
               title={listening ? 'Stop listening' : 'Start voice input'}
-              onClick={startVoiceInput}
-              disabled={!speechSupported || listening}
+              onClick={toggleVoiceInput}
+              disabled={!speechSupported}
             >
               {listening ? <Square size={18} /> : <Mic size={18} />}
             </button>
@@ -962,6 +1030,17 @@ function statusLabel(status) {
 
 function apiPath(path) {
   return `${API_BASE}${path}`;
+}
+
+function apiErrorMessage(payload, fallback) {
+  const detail = payload?.detail || payload?.error;
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  try {
+    return JSON.stringify(detail);
+  } catch {
+    return fallback;
+  }
 }
 
 function formatCategory(item) {

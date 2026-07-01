@@ -262,6 +262,47 @@ def test_nlu_recovers_diet_typo_and_resets_negation_scope():
     assert "milk" in warnings
 
 
+def test_negated_dietary_style_routes_to_excluded_diet_without_losing_utensil():
+    query = (
+        "recipes which contain onion but do not contain garlic but contain Milk "
+        "but should not be vegan recipes but contain container"
+    )
+
+    result = tag_entities(query)
+    sql = build_sql_query(result, transcript=query)
+
+    assert result["dietary_styles"] == []
+    assert result["excluded_dietary_styles"] == ["vegan"]
+    assert result["ingredient_logic"]["include"] == ["onion", "milk"]
+    assert result["ingredient_logic"]["exclude"] == ["garlic"]
+    assert result["utensils"] == ["container"]
+    assert sql["validation"]["ok"] is True
+    assert "r.`vegan` NOT IN" in sql["query"]
+    assert "r.`utensils` LIKE ?" in sql["query"]
+    assert "%container%" in sql["params"]
+
+
+def test_negated_dietary_style_after_do_not_contain_is_not_ingredient_or_positive_diet():
+    query = (
+        "recipes which contain onion but do not contain garlic but contain Milk "
+        "but do not contain vegan recipes but contain container"
+    )
+
+    result = tag_entities(query)
+    sql = build_sql_query(result, transcript=query)
+
+    assert result["dietary_styles"] == []
+    assert result["excluded_dietary_styles"] == ["vegan"]
+    assert result["ingredient_logic"]["include"] == ["onion", "milk"]
+    assert result["ingredient_logic"]["exclude"] == ["garlic"]
+    assert "vegan" not in result["ingredients"]
+    assert "container" not in result["ingredients"]
+    assert result["utensils"] == ["container"]
+    assert sql["validation"]["ok"] is True
+    assert "r.`vegan` NOT IN" in sql["query"]
+    assert "r.`utensils` LIKE ?" in sql["query"]
+
+
 def test_nlu_does_not_treat_at_least_one_ingredient_as_recipe_nutrition_continuation():
     result = tag_entities(
         "Return recipes with lentil where the full recipe has cholesterol below "
@@ -1444,6 +1485,38 @@ def test_sql_builder_handles_not_less_than_calories_as_lower_bound():
     assert sql["params"] == ["garlic", "%garlic%", 333.0]
 
 
+def test_sql_builder_handles_negated_greater_than_calories_as_upper_bound():
+    query = "Give me recipes with garlic not greater than 333 calories"
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["garlic"]
+    assert prepared["nutrition_filters"][0]["nutrient"] == "calories"
+    assert prepared["nutrition_filters"][0]["operator"] == "<="
+    assert prepared["nutrition_filters"][0]["value"] == 333.0
+    assert "n1.`calories` <= ?" in sql["query"]
+    assert "n1.`calories` > ?" not in sql["query"]
+    assert sql["params"] == ["garlic", "%garlic%", 333.0]
+
+
+def test_sql_builder_handles_negated_below_calories_as_lower_bound():
+    query = "Give me recipes with garlic not below 333 calories"
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["garlic"]
+    assert prepared["nutrition_filters"][0]["nutrient"] == "calories"
+    assert prepared["nutrition_filters"][0]["operator"] == ">="
+    assert prepared["nutrition_filters"][0]["value"] == 333.0
+    assert "n1.`calories` >= ?" in sql["query"]
+    assert "n1.`calories` < ?" not in sql["query"]
+    assert sql["params"] == ["garlic", "%garlic%", 333.0]
+
+
 def test_sql_builder_handles_not_less_than_minutes_as_base_time_lower_bound():
     query = "recipes with garlic that take not less than 30 minutes"
 
@@ -1461,6 +1534,46 @@ def test_sql_builder_handles_not_less_than_minutes_as_base_time_lower_bound():
     ]
     assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) >= ?" in sql["query"]
     assert "r.`total_time` <= ?" not in sql["query"]
+    assert sql["params"] == ["garlic", "%garlic%", 30.0]
+
+
+def test_sql_builder_handles_negated_greater_than_minutes_as_base_time_upper_bound():
+    query = "recipes with garlic that take not greater than 30 minutes"
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["time_filters"] == [
+        {
+            "field": "total_time",
+            "min": 0,
+            "max": 30.0,
+            "source": "intent_enrichment",
+        }
+    ]
+    assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) <= ?" in sql["query"]
+    assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) >= ?" not in sql["query"]
+    assert sql["params"] == ["garlic", "%garlic%", 30.0]
+
+
+def test_sql_builder_handles_negated_below_minutes_as_base_time_lower_bound():
+    query = "recipes with garlic that take not below 30 minutes"
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["time_filters"] == [
+        {
+            "field": "total_time",
+            "min": 30.0,
+            "max": None,
+            "source": "intent_enrichment",
+        }
+    ]
+    assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) >= ?" in sql["query"]
+    assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) <= ?" not in sql["query"]
     assert sql["params"] == ["garlic", "%garlic%", 30.0]
 
 

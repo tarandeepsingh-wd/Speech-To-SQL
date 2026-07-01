@@ -792,6 +792,12 @@ def _should_apply_phrase(
                 return False
             if _rewrites_literal_to_placeholder(phrase, candidate.term):
                 return False
+            if _is_negated_compare_phrase(candidate.term):
+                return (
+                    _negated_compare_phrase_supported(phrase, candidate.term)
+                    and _near_number_or_numeric_field(text, span, fuzzy_domain=True)
+                    and (score >= 84 or phonetic)
+                )
             return (
                 same_phrase_start
                 and _near_number_or_numeric_field(text, span, fuzzy_domain=True)
@@ -807,6 +813,24 @@ def _should_apply_phrase(
     if candidate.kind == "sort":
         return score >= 90 or (score >= 84 and phonetic)
     return False
+
+
+def _is_negated_compare_phrase(term: str) -> bool:
+    return bool(re.match(r"^(?:not|no)\s+", term))
+
+
+def _negated_compare_phrase_supported(source: str, target: str) -> bool:
+    if source == target:
+        return True
+    source_tokens = source.split()
+    target_tokens = target.split()
+    if len(source_tokens) != len(target_tokens) or len(source_tokens) < 2:
+        return False
+    if source_tokens[0] != target_tokens[0] or source_tokens[0] not in {"not", "no"}:
+        return False
+    if len(source_tokens[1]) < 4:
+        return False
+    return _compatible_start(source_tokens[1], target_tokens[1])
 
 
 def _should_apply_token(

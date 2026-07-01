@@ -1,8 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 
 afterEach(() => {
   jest.restoreAllMocks();
+  delete window.SpeechRecognition;
+  delete window.webkitSpeechRecognition;
 });
 
 test('renders the MERN query console workbench', () => {
@@ -103,4 +105,45 @@ test('runs a query and renders module SQL proof output', async () => {
   await waitFor(() => expect(screen.getByText(/Valid SQL/i)).toBeInTheDocument());
   expect(screen.getAllByText(/SELECT r\.\*/i).length).toBeGreaterThan(0);
   expect(screen.getAllByText(/ingredient_phrase/i).length).toBeGreaterThan(0);
+});
+
+test('voice input button toggles recognition start and stop', async () => {
+  global.fetch = jest.fn(() => Promise.resolve({
+    ok: true,
+    json: async () => ({ feedback_count: 0, learned_replacements: [] }),
+  }));
+
+  const instances = [];
+  class MockRecognition {
+    constructor() {
+      instances.push(this);
+      this.start = jest.fn(() => this.onstart?.());
+      this.stop = jest.fn(() => this.onend?.());
+      this.abort = jest.fn();
+    }
+  }
+  window.SpeechRecognition = MockRecognition;
+
+  render(<App />);
+
+  const startButton = await screen.findByRole('button', { name: /Start voice input/i });
+  await waitFor(() => expect(startButton).not.toBeDisabled());
+
+  fireEvent.click(startButton);
+  expect(instances).toHaveLength(1);
+
+  const stopButton = await screen.findByRole('button', { name: /Stop listening/i });
+  const finalResult = [{ transcript: 'show recipes with milk' }];
+  finalResult.isFinal = true;
+  await act(async () => {
+    instances[0].onresult({ resultIndex: 0, results: [finalResult] });
+  });
+
+  expect(screen.getByLabelText(/Natural language query/i)).toHaveValue('show recipes with milk');
+
+  fireEvent.click(stopButton);
+  expect(instances[0].stop).toHaveBeenCalledTimes(1);
+  expect(await screen.findByRole('button', { name: /Start voice input/i })).toBeInTheDocument();
+
+  delete window.SpeechRecognition;
 });

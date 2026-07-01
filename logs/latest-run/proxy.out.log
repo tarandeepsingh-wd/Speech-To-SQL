@@ -1,0 +1,6 @@
+
+> speech-to-sql-proxy@1.0.0 start
+> node index.js
+
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Node proxy running on http://localhost:5000

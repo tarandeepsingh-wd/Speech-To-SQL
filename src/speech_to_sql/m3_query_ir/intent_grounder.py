@@ -186,19 +186,20 @@ def _ground_dietary_styles(
 ) -> None:
     relation = registry.relation("dietary") or {}
     columns = relation.get("columns", {})
-    for style in tag_result.get("dietary_styles") or []:
-        style_text = str(style).strip()
-        column = columns.get(style_text)
-        if not column:
-            errors.append(f"Unknown dietary style {style_text!r}")
-            continue
-        evidence.append(GroundingEvidence(
-            "dietary",
-            style_text,
-            relation.get("table", registry.base_table["name"]),
-            column,
-            "sql_schema.relations.dietary",
-        ))
+    for field_name in ("dietary_styles", "excluded_dietary_styles"):
+        for style in tag_result.get(field_name) or []:
+            style_text = str(style).strip()
+            column = columns.get(style_text)
+            if not column:
+                errors.append(f"Unknown dietary style {style_text!r}")
+                continue
+            evidence.append(GroundingEvidence(
+                "dietary",
+                style_text,
+                relation.get("table", registry.base_table["name"]),
+                column,
+                f"{field_name}: sql_schema.relations.dietary",
+            ))
 
 
 def _ground_time_filters(

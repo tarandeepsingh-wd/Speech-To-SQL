@@ -85,6 +85,40 @@ def test_schema_normalizer_protects_negated_comparison_phrase(monkeypatch, tmp_p
     )
 
 
+def test_schema_normalizer_protects_negated_greater_and_below_phrases(monkeypatch, tmp_path):
+    monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
+    reset_adaptive_cache()
+
+    upper = tag_entities("show recipes with garlic not greater than 333 calories")
+    lower = tag_entities("show recipes with garlic not below 333 calories")
+
+    assert upper["_normalized_query"] == "show recipes with garlic not greater than 333 calories"
+    assert upper["nutrition_filters"] == [
+        {"nutrient": "calories", "operator": "<=", "value": 333.0}
+    ]
+    assert lower["_normalized_query"] == "show recipes with garlic not below 333 calories"
+    assert lower["nutrition_filters"] == [
+        {"nutrient": "calories", "operator": ">=", "value": 333.0}
+    ]
+
+
+def test_schema_normalizer_recovers_misspelled_negated_comparison_phrases(monkeypatch, tmp_path):
+    monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
+    reset_adaptive_cache()
+
+    upper = tag_entities("show recipes with garlic not gretaer than 333 calories")
+    lower = tag_entities("show recipes with garlic not belo 333 calories")
+
+    assert upper["_normalized_query"] == "show recipes with garlic not greater than 333 calories"
+    assert upper["nutrition_filters"] == [
+        {"nutrient": "calories", "operator": "<=", "value": 333.0}
+    ]
+    assert lower["_normalized_query"] == "show recipes with garlic not below 333 calories"
+    assert lower["nutrition_filters"] == [
+        {"nutrient": "calories", "operator": ">=", "value": 333.0}
+    ]
+
+
 def test_schema_normalizer_does_not_rewrite_operator_noise_without_numeric_context(monkeypatch, tmp_path):
     monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
     reset_adaptive_cache()

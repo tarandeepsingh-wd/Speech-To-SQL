@@ -191,23 +191,32 @@ def _dietary_predicates(
     recipe_config: dict[str, Any],
 ) -> list[Predicate]:
     aliases = recipe_config["diet_aliases"]
-    styles = []
-    for style in _unique_strings(tag_result.get("dietary_styles") or []):
-        api_style = aliases.get(style, style if style in aliases.values() else None)
-        if not api_style:
-            continue
-        styles.append(api_style)
+    styles = _resolved_dietary_styles(tag_result.get("dietary_styles") or [], aliases)
+    excluded_styles = _resolved_dietary_styles(
+        tag_result.get("excluded_dietary_styles") or [],
+        aliases,
+    )
+
+    predicates = []
+    for api_style in excluded_styles:
+        predicates.append(Predicate(
+            source="dietary",
+            field="dietary_tag",
+            operator="=",
+            values=(api_style,),
+            quantifier="not_exists",
+        ))
 
     if len(styles) > 1 and _contains_config_term(text, recipe_config.get("logic_terms", {}).get("or", [])):
-        return [Predicate(
+        predicates.append(Predicate(
             source="dietary",
             field="dietary_tag",
             operator="IN",
             values=tuple(styles),
             quantifier="or_exists",
-        )]
+        ))
+        return predicates
 
-    predicates = []
     for api_style in styles:
         predicates.append(Predicate(
             source="dietary",
@@ -216,6 +225,16 @@ def _dietary_predicates(
             values=(api_style,),
         ))
     return predicates
+
+
+def _resolved_dietary_styles(styles: list[Any], aliases: dict[str, str]) -> list[str]:
+    resolved = []
+    for style in _unique_strings(styles):
+        api_style = aliases.get(style, style if style in aliases.values() else None)
+        if not api_style:
+            continue
+        resolved.append(api_style)
+    return resolved
 
 
 def _time_predicates(

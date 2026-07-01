@@ -136,6 +136,12 @@ def _same_table_relation_condition(
     if relation.get("predicate_mode") == "truthy_flag" or predicate.source == "dietary":
         values = tuple(registry.truthy_values(predicate.source))
         placeholders = ", ".join("?" for _ in values)
+        if predicate.quantifier == "not_exists":
+            return SqlCondition(
+                f"({column_sql} NOT IN ({placeholders}) OR {column_sql} IS NULL)",
+                values,
+                predicate.source,
+            )
         return SqlCondition(
             f"{column_sql} IN ({placeholders})",
             values,

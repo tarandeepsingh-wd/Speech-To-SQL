@@ -53,6 +53,12 @@ def link_tag_result(
         links,
         unresolved,
     )
+    linked["excluded_dietary_styles"] = _link_dietary_styles(
+        linked.get("excluded_dietary_styles") or [],
+        recipe_config,
+        links,
+        unresolved,
+    )
     linked["time_filters"] = _link_time_filters(
         linked.get("time_filters") or [],
         recipe_config,
