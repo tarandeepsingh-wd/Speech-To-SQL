@@ -697,10 +697,35 @@ tr:last-child td {
   gap: 12px;
 }
 
+.sql-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .compact-button,
 .save-button {
   background: rgba(255, 255, 255, 0.06);
   color: var(--ink);
+}
+
+.sql-code-section {
+  display: grid;
+  gap: 8px;
+}
+
+.sql-block-heading {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 12px;
+  font-weight: 900;
+  gap: 8px;
+}
+
+.sql-block-heading svg {
+  color: var(--green);
 }
 
 .code-block,
@@ -716,6 +741,51 @@ tr:last-child td {
   overflow: auto;
   padding: 14px;
   white-space: pre-wrap;
+}
+
+.athena-block {
+  border-color: rgba(110, 200, 255, 0.24);
+}
+
+.athena-results {
+  display: grid;
+  gap: 12px;
+}
+
+.athena-row-section {
+  min-width: 0;
+}
+
+.athena-table-scroll {
+  max-height: 460px;
+}
+
+.athena-table {
+  min-width: max-content;
+}
+
+.athena-table th,
+.athena-table td {
+  max-width: 220px;
+  min-width: 92px;
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.athena-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.athena-table td {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+.athena-table tr:hover td {
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .message-list {

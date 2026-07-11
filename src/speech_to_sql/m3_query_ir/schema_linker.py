@@ -50,12 +50,14 @@ def link_tag_result(
     linked["dietary_styles"] = _link_dietary_styles(
         linked.get("dietary_styles") or [],
         recipe_config,
+        schema,
         links,
         unresolved,
     )
     linked["excluded_dietary_styles"] = _link_dietary_styles(
         linked.get("excluded_dietary_styles") or [],
         recipe_config,
+        schema,
         links,
         unresolved,
     )
@@ -146,6 +148,7 @@ def _link_nutrition_filters(
 def _link_dietary_styles(
     styles: list[Any],
     recipe_config: dict[str, Any],
+    schema: dict[str, Any],
     links: list[SchemaLink],
     unresolved: list[dict[str, str]],
 ) -> list[str]:
@@ -157,13 +160,42 @@ def _link_dietary_styles(
         if not resolved:
             _record_unresolved(unresolved, "dietary", style)
             continue
-        key = resolved.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        linked_styles.append(resolved)
-        _record_link(links, "dietary", style, resolved, "recipe_db.diet_aliases")
+        for candidate in _expanded_dietary_classification(style, resolved, schema):
+            key = candidate.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            linked_styles.append(candidate)
+            _record_link(links, "dietary", style, candidate, "recipe_db.diet_aliases")
     return linked_styles
+
+
+def _expanded_dietary_classification(
+    original: Any,
+    resolved: str,
+    schema: dict[str, Any],
+) -> list[str]:
+    normalized_original = _normalize_key(str(original or ""))
+    if normalized_original != "vegetarian":
+        return [resolved]
+
+    vegetarian_columns = _vegetarian_classification_columns(schema)
+    return vegetarian_columns or [resolved]
+
+
+def _vegetarian_classification_columns(schema: dict[str, Any]) -> list[str]:
+    columns = (
+        schema.get("relations", {})
+        .get("dietary", {})
+        .get("columns", {})
+    )
+    if not isinstance(columns, dict):
+        return []
+    return [
+        field
+        for field in columns
+        if str(field).endswith("_vegetarian")
+    ]
 
 
 def _link_time_filters(
@@ -257,16 +289,42 @@ def _normalize_ingredient_logic(tag_result: dict[str, Any]) -> dict[str, Any]:
         for item in tag_result.get("category_filters") or []
         if isinstance(item, dict)
     )
-    include = logic.get("include") or tag_result.get("ingredients") or []
+    has_explicit_include = "include" in logic
+    include = logic.get("include") if has_explicit_include else tag_result.get("ingredients") or []
     exclude = logic.get("exclude") or []
+    exclude_keys = {
+        _normalize_key(item)
+        for item in _unique_strings(exclude)
+    }
     logic["include"] = [
         item for item in _unique_strings(include)
         if _normalize_key(item) not in consumed
+        and (has_explicit_include or _normalize_key(item) not in exclude_keys)
     ]
     logic["exclude"] = [
         item for item in _unique_strings(exclude)
         if _normalize_key(item) not in consumed
     ]
+    include_set = {_normalize_key(item) for item in logic["include"]}
+    groups = []
+    for group in logic.get("include_groups") or []:
+        if not isinstance(group, dict):
+            continue
+        values = [
+            item for item in _unique_strings(group.get("ingredients") or [])
+            if _normalize_key(item) in include_set
+            and _normalize_key(item) not in consumed
+        ]
+        if not values:
+            continue
+        groups.append({
+            "ingredients": values,
+            "operator": "OR" if str(group.get("operator") or "").upper() == "OR" else "AND",
+        })
+    if groups:
+        logic["include_groups"] = groups
+    elif "include_groups" in logic:
+        logic.pop("include_groups", None)
     logic["include_operator"] = str(logic.get("include_operator") or "AND").upper()
     return logic
 

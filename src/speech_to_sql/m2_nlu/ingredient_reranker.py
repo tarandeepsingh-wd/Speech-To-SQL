@@ -15,7 +15,27 @@ MODEL_DIR = Path(__file__).parent / "models" / "ingredient_reranker"
 MODEL_FILE = MODEL_DIR / "model.pkl"
 DEFAULT_THRESHOLD = 0.50
 FEATURE_SCHEMA_VERSION = 3
-TRUSTED_EXACT_LAYERS = {"exact_aho", "exact_component"}
+TRUSTED_EXACT_LAYERS = {"exact_aho", "exact_component", "exact_morphology"}
+INGREDIENT_ROLE_TERMS = {
+    "with",
+    "contain",
+    "contains",
+    "containing",
+    "include",
+    "includes",
+    "including",
+    "exclude",
+    "excludes",
+    "excluding",
+    "without",
+    "using",
+    "find",
+    "search",
+    "show",
+    "give",
+    "recipe",
+    "recipes",
+}
 
 NUMERIC_FEATURE_NAMES = [
     "extractor_score",
@@ -254,7 +274,55 @@ def _is_trusted_exact_match(match: dict) -> bool:
         return False
     if source in {"db", "synonym"}:
         return canonical in DB_INGREDIENTS
+    if layer == "exact_morphology":
+        return canonical in DB_INGREDIENTS and _normalized_edit_similarity(surface, canonical) >= 0.70
     return bool(canonical and canonical == surface and canonical in DB_INGREDIENTS)
+
+
+def _is_safe_contextual_fuzzy_match(query: str, match: dict) -> bool:
+    layer = str(match.get("layer") or "")
+    if not any(marker in layer for marker in ("fuzzy", "metaphone", "neighbor")):
+        return False
+    canonical = str(match.get("canonical") or "").lower().strip()
+    surface = str(match.get("text") or "").lower().strip()
+    if canonical not in DB_INGREDIENTS or not surface:
+        return False
+    if _looks_like_ingredient_role_term(surface):
+        return False
+    score = _score(match)
+    if score < 74:
+        return False
+    if surface[:1] != canonical[:1]:
+        return False
+    similarity = max(
+        _normalized_edit_similarity(surface, canonical),
+        _normalized_edit_similarity(_strip_vowels(surface), _strip_vowels(canonical)),
+        _phoneme_similarity(surface, canonical),
+    )
+    if similarity < 0.68:
+        return False
+    span = match.get("span", (0, -1))
+    try:
+        start, end = int(span[0]), int(span[1])
+    except (TypeError, ValueError, IndexError):
+        return False
+    context = _context_text(query, start, end, window=48)
+    return bool(re.search(
+        r"\b(?:with|contain(?:s|ing)?|include(?:s|ing)?|using|use|without|exclude|excluding|"
+        r"not|no|dont|don't|or|and)\b|[,;]",
+        context,
+    ))
+
+
+def _looks_like_ingredient_role_term(surface: str) -> bool:
+    if len(surface) < 4:
+        return False
+    for term in INGREDIENT_ROLE_TERMS:
+        if surface == term:
+            return True
+        if surface[:1] == term[:1] and fuzz.WRatio(surface, term) >= 82:
+            return True
+    return False
 
 
 def rerank_ingredient_matches(query: str, matches: list[dict]) -> list[dict]:
@@ -275,6 +343,10 @@ def rerank_ingredient_matches(query: str, matches: list[dict]) -> list[dict]:
         probability = _predict_probability(payload, features)
         enriched = dict(match)
         enriched["reranker_confidence"] = round(probability, 3)
-        if probability >= cutoff or _is_trusted_exact_match(match):
+        if (
+            probability >= cutoff
+            or _is_trusted_exact_match(match)
+            or _is_safe_contextual_fuzzy_match(query, match)
+        ):
             kept.append(enriched)
     return kept

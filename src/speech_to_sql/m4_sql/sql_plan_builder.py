@@ -70,6 +70,8 @@ def _predicate_condition(
     plan: SqlPlan,
     join_strategy_sources: set[str],
 ) -> tuple[SqlCondition | None, dict[str, Any] | None]:
+    if predicate.source == "ingredient_count":
+        return _ingredient_count_condition(predicate, registry), None
     if predicate.source == plan.root_source:
         return _root_source_condition(predicate, registry, plan), None
     if predicate.source == "base":
@@ -95,6 +97,30 @@ def _base_condition(
         predicate,
         registry,
     )
+
+
+def _ingredient_count_condition(
+    predicate: Predicate,
+    registry: SchemaRegistry,
+) -> SqlCondition | None:
+    relation = registry.relation("ingredients")
+    join = registry.relationship_for_relation("ingredients")
+    if not relation or not join:
+        return None
+    ingredient_column = relation.get("columns", {}).get("ingredient") or relation.get("value_column")
+    if not ingredient_column:
+        return None
+
+    alias = "ip_count"
+    join_condition = registry.join_condition("ingredients", alias)
+    if not join_condition:
+        return None
+    count_sql = (
+        f"(SELECT COUNT(DISTINCT {registry.column_sql(alias, ingredient_column)}) "
+        f"FROM {registry.table_sql(relation['table'])} AS {alias} "
+        f"WHERE {join_condition})"
+    )
+    return _column_condition(count_sql, predicate, registry)
 
 
 def _root_source_condition(
@@ -922,10 +948,50 @@ def _column_condition(
         placeholders = ", ".join("?" for _ in values)
         return SqlCondition(f"{expression} IN ({placeholders})", values, predicate.source)
     if operator == "LIKE" and len(values) == 1:
+        delimited = _delimited_text_condition(expression, predicate, registry)
+        if delimited:
+            return delimited
         return SqlCondition(f"{expression} LIKE ?", values, predicate.source)
     if operator in {"<", "<=", "=", ">=", ">"} and len(values) == 1:
         return SqlCondition(f"{expression} {operator} ?", values, predicate.source)
     return None
+
+
+def _delimited_text_condition(
+    column_sql: str,
+    predicate: Predicate,
+    registry: SchemaRegistry | None,
+) -> SqlCondition | None:
+    if not registry or len(predicate.values) != 1:
+        return None
+    config = registry.delimited_text_field(predicate.source, predicate.field)
+    if not config:
+        return None
+
+    delimiter = str(config.get("delimiter") or "").strip()
+    token = _strip_like_wildcards(str(predicate.values[0] or "").strip())
+    if not delimiter or not token:
+        return None
+
+    params = (
+        delimiter,
+        delimiter,
+        f"%{delimiter}{token}{delimiter}%",
+    )
+    return SqlCondition(
+        f"CONCAT(?, {column_sql}, ?) LIKE ?",
+        params,
+        predicate.source,
+    )
+
+
+def _strip_like_wildcards(value: str) -> str:
+    text = value.strip()
+    while text.startswith("%"):
+        text = text[1:]
+    while text.endswith("%"):
+        text = text[:-1]
+    return text.strip()
 
 
 def _predicate_expression(
@@ -936,10 +1002,18 @@ def _predicate_expression(
     if not registry:
         return column_sql
     item = registry.predicate_catalog_item(predicate)
-    if not item or item.get("operator_profile") != "numeric":
+    numeric_profile = bool(item and item.get("operator_profile") == "numeric")
+    table = str((item or {}).get("table") or "")
+    column = str((item or {}).get("column") or "")
+    if (
+        predicate.source == "base"
+        and registry.base_field_has_numeric_relation_equivalent("nutrition", predicate.field)
+    ):
+        numeric_profile = True
+        table = registry.base_table["name"]
+        column = registry.base_column(predicate.field) or column
+    if not numeric_profile:
         return column_sql
-    table = str(item.get("table") or "")
-    column = str(item.get("column") or "")
     column_type = (
         registry.schema.get("collections", {})
         .get(table, {})
@@ -956,27 +1030,53 @@ def _order_expression(field: str, registry: SchemaRegistry) -> str | None:
     if not order_field:
         return None
     source = order_field["source"]
+    field_name = order_field["field"]
+    if source == "nutrition":
+        base_field = registry.base_field_for_relation_column("nutrition", field_name)
+        if base_field:
+            column = registry.base_column(base_field)
+            if not column:
+                return None
+            return _predicate_expression(
+                registry.column_sql(registry.base_alias, column),
+                Predicate("base", base_field, "=", (0,)),
+                registry,
+            )
+
     if source == "base":
-        column = registry.base_column(order_field["field"])
+        column = registry.base_column(field_name)
         if not column:
             return None
-        return registry.column_sql(registry.base_alias, column)
+        return _predicate_expression(
+            registry.column_sql(registry.base_alias, column),
+            Predicate("base", field_name, "=", (0,)),
+            registry,
+        )
 
     relation = registry.relation(source)
     if not relation:
         return None
-    column = relation.get("columns", {}).get(order_field["field"])
+    column = relation.get("columns", {}).get(field_name)
     if not column:
         return None
     if registry.relation_is_base(source):
-        return registry.column_sql(registry.base_alias, column)
+        return _predicate_expression(
+            registry.column_sql(registry.base_alias, column),
+            Predicate(source, field_name, "=", (0,)),
+            registry,
+        )
 
     alias = f"{relation['alias']}_order"
     join_condition = registry.join_condition(source, alias)
     if not join_condition:
         return None
+    expression = _predicate_expression(
+        registry.column_sql(alias, column),
+        Predicate(source, field_name, "=", (0,)),
+        registry,
+    )
     return (
-        f"(SELECT {registry.column_sql(alias, column)} "
+        f"(SELECT {expression} "
         f"FROM {registry.table_sql(relation['table'])} AS {alias} "
         f"WHERE {join_condition})"
     )

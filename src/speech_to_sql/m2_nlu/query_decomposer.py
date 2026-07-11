@@ -11,7 +11,10 @@ OR_SCOPE_PATTERNS = [
 ]
 
 EXCLUDE_PATTERNS = [
-    re.compile(r"\b(?:without|except|exclude|excluding|avoid|minus|no)\b"),
+    re.compile(
+        r"\b(?:without|except|exclude|excluding|avoid|minus|no|not|"
+        r"dont|don't|do\s+not|doesnt|doesn't|does\s+not|didnt|didn't|did\s+not)\b"
+    ),
     re.compile(r"\bfree\s+of\b"),
 ]
 
@@ -19,7 +22,7 @@ INCLUDE_RESET = re.compile(
     r"\b(?:with|containing|contains|contain|including|include|using|use|has|have)\b"
 )
 
-_NEGATION_TERMS = {"not", "without", "no"}
+_NEGATION_TERMS = {"not", "without", "no", "dont", "doesnt", "didnt"}
 _RELATION_TERMS = [
     "contain", "contains", "containing",
     "include", "includes", "including",
@@ -29,6 +32,15 @@ _RELATION_TERMS = [
 
 def _normalize_space(text: str) -> str:
     return re.sub(r"\s+", " ", text.lower()).strip()
+
+
+def _normalize_negation_text(text: str) -> str:
+    return (
+        text.lower()
+        .replace("don't", "dont")
+        .replace("doesn't", "doesnt")
+        .replace("didn't", "didnt")
+    )
 
 
 def _is_or_scope(text: str, first_start: int) -> bool:
@@ -45,26 +57,30 @@ def _has_negated_relation(segment: str) -> bool:
 
 
 def _negated_relation_ranges(segment: str) -> list[tuple[int, int]]:
-    tokens = list(re.finditer(r"[a-z]+", segment.lower()))
+    normalized_segment = _normalize_negation_text(segment)
+    tokens = list(re.finditer(r"[a-z]+", normalized_segment))
     ranges = []
     for i, token in enumerate(tokens):
         if token.group() not in _NEGATION_TERMS:
             continue
-        candidates = tokens[i + 1:i + 3]
+        candidates = tokens[i + 1:i + 4]
         if candidates and candidates[0].group() == "to":
             candidates = candidates[1:2]
-        else:
+        elif token.group() in {"no", "without"}:
             candidates = candidates[:1]
+        else:
+            candidates = candidates[:2]
         if not candidates:
             continue
-        candidate = candidates[0]
-        if process.extractOne(
-            candidate.group(),
-            _RELATION_TERMS,
-            scorer=fuzz.WRatio,
-            score_cutoff=78,
-        ):
-            ranges.append((token.start(), candidate.end()))
+        for candidate in candidates:
+            if process.extractOne(
+                candidate.group(),
+                _RELATION_TERMS,
+                scorer=fuzz.WRatio,
+                score_cutoff=78,
+            ):
+                ranges.append((token.start(), candidate.end()))
+                break
     return ranges
 
 
@@ -94,6 +110,13 @@ def _last_relation_cue(segment: str) -> str | None:
     return sorted(cues, key=lambda item: item[0])[-1][1]
 
 
+def _contains_list_continuation(segment: str) -> bool:
+    normalized = _normalize_space(segment)
+    if not normalized:
+        return True
+    return bool(re.search(r"(?:^|[,;]|\b(?:and|or)\b)\s*$", normalized))
+
+
 def _connector_between(text: str, left_end: int, right_start: int) -> str:
     segment = _normalize_space(text[left_end + 1:right_start])
     tokens = set(re.findall(r"[a-z]+", segment))
@@ -117,7 +140,7 @@ def _is_excluded(text: str, match: dict, prior_excluded: bool) -> bool:
         last_piece = before.rsplit(",", 1)[-1]
         if _last_relation_cue(last_piece) == "include":
             return False
-        return True
+        return _contains_list_continuation(last_piece)
 
     return False
 
@@ -126,12 +149,40 @@ def _dedupe_matches(matches: list[dict]) -> list[dict]:
     seen = set()
     result = []
     for match in sorted(matches, key=lambda item: item["span"][0]):
-        canonical = match["canonical"]
-        if canonical in seen:
+        key = (match["canonical"], tuple(match.get("span") or ()))
+        if key in seen:
             continue
-        seen.add(canonical)
+        seen.add(key)
         result.append(match)
     return result
+
+
+def _include_groups(include_matches: list[dict], connectors: list[dict]) -> list[dict]:
+    if not include_matches:
+        return []
+
+    groups: list[dict] = []
+    current = [include_matches[0]["canonical"]]
+    current_operator = "AND"
+
+    for connector, right in zip(connectors, include_matches[1:]):
+        operator = connector["operator"]
+        if operator == "OR":
+            current.append(right["canonical"])
+            current_operator = "OR"
+            continue
+        groups.append({
+            "ingredients": current,
+            "operator": "OR" if current_operator == "OR" and len(current) > 1 else "AND",
+        })
+        current = [right["canonical"]]
+        current_operator = "AND"
+
+    groups.append({
+        "ingredients": current,
+        "operator": "OR" if current_operator == "OR" and len(current) > 1 else "AND",
+    })
+    return groups
 
 
 def _remove_redundant_composites(matches: list[dict]) -> list[dict]:
@@ -151,6 +202,40 @@ def _remove_redundant_composites(matches: list[dict]) -> list[dict]:
     return result
 
 
+def _recover_repeated_exact_mentions(text: str, matches: list[dict]) -> list[dict]:
+    recovered = list(matches)
+    existing = {
+        (match.get("canonical"), tuple(match.get("span") or ()))
+        for match in recovered
+    }
+    for match in matches:
+        canonical = str(match.get("canonical") or "").strip().lower()
+        if len(canonical) < 3:
+            continue
+        terms = {
+            canonical,
+            str(match.get("text") or "").strip().lower(),
+        }
+        for term in terms:
+            if len(term) < 3:
+                continue
+            pattern = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
+            for found in pattern.finditer(text):
+                span = (found.start(), found.end() - 1)
+                key = (canonical, span)
+                if key in existing:
+                    continue
+                existing.add(key)
+                recovered.append({
+                    **match,
+                    "text": found.group(0),
+                    "canonical": canonical,
+                    "span": span,
+                    "layer": "repeated_exact",
+                })
+    return sorted(recovered, key=lambda item: item["span"][0])
+
+
 def decompose_ingredient_logic(text: str, ingredient_matches: list[dict]) -> dict:
     """
     Convert extracted ingredient spans into SQL-ready boolean intent.
@@ -162,6 +247,9 @@ def decompose_ingredient_logic(text: str, ingredient_matches: list[dict]) -> dic
     - "without/no/exclude" moves ingredients to exclude.
     """
     useful_matches = _remove_redundant_composites(_dedupe_matches(ingredient_matches))
+    useful_matches = _remove_redundant_composites(
+        _dedupe_matches(_recover_repeated_exact_mentions(text, useful_matches))
+    )
 
     include_matches = []
     exclude_matches = []
@@ -197,11 +285,14 @@ def decompose_ingredient_logic(text: str, ingredient_matches: list[dict]) -> dic
             operators = {connector["operator"] for connector in connectors}
             include_operator = operators.pop() if len(operators) == 1 else "MIXED"
 
+    include_groups = _include_groups(include_matches, connectors)
+
     return {
         "include": include,
         "exclude": exclude,
         "include_operator": include_operator,
         "exclude_operator": "AND",
+        "include_groups": include_groups,
         "connectors": connectors,
         "ambiguous": include_operator == "MIXED",
     }

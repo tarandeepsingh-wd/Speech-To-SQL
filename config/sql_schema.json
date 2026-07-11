@@ -1994,6 +1994,14 @@
       ]
     }
   },
+  "delimited_text_fields": {
+    "base.utensils": {
+      "delimiter": "||"
+    },
+    "base.processes": {
+      "delimiter": "||"
+    }
+  },
   "relaxation_settings": {
     "max_chain_steps": 1,
     "one_policy_per_step": true

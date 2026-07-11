@@ -16,25 +16,56 @@ To create a production build, use npm run build.
 
 webpack compiled successfully
 Compiling...
-Compiled successfully!
-webpack compiled successfully
+Failed to compile.
+
+[eslint] 
+src\App.js
+  Line 738:33:  'formatNumber' is not defined  no-undef
+
+Search for the keywords to learn more about each error.
+ERROR in [eslint] 
+src\App.js
+  Line 738:33:  'formatNumber' is not defined  no-undef
+
+Search for the keywords to learn more about each error.
+
+webpack compiled with 1 error
 Compiling...
 Failed to compile.
 
 [eslint] 
 src\App.js
-  Line 125:25:  'apiErrorMessage' is not defined  no-undef
-  Line 163:25:  'apiErrorMessage' is not defined  no-undef
+  Line 738:33:  'formatNumber' is not defined  no-undef
 
 Search for the keywords to learn more about each error.
 ERROR in [eslint] 
 src\App.js
-  Line 125:25:  'apiErrorMessage' is not defined  no-undef
-  Line 163:25:  'apiErrorMessage' is not defined  no-undef
+  Line 738:33:  'formatNumber' is not defined  no-undef
 
 Search for the keywords to learn more about each error.
 
 webpack compiled with 1 error
+Compiling...
+Failed to compile.
+
+[eslint] 
+src\App.js
+  Line 738:33:  'formatNumber' is not defined  no-undef
+
+Search for the keywords to learn more about each error.
+ERROR in [eslint] 
+src\App.js
+  Line 738:33:  'formatNumber' is not defined  no-undef
+
+Search for the keywords to learn more about each error.
+
+webpack compiled with 1 error
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Compiled successfully!
+webpack compiled successfully
 Compiling...
 Compiled successfully!
 webpack compiled successfully

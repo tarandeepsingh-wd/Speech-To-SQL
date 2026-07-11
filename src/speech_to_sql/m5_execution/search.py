@@ -12,6 +12,7 @@ from speech_to_sql.m5_execution.result_merger import dedupe_recipes, merge_api_r
 from speech_to_sql.common.config import load_recipe_db_config
 from speech_to_sql.m3_query_ir.intent_preparer import prepare_intent
 from speech_to_sql.m3_query_ir.sql_intent_builder import build_query_ir
+from speech_to_sql.m4_sql.athena_renderer import render_athena_sql
 from speech_to_sql.m4_sql.sql_query_builder import build_sql_query
 
 
@@ -66,6 +67,7 @@ def search_recipes(
     selected_plans = _select_plans(plans, max_api_calls)
     query_ir = build_query_ir(tag_result, transcript=transcript)
     sql_debug = build_sql_query(tag_result, transcript=transcript, query_ir=query_ir)
+    sql_debug["athena"] = render_athena_sql(sql_debug)
 
     if not execute:
         return {

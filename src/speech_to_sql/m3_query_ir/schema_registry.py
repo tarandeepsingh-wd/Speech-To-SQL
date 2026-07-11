@@ -78,6 +78,68 @@ class SchemaRegistry:
     def base_column(self, logical_field: str) -> str | None:
         return self.schema.get("base_columns", {}).get(logical_field)
 
+    def base_field_for_relation_column(self, source: str, field: str) -> str | None:
+        relation = self.relation(source)
+        if not relation:
+            return None
+
+        relation_columns = relation.get("columns", {})
+        target_column = relation_columns.get(field)
+        if target_column is None:
+            target_column = field
+
+        return self.base_field_for_column(str(target_column))
+
+    def base_field_for_column(self, column_name: str) -> str | None:
+        target_key = _column_key(column_name)
+        if not target_key:
+            return None
+        for field, column in (self.schema.get("base_columns") or {}).items():
+            if _column_key(column) == target_key:
+                return str(field)
+        return None
+
+    def base_field_has_relation_equivalent(self, source: str, base_field: str) -> bool:
+        base_column = self.base_column(base_field)
+        if not base_column:
+            return False
+
+        relation = self.relation(source)
+        if not relation:
+            return False
+
+        base_key = _column_key(base_column)
+        return any(
+            _column_key(column) == base_key
+            for column in (relation.get("columns") or {}).values()
+        )
+
+    def base_field_has_numeric_relation_equivalent(self, source: str, base_field: str) -> bool:
+        relation_field = self.relation_field_for_base_field(source, base_field)
+        if not relation_field:
+            return False
+
+        item = self.field_catalog_item(source, relation_field) or {}
+        if item.get("operator_profile") == "numeric":
+            return True
+        return relation_field in (self.schema.get("value_constraints", {}).get(source, {}) or {})
+
+    def relation_field_for_base_field(self, source: str, base_field: str) -> str | None:
+        base_column = self.base_column(base_field)
+        relation = self.relation(source)
+        if not base_column or not relation:
+            return None
+
+        base_key = _column_key(base_column)
+        for field, column in (relation.get("columns") or {}).items():
+            if _column_key(column) == base_key:
+                return str(field)
+        return None
+
+    def delimited_text_field(self, source: str, field: str) -> dict[str, Any] | None:
+        config = (self.schema.get("delimited_text_fields") or {}).get(f"{source}.{field}")
+        return config if isinstance(config, dict) else None
+
     def relation(self, source: str) -> dict[str, Any] | None:
         return self.schema.get("relations", {}).get(source)
 
@@ -182,3 +244,7 @@ class SchemaRegistry:
 
 def load_schema_registry(schema: dict[str, Any] | None = None) -> SchemaRegistry:
     return SchemaRegistry(schema)
+
+
+def _column_key(value: Any) -> str:
+    return " ".join(str(value or "").strip().casefold().split())

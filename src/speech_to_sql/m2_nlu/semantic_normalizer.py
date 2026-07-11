@@ -18,6 +18,7 @@ DATA_DIR = Path(__file__).parent / "data"
 SQL_OPERATOR_LEXICON_PATH = DATA_DIR / "sql_operator_lexicon.json"
 MAX_PHRASE_TOKENS = 4
 MAX_ROLE_CUE_TOKENS = 3
+TIME_UNIT_TERMS = ("minute", "minutes", "min", "mins", "hour", "hours", "hr", "hrs")
 
 NUMBER_ONES = {
     "zero": 0,
@@ -112,7 +113,7 @@ def _normalize_spoken_numbers(text: str) -> dict[str, Any]:
     tokens = _token_spans(text)
     updates = []
     used_positions: set[int] = set()
-    protected_spans = [*_compare_phrase_spans(text), *_exact_ingredient_spans(text)]
+    protected_spans = [*_compare_phrase_spans(text), *_exact_nlu_entity_spans(text)]
 
     index = 0
     while index < len(tokens):
@@ -378,7 +379,7 @@ def _normalize_phrase_terms(text: str) -> dict[str, Any]:
     tokens = _token_spans(text)
     updates = []
     used_positions: set[int] = set()
-    protected_spans = [*_exact_phrase_spans(text), *_exact_ingredient_spans(text)]
+    protected_spans = [*_exact_phrase_spans(text), *_exact_nlu_entity_spans(text)]
     for width in range(MAX_PHRASE_TOKENS, 1, -1):
         for index in range(0, len(tokens) - width + 1):
             window = tokens[index:index + width]
@@ -422,7 +423,7 @@ def _normalize_single_tokens(text: str) -> dict[str, Any]:
     protected_spans = [
         *_exact_phrase_spans(text),
         *_compare_phrase_spans(text),
-        *_exact_ingredient_spans(text),
+        *_exact_nlu_entity_spans(text),
     ]
     for match in re.finditer(r"\b[a-zA-Z][a-zA-Z-]{2,}\b", text):
         if _overlaps_any(match.span(), protected_spans):
@@ -454,7 +455,7 @@ def _normalize_role_cues(text: str) -> dict[str, Any]:
     tokens = _token_spans(text)
     updates = []
     used_positions: set[int] = set()
-    protected_spans = _exact_ingredient_spans(text)
+    protected_spans = _exact_nlu_entity_spans(text)
     max_width = min(MAX_ROLE_CUE_TOKENS, _max_term_tokens(choices))
     for width in range(max_width, 0, -1):
         for index in range(0, len(tokens) - width + 1):
@@ -627,9 +628,29 @@ def _exact_ingredient_spans(text: str) -> list[tuple[int, int]]:
     """Protect CSV-backed ingredient literals from schema-term rewrites."""
     from speech_to_sql.m2_nlu.automaton import INGREDIENT_AUTOMATON
 
+    return _exact_automaton_spans(text, INGREDIENT_AUTOMATON)
+
+
+def _exact_nlu_entity_spans(text: str) -> list[tuple[int, int]]:
+    """Protect known entities so normalization does not rewrite them as SQL terms."""
+    from speech_to_sql.m2_nlu.automaton import ACTION_AUTOMATON, INGREDIENT_AUTOMATON, UTENSIL_AUTOMATON
+
+    spans = [
+        *_exact_automaton_spans(text, INGREDIENT_AUTOMATON),
+        *_exact_automaton_spans(text, UTENSIL_AUTOMATON),
+        *_exact_automaton_spans(text, ACTION_AUTOMATON),
+    ]
+    selected: list[tuple[int, int]] = []
+    for span in sorted(spans, key=lambda item: item[1] - item[0], reverse=True):
+        if not _overlaps_any(span, selected):
+            selected.append(span)
+    return selected
+
+
+def _exact_automaton_spans(text: str, automaton: Any) -> list[tuple[int, int]]:
     lower_text = text.lower()
     candidates: list[tuple[int, int]] = []
-    for end_index, (_source, original, _canonical) in INGREDIENT_AUTOMATON.iter(lower_text):
+    for end_index, (_source, original, _canonical) in automaton.iter(lower_text):
         start_index = end_index - len(original) + 1
         end_index += 1
         before = lower_text[start_index - 1] if start_index > 0 else " "
@@ -790,6 +811,8 @@ def _should_apply_phrase(
         if candidate.operator_type == "COMPARE":
             if _instruction_mention_context(text, span):
                 return False
+            if _operator_followed_by_entity_relation(text, span):
+                return False
             if _rewrites_literal_to_placeholder(phrase, candidate.term):
                 return False
             if _is_negated_compare_phrase(candidate.term):
@@ -851,7 +874,7 @@ def _should_apply_token(
     if candidate.kind == "time":
         if _looks_like_inflection(token, candidate.term):
             return False
-        return _time_context_supports(text, span, score, phonetic, same_start)
+        return _time_context_supports(text, span, token, candidate.term, score, phonetic, same_start)
     if candidate.kind in {"cuisine", "diet", "ingredient_flavor"}:
         return len(candidate.term) >= 5 and score >= 88 and compatible_start
     if candidate.kind in {"sql_field", "sql_table"}:
@@ -872,6 +895,8 @@ def _operator_context_supports(
     if candidate.operator_type != "COMPARE":
         return False
     if _instruction_mention_context(text, span):
+        return False
+    if _operator_followed_by_entity_relation(text, span):
         return False
     if not _near_number_or_numeric_field(text, span):
         return False
@@ -918,13 +943,17 @@ def _single_token_spelling_supported(source: str, target: str, phonetic: bool) -
 def _time_context_supports(
     text: str,
     span: tuple[int, int],
+    token: str,
+    target: str,
     score: float,
     phonetic: bool,
     same_start: bool,
 ) -> bool:
     if not _near_number_or_time_unit(text, span):
         return False
-    return (score >= 86 and same_start) or (score >= 78 and phonetic)
+    if not _single_token_spelling_supported(token, target, phonetic):
+        return False
+    return (score >= 86 and same_start) or (score >= 78 and phonetic and same_start)
 
 
 def _looks_like_inflection(source: str, target: str) -> bool:
@@ -972,6 +1001,16 @@ def _instruction_mention_context(text: str, span: tuple[int, int]) -> bool:
             prefix,
         )
     )
+
+
+def _operator_followed_by_entity_relation(text: str, span: tuple[int, int]) -> bool:
+    suffix = _normalize_term(text[span[1]:span[1] + 48])
+    return bool(re.match(
+        r"^(?:and\s+)?(?:must\s+|should\s+|can\s+|will\s+)?"
+        r"(?:contain|contains|containing|include|includes|including|"
+        r"use|uses|using|have|has|with)\b",
+        suffix,
+    ))
 
 
 def _rewrites_literal_to_placeholder(source: str, target: str) -> bool:
@@ -1147,6 +1186,8 @@ def _add_recipe_config_terms(terms: dict[str, LexiconTerm]) -> None:
         _add_term(terms, term=term, kind="time", source="recipe_db.time_fields")
     for term in payload.get("time_fields", {}).get("quick_terms", []):
         _add_term(terms, term=term, kind="time", source="recipe_db.time_fields.quick_terms")
+    for term in TIME_UNIT_TERMS:
+        _add_term(terms, term=term, kind="time", source="time_units")
 
 
 def _add_recipe_phrase_terms(terms: dict[str, LexiconTerm]) -> None:

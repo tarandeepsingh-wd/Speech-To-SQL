@@ -52,6 +52,9 @@ function App() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [copyState, setCopyState] = useState('');
+  const [athenaLoading, setAthenaLoading] = useState(false);
+  const [athenaResult, setAthenaResult] = useState(null);
+  const [athenaError, setAthenaError] = useState('');
   const [feedbackStatus, setFeedbackStatus] = useState('');
   const [feedbackSummary, setFeedbackSummary] = useState(null);
   const [correctedQuery, setCorrectedQuery] = useState('');
@@ -105,6 +108,8 @@ function App() {
     setError('');
     setFeedbackStatus('');
     setCopyState('');
+    setAthenaResult(null);
+    setAthenaError('');
     setResult(null);
     setActiveModule('m1');
 
@@ -263,17 +268,48 @@ function App() {
     setError('');
     setFeedbackStatus('');
     setCopyState('');
+    setAthenaResult(null);
+    setAthenaError('');
     setActiveModule('m1');
     setInputMode('text');
   }
 
-  async function copySql() {
-    if (!sql.query) return;
+  async function copySql(kind = 'sql') {
+    const text = kind === 'athena' ? sql.athena?.query : sql.query;
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(sql.query);
-      setCopyState('Copied');
+      await navigator.clipboard.writeText(text);
+      setCopyState(kind === 'athena' ? 'Athena copied' : 'SQL copied');
     } catch {
       setCopyState('Copy failed');
+    }
+  }
+
+  async function runAthena() {
+    const queryText = sql.athena?.query;
+    if (!queryText) return;
+    setAthenaLoading(true);
+    setAthenaResult(null);
+    setAthenaError('');
+    try {
+      const response = await fetch(apiPath('/athena/execute'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: queryText,
+          max_rows: Number(finalLimit) || 20,
+          timeout_seconds: 120,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, 'Athena execution failed'));
+      }
+      setAthenaResult(payload);
+    } catch (err) {
+      setAthenaError(err.message);
+    } finally {
+      setAthenaLoading(false);
     }
   }
 
@@ -474,6 +510,10 @@ function App() {
                 validation={validation}
                 copySql={copySql}
                 copyState={copyState}
+                runAthena={runAthena}
+                athenaLoading={athenaLoading}
+                athenaResult={athenaResult}
+                athenaError={athenaError}
               />
             )}
             {activeModule === 'm5' && (
@@ -633,23 +673,84 @@ function GroundingPanel({ tagResult, queryIr, result }) {
   );
 }
 
-function SqlPanel({ sql, sqlPlan, validation, copySql, copyState }) {
+function SqlPanel({
+  sql,
+  sqlPlan,
+  validation,
+  copySql,
+  copyState,
+  runAthena,
+  athenaLoading,
+  athenaResult,
+  athenaError,
+}) {
   const joins = sqlPlan.joins || [];
   const where = sqlPlan.where || [];
   const params = sql.params || [];
+  const athenaSql = sql.athena?.query || '';
   const warnings = validation.warnings || [];
   const errors = validation.errors || [];
+  const formatAthenaNumber = (value) => {
+    if (value === undefined || value === null || value === '') return '-';
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value);
+    return numeric.toLocaleString();
+  };
 
   return (
     <div className="panel-stack">
       <div className="sql-toolbar">
         <StatusBadge ok={validation.ok !== false} label={validation.ok === false ? 'Invalid SQL' : 'Valid SQL'} />
-        <button className="compact-button" type="button" onClick={copySql} disabled={!sql.query}>
-          <Clipboard size={15} />
-          <span>{copyState || 'Copy SQL'}</span>
-        </button>
+        <div className="sql-actions">
+          <button className="compact-button" type="button" onClick={() => copySql('sql')} disabled={!sql.query}>
+            <Clipboard size={15} />
+            <span>{copyState === 'SQL copied' ? copyState : 'Copy SQL'}</span>
+          </button>
+          <button className="compact-button" type="button" onClick={() => copySql('athena')} disabled={!athenaSql}>
+            <Clipboard size={15} />
+            <span>{copyState === 'Athena copied' ? copyState : 'Copy Athena'}</span>
+          </button>
+          <button className="compact-button" type="button" onClick={runAthena} disabled={!athenaSql || athenaLoading}>
+            <Play size={15} />
+            <span>{athenaLoading ? 'Running Athena' : 'Run Athena'}</span>
+          </button>
+        </div>
       </div>
-      <pre className="code-block">{sql.query || 'No SQL generated yet'}</pre>
+      <section className="sql-code-section">
+        <div className="sql-block-heading">
+          <Code2 size={15} />
+          <span>Parameterized SQL</span>
+        </div>
+        <pre className="code-block">{sql.query || 'No SQL generated yet'}</pre>
+      </section>
+      <section className="sql-code-section">
+        <div className="sql-block-heading">
+          <Database size={15} />
+          <span>Athena SQL</span>
+        </div>
+        <pre className="code-block athena-block">{athenaSql || 'No Athena SQL generated yet'}</pre>
+      </section>
+      {athenaError && (
+        <div className="message-list error">
+          <p>{athenaError}</p>
+        </div>
+      )}
+      {athenaResult && (
+        <section className="athena-results">
+          <KeyValueGrid
+            items={[
+              ['Athena state', athenaResult.state || 'Unknown'],
+              ['Rows shown', String(athenaResult.row_count ?? 0)],
+              ['Bytes scanned', formatAthenaNumber(athenaResult.bytes_scanned)],
+              ['Execution ID', athenaResult.query_execution_id || '-'],
+            ]}
+          />
+          <AthenaRowsTable
+            columns={athenaResult.columns || []}
+            rows={athenaResult.rows || []}
+          />
+        </section>
+      )}
       <TokenList title="Parameters" icon={<Database size={16} />} values={params.map((param) => JSON.stringify(param))} tone="gray" />
       <DataTable
         title="Joins"
@@ -926,6 +1027,48 @@ function DataTable({ title, columns, rows }) {
                   {row.map((cell, cellIndex) => (
                     <td key={`${title}-${index}-${cellIndex}`}>{formatCell(cell)}</td>
                   ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AthenaRowsTable({ columns, rows }) {
+  const safeColumns = columns || [];
+  const safeRows = rows || [];
+  return (
+    <section className="data-section athena-row-section">
+      <div className="data-title">
+        <Database size={16} />
+        <span>Athena rows</span>
+      </div>
+      {!safeRows.length ? (
+        <p className="muted-line">No rows</p>
+      ) : (
+        <div className="table-scroll athena-table-scroll">
+          <table className="athena-table">
+            <thead>
+              <tr>
+                {safeColumns.map((column) => (
+                  <th key={column} title={column}>{column}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {safeRows.map((row, index) => (
+                <tr key={`athena-${index}`}>
+                  {safeColumns.map((column, cellIndex) => {
+                    const value = row[cellIndex] ?? '';
+                    return (
+                      <td key={`athena-${index}-${column}`} title={String(value || '-')}>
+                        {formatCell(value)}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

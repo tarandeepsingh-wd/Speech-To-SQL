@@ -148,7 +148,10 @@ def _get_nlp():
     if _nlp is None:
         import spacy
 
-        _nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+        try:
+            _nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+        except OSError:
+            _nlp = spacy.blank("en")
         _SPACY_STOPS = _nlp.Defaults.stop_words
         _BG_STOPS = _nlp.Defaults.stop_words | COMMON_WORDS_BLACKLIST
     return _nlp
@@ -392,7 +395,7 @@ def get_pos_filtered_tokens(text: str) -> list:
             "end":   token.idx + len(token.text) - 1,
         }
         for token in doc
-        if token.pos_ in VALID_POS
+        if token.pos_ in VALID_POS or not token.pos_
     ]
 
 

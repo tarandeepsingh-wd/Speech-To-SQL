@@ -55,6 +55,12 @@ class SearchQueryRequest(BaseModel):
     final_limit: Optional[int] = None
 
 
+class AthenaExecuteRequest(BaseModel):
+    query: str
+    max_rows: int = Field(default=20, ge=1, le=100)
+    timeout_seconds: int = Field(default=90, ge=10, le=300)
+
+
 class SqlOperatorRequest(BaseModel):
     query: str
 
@@ -111,6 +117,30 @@ def query_text(payload: SearchQueryRequest) -> dict:
         fetch_limit=payload.fetch_limit,
         final_limit=payload.final_limit,
     )
+
+
+@app.post("/athena/execute")
+def execute_athena(payload: AthenaExecuteRequest) -> dict:
+    """Execute paste-ready Athena SQL and return a small result preview."""
+    if not payload.query.strip():
+        raise HTTPException(status_code=400, detail="Athena SQL cannot be empty.")
+
+    from speech_to_sql.m5_execution.athena_client import (
+        AthenaConfigError,
+        AthenaQueryError,
+        execute_athena_query,
+    )
+
+    try:
+        return execute_athena_query(
+            payload.query,
+            max_rows=payload.max_rows,
+            timeout_seconds=payload.timeout_seconds,
+        )
+    except AthenaConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except AthenaQueryError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @app.post("/transcribe-and-tag")

@@ -68,6 +68,8 @@ DIETARY_STYLE_ALIASES = {
     "vigan": "vegan",
     "vegen": "vegan",
     "vegn": "vegan",
+    "veg": "vegetarian",
+    "veggie": "vegetarian",
 }
 
 DIETARY_STYLE_LOOKUP = {
@@ -217,7 +219,9 @@ _BASE_OP_MAP = {
     "under": "<",
     "below": "<",
     "less than": "<",
+    "fewer than": "<",
     "at most": "<=",
+    "fewer than or equal": "<=",
     "over": ">",
     "above": ">",
     "more than": ">",
@@ -249,6 +253,25 @@ def _operator_pattern(terms: list[str]) -> str:
 
 _BASE_OPERATOR_WORD_PATTERN = _operator_pattern(list(_BASE_OP_MAP))
 _OPERATOR_WORD_PATTERN = rf"(?:(?:not|no)\s+)?(?:{_BASE_OPERATOR_WORD_PATTERN})"
+_NUTRITION_UNIT_PATTERN = (
+    r"milligrams|milligram|grams|gram|gms|gm|mg|g|"
+    r"kcal|calories|calorie|cal"
+)
+_NUTRITION_SEPARATOR_PATTERN = r"[\s,;:()\[\]{}-]*"
+_NUTRITION_REQUIRED_SEPARATOR_PATTERN = r"[\s,;:()\[\]{}-]+"
+_NUTRIENT_ALIAS_SEPARATOR_PATTERN = r"[\s,;:()+\[\]{}-]+"
+_NUTRITION_RELATION_PATTERN = (
+    rf"(?:(?:se|is|are|was|were|has|have|contains?|with|of)"
+    rf"{_NUTRITION_SEPARATOR_PATTERN})?"
+)
+_NUTRITION_OF_PATTERN = rf"(?:of\b{_NUTRITION_SEPARATOR_PATTERN})?"
+_NEGATED_NUTRITION_RELATION_RE = re.compile(
+    r"\b(?:(?:do|does|did|should|must|can|could|would|is|are|was|were)\s+)?"
+    r"(?:not|dont|doesnt|didnt|no|without)\b"
+    r"(?:\s+(?:be|being|have|has|having|contain|contains|containing|"
+    r"include|includes|including|with)){0,3}$",
+    re.IGNORECASE,
+)
 
 
 def _operator_from_text(op_text: str | None, default: str = "=") -> str:
@@ -266,20 +289,59 @@ def _operator_from_text(op_text: str | None, default: str = "=") -> str:
     return _BASE_OP_MAP.get(normalized, default)
 
 
+def _is_negated_operator_text(op_text: str | None) -> bool:
+    normalized = re.sub(r"\s+", " ", (op_text or "").lower()).strip()
+    return bool(_NEGATED_OPERATOR_PREFIX_RE.match(normalized))
+
+
+def _comparison_scope_is_negated(text: str, start: int) -> bool:
+    prefix = (
+        text[:start]
+        .lower()
+        .replace("don't", "dont")
+        .replace("doesn't", "doesnt")
+        .replace("didn't", "didnt")
+    )
+    local_clause = re.split(r"\b(?:but|and|or|then)\b|[,;]", prefix)[-1]
+    local_clause = re.sub(r"\s+", " ", local_clause).strip()
+    return bool(_NEGATED_NUTRITION_RELATION_RE.search(local_clause))
+
+
+def _operator_from_match(
+    text: str,
+    match: re.Match,
+    *,
+    offset: int = 0,
+    default: str = "=",
+) -> str:
+    op_text = match.group("op")
+    operator = _operator_from_text(op_text, default=default)
+    if (
+        op_text
+        and not _is_negated_operator_text(op_text)
+        and operator in _NEGATED_OPERATOR_MAP
+        and _comparison_scope_is_negated(text, offset + match.start())
+    ):
+        return _NEGATED_OPERATOR_MAP[operator]
+    return operator
+
+
 _NUTRITION_PATTERN = re.compile(
     rf"(?P<op>{_OPERATOR_WORD_PATTERN})?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
-    r"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?\s*"
+    rf"(?P<unit>{_NUTRITION_UNIT_PATTERN})?"
+    rf"{_NUTRITION_SEPARATOR_PATTERN}"
+    rf"{_NUTRITION_OF_PATTERN}"
     r"(?P<nutrient>[a-z][a-z-]*)",
     re.IGNORECASE,
 )
 
 _NUTRITION_NUTRIENT_FIRST_PATTERN = re.compile(
-    r"(?P<nutrient>[a-z][a-z-]*)\s*"
-    r"(?:se\s+)?(?:is|are|was|were|has|have|contains?|with|of)?\s*"
+    rf"(?P<nutrient>[a-z][a-z-]*){_NUTRITION_SEPARATOR_PATTERN}"
+    rf"{_NUTRITION_RELATION_PATTERN}"
     rf"(?P<op>{_OPERATOR_WORD_PATTERN})?\s*"
     r"(?P<value>\d+(?:\.\d+)?)\s*"
-    r"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
+    rf"(?P<unit>{_NUTRITION_UNIT_PATTERN})?",
     re.IGNORECASE,
 )
 
@@ -319,20 +381,24 @@ def _dynamic_nutrient_patterns() -> tuple[tuple[str, str, re.Pattern, re.Pattern
         tokens = re.findall(r"[a-z0-9]+", alias.lower())
         if not tokens:
             continue
-        alias_pattern = r"\b" + r"[\s,()+-]+".join(re.escape(token) for token in tokens) + r"\b"
+        alias_pattern = r"\b" + _NUTRIENT_ALIAS_SEPARATOR_PATTERN.join(
+            re.escape(token) for token in tokens
+        ) + r"\b"
         nutrient_first = re.compile(
-            rf"(?P<nutrient>{alias_pattern})\s+"
-            rf"(?:(?:is|are|was|were|has|have|contains?|with|of)\s+)?"
+            rf"(?P<nutrient>{alias_pattern})"
+            rf"{_NUTRITION_SEPARATOR_PATTERN}"
+            rf"{_NUTRITION_RELATION_PATTERN}"
             rf"(?P<op>{_OPERATOR_WORD_PATTERN})\s+"
             rf"(?P<value>\d+(?:\.\d+)?)\s*"
-            rf"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
+            rf"(?P<unit>{_NUTRITION_UNIT_PATTERN})?",
             re.IGNORECASE,
         )
         value_first = re.compile(
             rf"(?P<op>{_OPERATOR_WORD_PATTERN})\s+"
             rf"(?P<value>\d+(?:\.\d+)?)\s*"
-            rf"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?\s+"
-            rf"(?:of\s+)?"
+            rf"(?P<unit>{_NUTRITION_UNIT_PATTERN})?"
+            rf"{_NUTRITION_REQUIRED_SEPARATOR_PATTERN}"
+            rf"{_NUTRITION_OF_PATTERN}"
             rf"(?P<nutrient>{alias_pattern})",
             re.IGNORECASE,
         )
@@ -342,35 +408,98 @@ def _dynamic_nutrient_patterns() -> tuple[tuple[str, str, re.Pattern, re.Pattern
 
 def _dynamic_nutrition_matches(text: str) -> list[dict]:
     found = []
+    candidates = []
     used_positions: set[int] = set()
-    for _alias, nutrient, *patterns in _dynamic_nutrient_patterns():
-        for pattern in patterns:
+    for _alias, nutrient, value_first, nutrient_first in _dynamic_nutrient_patterns():
+        for pattern_order, pattern in enumerate((nutrient_first, value_first)):
             for match in pattern.finditer(text.lower()):
+                candidates.append((match.start(), pattern_order, match.end(), nutrient, match))
+
+    candidates.sort(key=lambda item: (item[0], item[1], item[2]))
+    for _start, _pattern_order, _end, nutrient, match in candidates:
+        positions = set(range(match.start(), match.end()))
+        if positions & used_positions:
+            continue
+        operator = _operator_from_match(text, match)
+        try:
+            value = float(match.group("value"))
+        except (TypeError, ValueError):
+            continue
+        used_positions |= positions
+        found.append({
+            "span": match.span(),
+            "nutrient": nutrient,
+            "operator": operator,
+            "value": value,
+        })
+    found.sort(key=lambda item: item["span"])
+    return found
+
+
+def _dynamic_nutrition_between_matches(text: str) -> list[dict]:
+    found = []
+    text_lower = text.lower()
+    used_positions: set[int] = set()
+    for alias, nutrient, *_patterns in _dynamic_nutrient_patterns():
+        tokens = re.findall(r"[a-z0-9]+", alias.lower())
+        if not tokens:
+            continue
+        alias_pattern = r"\b" + _NUTRIENT_ALIAS_SEPARATOR_PATTERN.join(
+            re.escape(token) for token in tokens
+        ) + r"\b"
+        patterns = (
+            re.compile(
+                rf"(?P<nutrient>{alias_pattern})"
+                rf"{_NUTRITION_SEPARATOR_PATTERN}"
+                rf"{_NUTRITION_RELATION_PATTERN}"
+                rf"between\s+(?P<min>\d+(?:\.\d+)?)\s*"
+                rf"(?P<unit1>{_NUTRITION_UNIT_PATTERN})?"
+                rf"{_NUTRITION_REQUIRED_SEPARATOR_PATTERN}"
+                rf"(?:and|to)\s+(?P<max>\d+(?:\.\d+)?)\s*"
+                rf"(?P<unit2>{_NUTRITION_UNIT_PATTERN})?",
+                re.IGNORECASE,
+            ),
+            re.compile(
+                rf"between\s+(?P<min>\d+(?:\.\d+)?)\s*"
+                rf"(?P<unit1>{_NUTRITION_UNIT_PATTERN})?"
+                rf"{_NUTRITION_REQUIRED_SEPARATOR_PATTERN}"
+                rf"(?:and|to)\s+(?P<max>\d+(?:\.\d+)?)\s*"
+                rf"(?P<unit2>{_NUTRITION_UNIT_PATTERN})?"
+                rf"{_NUTRITION_REQUIRED_SEPARATOR_PATTERN}"
+                rf"{_NUTRITION_OF_PATTERN}(?P<nutrient>{alias_pattern})",
+                re.IGNORECASE,
+            ),
+        )
+        for pattern in patterns:
+            for match in pattern.finditer(text_lower):
                 positions = set(range(match.start(), match.end()))
                 if positions & used_positions:
                     continue
-                operator = _operator_from_text(match.group("op"))
                 try:
-                    value = float(match.group("value"))
+                    low = float(match.group("min"))
+                    high = float(match.group("max"))
                 except (TypeError, ValueError):
                     continue
+                if low > high:
+                    low, high = high, low
                 used_positions |= positions
                 found.append({
                     "span": match.span(),
                     "nutrient": nutrient,
-                    "operator": operator,
-                    "value": value,
+                    "operator": "BETWEEN",
+                    "values": (low, high),
                 })
     found.sort(key=lambda item: item["span"])
     return found
 
 
 _NUTRITION_CONTINUATION_PATTERN = re.compile(
-    rf"(?:^|\b(?:but|and|or)\b|[,;])\s+"
+    rf"(?:^|\b(?:but|and|or)\b|{_NUTRITION_REQUIRED_SEPARATOR_PATTERN})"
+    rf"{_NUTRITION_SEPARATOR_PATTERN}"
     rf"(?:(?:also|still|should|must|be|is|are|to|remain|have|has)\s+){{0,4}}"
     rf"(?P<op>{_OPERATOR_WORD_PATTERN})\s+"
     rf"(?P<value>\d+(?:\.\d+)?)\s*"
-    rf"(?P<unit>g|mg|gram|grams|kcal|cal|calories|calorie)?",
+    rf"(?P<unit>{_NUTRITION_UNIT_PATTERN})?",
     re.IGNORECASE,
 )
 
@@ -427,6 +556,16 @@ def _looks_like_quantity_of_entity(text: str, end: int) -> bool:
     )
 
 
+def _looks_like_explicit_nutrient_after_value(text: str, end: int) -> bool:
+    suffix = text[end:end + 48]
+    tokens = re.findall(r"[a-z][a-z-]*", suffix.lower())[:4]
+    for token in tokens:
+        if token in {"and", "or", "but", "with", "of"}:
+            continue
+        return _normalize_nutrient(token) is not None
+    return False
+
+
 def _dynamic_nutrition_continuation_matches(
     text: str,
     base_matches: list[dict] | None = None,
@@ -444,6 +583,8 @@ def _dynamic_nutrition_continuation_matches(
                 continue
             if not match.group("unit") and _looks_like_quantity_of_entity(text_lower, end):
                 continue
+            if _looks_like_explicit_nutrient_after_value(text_lower, end):
+                continue
             try:
                 value = float(match.group("value"))
             except (TypeError, ValueError):
@@ -451,7 +592,7 @@ def _dynamic_nutrition_continuation_matches(
             found.append({
                 "span": (scope_start + match.start(), end),
                 "nutrient": base["nutrient"],
-                "operator": _operator_from_text(match.group("op")),
+                "operator": _operator_from_match(text_lower, match, offset=scope_start),
                 "value": value,
             })
     found.sort(key=lambda item: item["span"])
@@ -522,7 +663,9 @@ def _dynamic_nutrient_presence_patterns() -> tuple[tuple[str, str, re.Pattern, b
         tokens = re.findall(r"[a-z0-9]+", alias.lower())
         if not tokens:
             continue
-        alias_pattern = r"\b" + r"[\s,()+-]*".join(re.escape(token) for token in tokens) + r"\b"
+        alias_pattern = r"\b" + _NUTRITION_SEPARATOR_PATTERN.join(
+            re.escape(token) for token in tokens
+        ) + r"\b"
         patterns.append((alias, nutrient, re.compile(alias_pattern, re.IGNORECASE), requires_broad_cue))
     patterns.sort(key=lambda item: len(item[0]), reverse=True)
     return tuple(patterns)
@@ -553,7 +696,7 @@ def _suffix_mentions_presence_context(suffix: str, suffix_terms: list[str]) -> b
 def _suffix_mentions_numeric_comparison(suffix: str) -> bool:
     return bool(
         re.match(
-            rf"^\s*(?:(?:is|are|was|were|has|have|contains?|with|of)\s+)?"
+            rf"^{_NUTRITION_SEPARATOR_PATTERN}{_NUTRITION_RELATION_PATTERN}"
             rf"(?:{_OPERATOR_WORD_PATTERN})\b",
             suffix,
             re.IGNORECASE,
@@ -666,12 +809,30 @@ def _detect_nutrition_filters(text: str) -> list:
     seen_semantic = set()
     used_positions: set[int] = set()
 
+    dynamic_between_matches = _dynamic_nutrition_between_matches(text)
     dynamic_numeric_matches = _dynamic_nutrition_matches(text)
     dynamic_numeric_matches.extend(
         _dynamic_nutrition_continuation_matches(text, dynamic_numeric_matches)
     )
 
+    for item in dynamic_between_matches:
+        nutrient = item["nutrient"]
+        values = tuple(item["values"])
+        semantic_key = (nutrient, item["operator"], values, item["span"])
+        if semantic_key in seen_semantic:
+            continue
+        seen_semantic.add(semantic_key)
+        seen_spans.add(item["span"])
+        used_positions.update(range(item["span"][0], item["span"][1]))
+        results.append({
+            "nutrient": nutrient,
+            "operator": item["operator"],
+            "values": values,
+        })
+
     for item in dynamic_numeric_matches:
+        if set(range(item["span"][0], item["span"][1])) & used_positions:
+            continue
         nutrient = item["nutrient"]
         operator = item["operator"]
         value = item["value"]
@@ -699,12 +860,13 @@ def _detect_nutrition_filters(text: str) -> list:
             nutrient = _normalize_nutrient(m.group("nutrient"))
             if not nutrient:
                 continue
-            operator = _operator_from_text(m.group("op"))
+            operator = _operator_from_match(text, m)
             value = float(m.group("value"))
             semantic_key = (nutrient, operator, value, m.span())
             if semantic_key in seen_semantic:
                 continue
             seen_semantic.add(semantic_key)
+            used_positions.update(range(m.start(), m.end()))
             results.append({
                 "nutrient": nutrient,
                 "operator": operator,
@@ -783,7 +945,16 @@ def _mask_claimed_spans(text: str, extra_spans: list | None = None) -> str:
     that have already been extracted by other detectors.
     """
     chars = list(text)
+    for start, end in _nutrition_qualifier_match_spans(text):
+        for i in range(start, end):
+            if i < len(chars):
+                chars[i] = " "
     for item in _dynamic_nutrition_matches(text):
+        start, end = item["span"]
+        for i in range(start, end):
+            if i < len(chars):
+                chars[i] = " "
+    for item in _dynamic_nutrition_between_matches(text):
         start, end = item["span"]
         for i in range(start, end):
             if i < len(chars):
@@ -842,6 +1013,7 @@ def _detect_actions(text: str) -> list:
 def _measurement_claimed_spans(text: str) -> list[tuple[int, int]]:
     spans: list[tuple[int, int]] = []
     dynamic_matches = _dynamic_nutrition_matches(text)
+    dynamic_matches.extend(_dynamic_nutrition_between_matches(text))
     dynamic_matches.extend(_dynamic_nutrition_continuation_matches(text, dynamic_matches))
     dynamic_matches.extend(_dynamic_nutrition_group_matches(text))
     dynamic_matches.extend(_dynamic_nutrient_presence_matches(text))
@@ -881,6 +1053,80 @@ def _filter_actions_claimed_by_sql_ops(actions: list[dict], sql_operators: list[
             continue
         filtered.append(action)
     return filtered
+
+
+def _sql_operator_claimed_spans(sql_operators: list[dict]) -> list[tuple[int, int]]:
+    """Return visible operator spans that should not be reused as ingredients."""
+    spans: list[tuple[int, int]] = []
+    for item in sql_operators:
+        span = tuple(item.get("span") or ())
+        if len(span) != 2:
+            continue
+        start, end = span
+        if not isinstance(start, int) or not isinstance(end, int):
+            continue
+        if start < 0 or end < 0 or end < start:
+            continue
+        spans.append((start, end))
+    return spans
+
+
+def _sort_field_claimed_spans(text: str) -> list[tuple[int, int]]:
+    try:
+        from speech_to_sql.common.config import load_recipe_db_config
+
+        config = load_recipe_db_config()
+    except (OSError, json.JSONDecodeError):
+        return []
+
+    text_lower = text.lower()
+    cue_terms = list(config.get("sort_cues", []))
+    cue_terms.extend(config.get("time_fields", {}).get("quick_sort_terms", []))
+    cue_positions = [
+        match.start()
+        for term in cue_terms
+        for match in _literal_term_matches(text_lower, str(term))
+    ]
+    if not cue_positions:
+        return []
+
+    candidates: list[tuple[int, int, int, int, str, tuple[int, int]]] = []
+    for field, terms in (config.get("sort_terms") or {}).items():
+        for term in terms:
+            for match in _literal_term_matches(text_lower, str(term)):
+                distance = min(abs(match.start() - cue) for cue in cue_positions)
+                candidates.append((
+                    distance // 16,
+                    -len(str(term).split()),
+                    -len(str(term)),
+                    distance,
+                    str(field),
+                    match.span(),
+                ))
+    if not candidates:
+        return []
+
+    candidates.sort()
+    best_field = candidates[0][4]
+    return [
+        span for *_score, field, span in candidates
+        if field == best_field and _sort_span_is_close_to_cue(span, cue_positions)
+    ]
+
+
+def _literal_term_matches(text: str, term: str) -> list[re.Match]:
+    tokens = re.findall(r"[a-z0-9]+", term.lower())
+    if not tokens:
+        return []
+    pattern = r"\b" + r"[\s-]+".join(re.escape(token) for token in tokens) + r"\b"
+    return list(re.finditer(pattern, text, re.IGNORECASE))
+
+
+def _sort_span_is_close_to_cue(span: tuple[int, int], cue_positions: list[int]) -> bool:
+    return min(
+        min(abs(span[0] - cue), abs(span[1] - cue))
+        for cue in cue_positions
+    ) <= 48
 
 
 def _filter_actions_claimed_by_measurements(actions: list[dict], text: str) -> list[dict]:
@@ -1229,6 +1475,31 @@ def _is_nutrition_qualifier(term: str) -> bool:
     return _normalize_schema_key(term) in _nutrition_qualifier_terms()
 
 
+@lru_cache(maxsize=1)
+def _nutrition_qualifier_patterns() -> tuple[re.Pattern, ...]:
+    patterns = []
+    for term in sorted(_nutrition_qualifier_terms(), key=len, reverse=True):
+        tokens = re.findall(r"[a-z0-9]+", term.lower())
+        if not tokens:
+            continue
+        pattern = r"\b" + r"[\s-]+".join(re.escape(token) for token in tokens) + r"\b"
+        patterns.append(re.compile(pattern, re.IGNORECASE))
+    return tuple(patterns)
+
+
+def _nutrition_qualifier_match_spans(text: str) -> list[tuple[int, int]]:
+    spans: list[tuple[int, int]] = []
+    used: set[int] = set()
+    for pattern in _nutrition_qualifier_patterns():
+        for match in pattern.finditer(text.lower()):
+            positions = set(range(match.start(), match.end()))
+            if positions & used:
+                continue
+            used |= positions
+            spans.append(match.span())
+    return spans
+
+
 # ---------------------------------------------------------
 # MAIN TAG FUNCTION
 # ---------------------------------------------------------
@@ -1303,9 +1574,11 @@ def tag_entities(text: str) -> dict:
         action_matches,
     )
 
-    # Mask nutrition, dietary, and utensil spans so ingredient extraction stays
-    # independent from the SQL operator layer while avoiding known false hits.
+    # Mask already-claimed spans so fuzzy ingredient matching cannot reinterpret
+    # query operators, nutrition terms, dietary labels, tools, or actions as food.
     claimed_spans = [m["span"] for m in utensil_matches]
+    claimed_spans.extend(_sql_operator_claimed_spans(sql_operators))
+    claimed_spans.extend(_sort_field_claimed_spans(text))
     claimed_spans.extend(_category_claimed_spans(text, categories))
     claimed_spans.extend(m["span"] for m in dietary_matches)
     claimed_spans.extend(

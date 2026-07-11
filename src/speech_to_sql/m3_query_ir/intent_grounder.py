@@ -160,21 +160,43 @@ def _ground_nutrition_filters(
             operator = "BETWEEN"
         if operator not in allowed_operators:
             errors.append(f"nutrition_filters[{index}] uses unsupported operator {operator!r}")
-        try:
-            float(item["value"])
-        except (KeyError, TypeError, ValueError):
-            errors.append(f"nutrition_filters[{index}] has non-numeric value")
-        predicate = Predicate(source, nutrient, "=", (0,))
+        if operator == "BETWEEN":
+            values = item.get("values")
+            if values is None:
+                values = (item.get("min"), item.get("max"))
+            try:
+                low, high = (float(values[0]), float(values[1]))
+                if low > high:
+                    errors.append(f"nutrition_filters[{index}] BETWEEN lower bound must be <= upper bound")
+            except (TypeError, ValueError, IndexError):
+                errors.append(f"nutrition_filters[{index}] has non-numeric BETWEEN values")
+        else:
+            try:
+                float(item["value"])
+            except (KeyError, TypeError, ValueError):
+                errors.append(f"nutrition_filters[{index}] has non-numeric value")
+        field = nutrient
+        table = relation.get("table", registry.base_table["name"])
+        reason = f"sql_schema.relations.{source}"
+        if source == "nutrition":
+            base_field = registry.base_field_for_relation_column("nutrition", nutrient)
+            if base_field:
+                source = "base"
+                field = base_field
+                table = registry.base_table["name"]
+                reason = "sql_schema.base_columns"
+
+        predicate = Predicate(source, field, "=", (0,))
         column = registry.predicate_column(predicate)
         if not column:
             errors.append(f"Unknown {source} field {nutrient!r}")
             continue
         evidence.append(GroundingEvidence(
             source,
-            nutrient,
-            relation.get("table", registry.base_table["name"]),
+            field,
+            table,
             column,
-            f"sql_schema.relations.{source}",
+            reason,
         ))
 
 

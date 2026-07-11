@@ -186,10 +186,13 @@
   "diet_aliases": {
     "vegan": "vegan",
     "vegetarian": "ovo_lacto_vegetarian",
+    "veg": "vegetarian",
+    "veggie": "vegetarian",
     "ovo-vegetarian": "ovo_vegetarian",
     "lacto-vegetarian": "lacto_vegetarian",
     "pescatarian": "pescetarian",
-    "pescetarian": "pescetarian"
+    "pescetarian": "pescetarian",
+    "non-vegetarian": "non-vegetarian"
   },
   "logic_terms": {
     "or": ["or", "either", "any of"],
@@ -224,6 +227,10 @@
       "prep": "prep_time",
       "prepare": "prep_time",
       "preparation": "prep_time",
+      "less time to prepare": "prep_time",
+      "quick prep": "prep_time",
+      "fast prep": "prep_time",
+      "short prep": "prep_time",
       "cook": "cook_time",
       "cooking": "cook_time",
       "total": "total_time",
@@ -232,19 +239,38 @@
       "fast": "total_time",
       "faster": "total_time"
     },
-    "quick_terms": ["quick", "fast", "faster", "quickest", "shortest"],
+    "quick_terms": ["quick", "fast", "faster", "less time", "takes less time", "short time", "quick food", "fast food"],
+    "quick_sort_terms": ["quickest", "fastest", "shortest"],
+    "quick_prep_terms": ["less time to prepare", "quick prep", "fast prep", "short prep", "quick preparation", "fast preparation"],
     "hour_terms": ["hour", "hours", "hr", "hrs"],
-    "quick_max_minutes": 30
+    "quick_max_minutes": 30,
+    "quick_prep_max_minutes": 20
   },
   "intent_enrichment": {
     "nutrition_qualifiers": [
-      {"terms": ["low carb", "low carbs", "low carbohydrate", "low carbohydrates"], "nutrient": "carbs", "operator": "<=", "value": 50},
-      {"terms": ["low calorie", "low calories", "low kcal"], "nutrient": "calories", "operator": "<=", "value": 500},
+      {"terms": ["calorie free", "calorie-free", "free of calories", "no calories", "zero calories", "without calories"], "nutrient": "calories", "operator": "<", "value": 5},
+      {"terms": ["low calorie", "low calories", "low kcal", "less calories", "fewer calories", "lower calories", "lower calorie", "light calorie"], "nutrient": "calories", "operator": "<=", "value": 500},
+      {"terms": ["low carb", "low carbs", "low carbohydrate", "low carbohydrates", "lower carb", "less carbs", "fewer carbs"], "nutrient": "carbs", "operator": "<=", "value": 50},
+      {"terms": ["carb free", "carb-free", "no carbs", "zero carbs", "without carbs"], "nutrient": "carbs", "operator": "<=", "value": 0.5},
       {"terms": ["high protein", "protein rich"], "nutrient": "protein", "operator": ">=", "value": 20},
+      {"terms": ["good source of protein", "more protein", "higher protein"], "nutrient": "protein", "operator": ">=", "value": 10},
       {"terms": ["high fiber", "high-fiber", "fiber rich", "fibre rich"], "nutrient": "fiber", "operator": ">=", "value": 5},
+      {"terms": ["good source of fiber", "good source of fibre", "more fiber", "more fibre"], "nutrient": "fiber", "operator": ">=", "value": 2.5},
+      {"terms": ["fat free", "fat-free", "free of fat", "no fat", "zero fat", "without fat"], "nutrient": "fat", "operator": "<=", "value": 0.5},
       {"terms": ["low fat", "low-fat"], "nutrient": "fat", "operator": "<=", "value": 3},
+      {"terms": ["saturated fat free", "saturated-fat-free", "free of saturated fat", "no saturated fat", "zero saturated fat"], "nutrient": "fatty_acids_total_saturated", "operator": "<=", "value": 0.5, "suppress_presence_nutrients": ["fat"]},
+      {"terms": ["low saturated fat", "low-saturated-fat"], "nutrient": "fatty_acids_total_saturated", "operator": "<=", "value": 1, "suppress_presence_nutrients": ["fat"]},
+      {"terms": ["trans fat free", "trans-fat-free", "free of trans fat", "no trans fat", "zero trans fat"], "nutrient": "fatty_acids_total_trans", "operator": "<=", "value": 0.5, "suppress_presence_nutrients": ["fat"]},
+      {"terms": ["sodium free", "sodium-free", "salt free", "salt-free", "no sodium", "zero sodium", "without sodium"], "nutrient": "sodium", "operator": "<", "value": 5},
+      {"terms": ["very low sodium", "very-low-sodium", "very low salt"], "nutrient": "sodium", "operator": "<=", "value": 35},
       {"terms": ["low sodium", "low-sodium", "low salt"], "nutrient": "sodium", "operator": "<=", "value": 140},
-      {"terms": ["low sugar", "low sugars", "sugar free", "sugar-free"], "nutrient": "sugar", "operator": "<=", "value": 10}
+      {"terms": ["cholesterol free", "cholesterol-free", "free of cholesterol", "no cholesterol", "zero cholesterol"], "nutrient": "cholesterol", "operator": "<", "value": 2},
+      {"terms": ["low cholesterol", "low-cholesterol"], "nutrient": "cholesterol", "operator": "<=", "value": 20},
+      {"terms": ["sugar free", "sugar-free", "free of sugar", "no sugar", "zero sugar", "without sugar", "sugarless"], "nutrient": "sugar", "operator": "<=", "value": 0.5},
+      {"terms": ["low sugar", "low sugars", "less sugar", "less sugars", "lower sugar", "lower sugars", "reduced sugar"], "nutrient": "sugar", "operator": "<=", "value": 10}
+    ],
+    "dietary_classifications": [
+      {"styles": ["non-vegetarian"], "exclude": ["vegan", "vegetarian"], "negated_include": ["vegetarian"]}
     ],
     "time_patterns": {
       "between": "\\bbetween\\s+(\\d+(?:\\.\\d+)?)\\s+(?:and|to)\\s+(\\d+(?:\\.\\d+)?)\\s*(?:minutes?|mins?|min|hours?|hrs?|hr)\\b"
@@ -318,6 +344,12 @@
     "calories": ["calorie", "calories", "kcal"],
     "carbs": ["carb", "carbs", "carbohydrate"],
     "fat": ["fat"],
+    "fatty_acids_total_saturated": ["saturated fat", "saturated fats"],
+    "fatty_acids_total_trans": ["trans fat", "trans fats"],
+    "fiber": ["fiber", "fibre"],
+    "sugar": ["sugar", "sugars"],
+    "sodium": ["sodium", "salt"],
+    "cholesterol": ["cholesterol"],
     "prep_time": ["prep time", "prepare time", "prepared time", "preparation time", "prep", "prepare", "prepared", "preparation"],
     "cook_time": ["cook time", "cooking time", "cook", "cooking"],
     "total_time": ["total time", "overall time"],
@@ -334,8 +366,8 @@
     "min",
     "ascending",
     "descending",
-    "quick",
-    "fast",
+    "quickest",
+    "fastest",
     "shortest",
     "longest"
   ],
@@ -355,6 +387,13 @@
     "carb": "carbs_g",
     "carbs": "carbs_g",
     "fat": "fat_g",
+    "sugar": "sugar",
+    "sugars": "sugar",
+    "sodium": "sodium",
+    "salt": "sodium",
+    "fiber": "fiber",
+    "fibre": "fiber",
+    "cholesterol": "cholesterol",
     "time": "total_time",
     "cook": "cook_time",
     "prep": "prep_time"

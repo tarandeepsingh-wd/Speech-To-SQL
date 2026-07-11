@@ -28,6 +28,7 @@ from speech_to_sql.m2_nlu.sql_ops.label_utils import normalize_sql_label
 from speech_to_sql.m2_nlu.sql_ops import score_sql_clause_labels
 from speech_to_sql.m3_query_ir.intent_preparer import prepare_intent
 from speech_to_sql.m3_query_ir.sql_intent_builder import build_query_ir
+from speech_to_sql.m4_sql.athena_renderer import render_athena_sql
 from speech_to_sql.m4_sql.sql_query_builder import build_sql_query
 from speech_to_sql.m5_execution.query_planner import plan_queries
 
@@ -211,6 +212,7 @@ def print_sql_result(result: dict) -> None:
         print(f"  Strategy        : {_sql_strategy(plan, sql_result.get('query'))}")
     print(f"  SQL             : {sql_result.get('query')}")
     print(f"  Params          : {sql_result.get('params', [])}")
+    print(f"  Athena SQL      : {(render_athena_sql(sql_result).get('query') or '')}")
     print(f"  Valid           : {validation.get('ok')}")
     if validation.get("warnings"):
         print(f"  Warnings        : {validation['warnings']}")
@@ -267,6 +269,7 @@ def print_pipeline_report(result: dict) -> None:
         _print_kv("Valid", str(bool(sql_validation.get("ok"))))
         _print_kv("SQL", sql_result.get("query"))
         _print_kv("Params", _json_inline(sql_result.get("params", [])))
+        _print_kv("Athena SQL", render_athena_sql(sql_result).get("query"))
         _print_sql_plan(sql_result.get("plan") or {})
         if sql_validation.get("warnings"):
             _print_kv("Warnings", _json_inline(sql_validation["warnings"]))

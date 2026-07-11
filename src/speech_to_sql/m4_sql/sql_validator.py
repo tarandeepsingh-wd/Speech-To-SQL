@@ -115,6 +115,10 @@ def _validate_predicate(
     errors: list[str],
     warnings: list[str],
 ) -> None:
+    if predicate.source == "ingredient_count":
+        _validate_ingredient_count_predicate(predicate, index, schema, errors)
+        return
+
     if predicate.source != "base" and not registry.relation(predicate.source):
         errors.append(f"predicates[{index}] uses unknown source {predicate.source!r}")
         return
@@ -236,6 +240,8 @@ def _validate_operator_field_compatibility(
         return
     operator = predicate.operator.upper()
     if operator not in operators:
+        if _base_nutrition_equivalent_allows_numeric_operator(predicate, operator, registry):
+            return
         errors.append(
             f"predicates[{index}] operator {predicate.operator!r} is not valid for "
             f"{predicate.source}.{predicate.field} ({catalog.get('operator_profile', 'unknown')} field)"
@@ -322,6 +328,11 @@ def _validate_value_constraints(
 ) -> None:
     constraints = schema.get("value_constraints", {}).get(predicate.source, {})
     constraint = constraints.get(predicate.field)
+    if not constraint and predicate.source == "base":
+        registry = load_schema_registry(schema)
+        nutrition_field = registry.relation_field_for_base_field("nutrition", predicate.field)
+        if nutrition_field:
+            constraint = schema.get("value_constraints", {}).get("nutrition", {}).get(nutrition_field)
     if not constraint:
         return
 
@@ -356,6 +367,51 @@ def _validate_value_constraints(
             errors.append(
                 f"predicates[{index}] BETWEEN lower bound must be <= upper bound"
             )
+
+
+def _base_nutrition_equivalent_allows_numeric_operator(
+    predicate: Predicate,
+    operator: str,
+    registry: SchemaRegistry,
+) -> bool:
+    if predicate.source != "base":
+        return False
+    if operator not in {"<", "<=", "=", ">=", ">", "BETWEEN", "IN"}:
+        return False
+    return registry.base_field_has_numeric_relation_equivalent("nutrition", predicate.field)
+
+
+def _validate_ingredient_count_predicate(
+    predicate: Predicate,
+    index: int,
+    schema: dict[str, Any],
+    errors: list[str],
+) -> None:
+    operator = predicate.operator.upper()
+    if predicate.field != "count":
+        errors.append(f"predicates[{index}] field ingredient_count.{predicate.field} is unsupported")
+        return
+    if operator not in {"<", "<=", "=", ">=", ">", "BETWEEN"}:
+        errors.append(f"predicates[{index}] uses unsupported ingredient_count operator {predicate.operator!r}")
+        return
+    expected = 2 if operator == "BETWEEN" else 1
+    if len(predicate.values) != expected:
+        errors.append(
+            f"predicates[{index}] operator {predicate.operator!r} expects {expected} value(s), got {len(predicate.values)}"
+        )
+        return
+    numeric_values: list[float] = []
+    for value_index, value in enumerate(predicate.values):
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            errors.append(f"predicates[{index}].values[{value_index}] must be numeric for ingredient_count")
+            continue
+        if numeric < 0:
+            errors.append(f"predicates[{index}].values[{value_index}] must be non-negative for ingredient_count")
+        numeric_values.append(numeric)
+    if operator == "BETWEEN" and len(numeric_values) == 2 and numeric_values[0] > numeric_values[1]:
+        errors.append(f"predicates[{index}] BETWEEN lower bound must be <= upper bound")
 
 
 def _validate_semantic_guards(

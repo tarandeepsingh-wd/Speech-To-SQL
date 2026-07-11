@@ -278,8 +278,8 @@ def test_negated_dietary_style_routes_to_excluded_diet_without_losing_utensil():
     assert result["utensils"] == ["container"]
     assert sql["validation"]["ok"] is True
     assert "r.`vegan` NOT IN" in sql["query"]
-    assert "r.`utensils` LIKE ?" in sql["query"]
-    assert "%container%" in sql["params"]
+    assert "CONCAT(?, r.`utensils`, ?) LIKE ?" in sql["query"]
+    assert "%||container||%" in sql["params"]
 
 
 def test_negated_dietary_style_after_do_not_contain_is_not_ingredient_or_positive_diet():
@@ -300,7 +300,130 @@ def test_negated_dietary_style_after_do_not_contain_is_not_ingredient_or_positiv
     assert result["utensils"] == ["container"]
     assert sql["validation"]["ok"] is True
     assert "r.`vegan` NOT IN" in sql["query"]
-    assert "r.`utensils` LIKE ?" in sql["query"]
+    assert "CONCAT(?, r.`utensils`, ?) LIKE ?" in sql["query"]
+
+
+def test_query_preparation_preserves_empty_include_for_negated_ingredient():
+    query = "give me those recipises that do not contain egg and are not vegan"
+
+    result = tag_entities(query)
+    prepared = prepare_intent(result, transcript=query)
+    sql = build_sql_query(result, transcript=query)
+
+    assert result["ingredient_logic"]["include"] == []
+    assert result["ingredient_logic"]["exclude"] == ["egg"]
+    assert prepared["ingredient_logic"]["include"] == []
+    assert prepared["ingredient_logic"]["exclude"] == ["egg"]
+    assert prepared["excluded_dietary_styles"] == ["vegan"]
+    assert "EXISTS (SELECT 1 FROM `ingredient_phrase` AS ip1" not in sql["query"]
+    assert "NOT EXISTS (SELECT 1 FROM `ingredient_phrase`" in sql["query"]
+    assert "r.`vegan` NOT IN" in sql["query"]
+    assert sql["params"] == ["egg", "%egg%", "1", "1.0", "true", "True", "yes", "Y"]
+
+
+def test_sql_operator_words_are_not_reused_as_fuzzy_ingredients():
+    query = "Show me the recipes which are Vegan but should not be vegan"
+
+    result = tag_entities(query)
+    sql = build_sql_query(result, transcript=query)
+
+    assert result["ingredients"] == []
+    assert result["ingredient_logic"]["include"] == []
+    assert result["ingredient_logic"]["exclude"] == []
+    assert result["raw_spans"] == []
+    assert result["dietary_styles"] == ["vegan"]
+    assert result["excluded_dietary_styles"] == ["vegan"]
+    assert any(op["canonical"] == "NOT" for op in result["sql_operators"])
+    assert "`ingredient_phrase`" not in sql["query"]
+    assert "r.`vegan` IN" in sql["query"]
+    assert "r.`vegan` NOT IN" in sql["query"]
+
+
+def test_general_nutrition_label_phrases_apply_without_ingredient_collision():
+    query = "show me sugar free food"
+
+    result = tag_entities(query)
+    prepared = prepare_intent(result, transcript=query)
+    sql = build_sql_query(result, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == []
+    assert prepared["nutrition_filters"] == [{
+        "nutrient": "sugar",
+        "operator": "<=",
+        "value": 0.5,
+        "source": "intent_enrichment",
+        "table_source": "nutrition",
+    }]
+    assert "`sugars, total (g)` <= ?" in sql["query"]
+    assert sql["params"] == [0.5]
+
+
+def test_specific_fat_label_phrase_suppresses_only_generic_presence_filter():
+    query = "show me low saturated fat recipes"
+
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+
+    assert prepared["nutrition_filters"] == [{
+        "nutrient": "fatty_acids_total_saturated",
+        "operator": "<=",
+        "value": 1,
+        "source": "intent_enrichment",
+        "table_source": "nutrition",
+    }]
+
+
+def test_relative_superlative_sorts_without_fake_nutrition_threshold_or_ingredient():
+    query = "show me least sugar recipes"
+
+    result = tag_entities(query)
+    prepared = prepare_intent(result, transcript=query)
+    sql = build_sql_query(result, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == []
+    assert prepared["nutrition_filters"] == []
+    assert "ORDER BY" in sql["query"]
+    assert "`sugars, total (g)`" in sql["query"]
+    assert sql["params"] == []
+
+
+def test_general_time_effort_and_quickest_sort_are_distinct():
+    quick = "show me quick food"
+    quickest = "show me quickest recipes"
+    prep = "show me food with less time to prepare"
+
+    quick_prepared = prepare_intent(tag_entities(quick), transcript=quick)
+    quickest_prepared = prepare_intent(tag_entities(quickest), transcript=quickest)
+    prep_prepared = prepare_intent(tag_entities(prep), transcript=prep)
+    quick_sql = build_sql_query(tag_entities(quick), transcript=quick)
+    quickest_sql = build_sql_query(tag_entities(quickest), transcript=quickest)
+
+    assert quick_prepared["time_filters"][0]["field"] == "total_time"
+    assert quick_prepared["time_filters"][0]["max"] == 30
+    assert "ORDER BY" not in quick_sql["query"]
+    assert quickest_prepared["time_filters"] == []
+    assert "ORDER BY" in quickest_sql["query"]
+    assert "total_time" in quickest_sql["query"]
+    assert prep_prepared["time_filters"][0]["field"] == "prep_time"
+    assert prep_prepared["time_filters"][0]["max"] == 20
+
+
+def test_non_veg_maps_to_not_vegan_and_not_vegetarian_flag_group():
+    query = "show me non veg food"
+
+    prepared = prepare_intent(tag_entities(query), transcript=query)
+    sql = build_sql_query(tag_entities(query), transcript=query)
+
+    assert prepared["dietary_styles"] == []
+    assert set(prepared["excluded_dietary_styles"]) == {
+        "vegan",
+        "ovo_vegetarian",
+        "lacto_vegetarian",
+        "ovo_lacto_vegetarian",
+    }
+    assert "r.`vegan` NOT IN" in sql["query"]
+    assert "r.`ovo_vegetarian` NOT IN" in sql["query"]
+    assert "r.`lacto_vegetarian` NOT IN" in sql["query"]
+    assert "r.`ovo_lacto_vegetarian` NOT IN" in sql["query"]
 
 
 def test_nlu_does_not_treat_at_least_one_ingredient_as_recipe_nutrition_continuation():
@@ -363,10 +486,16 @@ def test_sql_query_builder_uses_schema_driven_utensil_and_action_filters():
     sql = build_sql_query(tag_result, transcript="fried recipes made in skillet")
 
     assert sql["validation"]["ok"] is True
-    assert "r.`utensils` LIKE ?" in sql["query"]
-    assert "r.`processes` LIKE ?" in sql["query"]
-    assert "%skillet%" in sql["params"]
-    assert "%fry%" in sql["params"]
+    assert "CONCAT(?, r.`utensils`, ?) LIKE ?" in sql["query"]
+    assert "CONCAT(?, r.`processes`, ?) LIKE ?" in sql["query"]
+    assert sql["params"] == [
+        "||",
+        "||",
+        "%||skillet||%",
+        "||",
+        "||",
+        "%||fry||%",
+    ]
 
 
 def test_text_to_sql_uses_extracted_utensil_and_action_filters():
@@ -381,10 +510,66 @@ def test_text_to_sql_uses_extracted_utensil_and_action_filters():
         for action in tags["actions"]
     )
     assert tags["utensils"] == ["skillet"]
-    assert "r.`utensils` LIKE ?" in sql["query"]
-    assert "r.`processes` LIKE ?" in sql["query"]
-    assert "%skillet%" in sql["params"]
-    assert "%fry%" in sql["params"]
+    assert "CONCAT(?, r.`utensils`, ?) LIKE ?" in sql["query"]
+    assert "CONCAT(?, r.`processes`, ?) LIKE ?" in sql["query"]
+    assert "%||skillet||%" in sql["params"]
+    assert "%||fry||%" in sql["params"]
+
+
+def test_utensil_sql_matches_pipe_delimited_database_tokens():
+    sql = build_sql_query(
+        {
+            "ingredients": [],
+            "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+            "utensils": ["pan"],
+            "actions": [],
+            "dietary_styles": [],
+            "nutrition_filters": [],
+            "sql_operators": [],
+        },
+        transcript="recipes using pan",
+    )
+
+    assert sql["validation"]["ok"] is True
+    assert sql["query"] == (
+        "SELECT r.* FROM `recipes` AS r WHERE "
+        "(CONCAT(?, r.`utensils`, ?) LIKE ?)"
+    )
+    assert sql["params"] == ["||", "||", "%||pan||%"]
+
+
+def test_utensil_word_is_not_normalized_into_numeric_comparator():
+    query = (
+        "show me the recipe that contain protein not above 40 "
+        "and also required bowl to prepare"
+    )
+
+    tags = tag_entities(query)
+    sql = build_sql_query(tags, transcript=query)
+
+    assert "bowl" in tags["_normalized_query"]
+    assert "below to prepare" not in tags["_normalized_query"]
+    assert tags["utensils"] == ["bowl"]
+    assert tags["nutrition_filters"] == [
+        {"nutrient": "protein", "operator": "<=", "value": 40.0}
+    ]
+    assert "CONCAT(?, r.`utensils`, ?) LIKE ?" in sql["query"]
+    assert "%||bowl||%" in sql["params"]
+
+
+def test_multiple_required_utensils_are_conjoined_not_alternatives():
+    query = (
+        "show me the recipise that contain protein not above 40 "
+        "and also required skillet and pan to prepare"
+    )
+
+    tags = tag_entities(query)
+    sql = build_sql_query(tags, transcript=query)
+
+    assert tags["utensils"] == ["skillet", "pan"]
+    assert "%||skillet||%" in sql["params"]
+    assert "%||pan||%" in sql["params"]
+    assert "CONCAT(?, r.`utensils`, ?) LIKE ? AND CONCAT(?, r.`utensils`, ?) LIKE ?" in sql["query"]
 
 
 def test_misspelled_utensil_uses_csv_vocab_without_ingredient_bleed():
@@ -865,13 +1050,13 @@ def test_later_instruction_clause_does_not_capture_base_utensil_or_time_word():
         }
     ]
     assert "n1.`prep_time`" not in sql["query"]
-    assert "r.`utensils` LIKE ?" in sql["query"]
+    assert "CONCAT(?, r.`utensils`, ?) LIKE ?" in sql["query"]
     assert "r.`processes` LIKE ?" not in sql["query"]
     assert "ins1.`steps` LIKE ?" in sql["query"]
     assert "ins2.`steps` LIKE ?" not in sql["query"]
     assert "%tie%" not in sql["params"]
     assert sql["params"].count("%simmer%") == 1
-    assert sql["params"].count("%saucepan%") == 1
+    assert sql["params"].count("%||saucepan||%") == 1
 
 
 def test_quantity_available_and_cooking_step_mentions_use_phrase_and_instruction_tables():
@@ -1355,8 +1540,34 @@ def test_sql_builder_uses_schema_linker_for_alias_inputs():
 
     assert sql["validation"]["ok"] is True
     assert "n1.`calories` < ?" in sql["query"]
+    assert sql["ir"]["predicates"][1]["quantifier"] == "or_exists"
+    assert "r.`ovo_vegetarian` IN" in sql["query"]
+    assert "r.`lacto_vegetarian` IN" in sql["query"]
     assert "r.`ovo_lacto_vegetarian` IN" in sql["query"]
     assert sql["params"][0] == 300.0
+
+
+def test_veg_abbreviation_maps_to_vegetarian_without_breaking_non_veg():
+    veg_query = "show me the top 100 veg recipies"
+    veg_tags = tag_entities(veg_query)
+    veg_sql = build_sql_query(veg_tags, transcript=veg_query)
+
+    assert veg_tags["dietary_styles"] == ["vegetarian"]
+    assert veg_tags["ingredients"] == []
+    assert veg_sql["ir"]["predicates"][0]["values"] == [
+        "ovo_vegetarian",
+        "lacto_vegetarian",
+        "ovo_lacto_vegetarian",
+    ]
+    assert "r.`ovo_vegetarian` IN" in veg_sql["query"]
+    assert "r.`lacto_vegetarian` IN" in veg_sql["query"]
+    assert "r.`ovo_lacto_vegetarian` IN" in veg_sql["query"]
+    assert "LIMIT ?" in veg_sql["query"]
+    assert veg_sql["params"][-1] == 100
+
+    non_veg_tags = tag_entities("show me top 20 non veg recipes")
+    assert non_veg_tags["dietary_styles"] == ["non-vegetarian"]
+    assert "vegetarian" not in non_veg_tags["dietary_styles"]
 
 
 def test_planner_uses_schema_linker_for_nutrition_alias_endpoint():
@@ -1517,6 +1728,120 @@ def test_sql_builder_handles_negated_below_calories_as_lower_bound():
     assert sql["params"] == ["garlic", "%garlic%", 333.0]
 
 
+def test_nutrition_relation_negation_inverts_local_comparator_scope():
+    cases = [
+        (
+            "give me those recipise that do not have calories more than 900",
+            "calories",
+            "<=",
+            900.0,
+            "n1.`calories` <= ?",
+        ),
+        (
+            "recipes should not have protein less than 40",
+            "protein",
+            ">=",
+            40.0,
+            "n1.`protein (g)` >= ?",
+        ),
+        (
+            "recipes do not contain fat above 20",
+            "fat",
+            "<=",
+            20.0,
+            "n1.`total lipid (fat) (g)` <= ?",
+        ),
+    ]
+
+    for query, nutrient, operator, value, sql_fragment in cases:
+        tags = tag_entities(query)
+        prepared = prepare_intent(tags, transcript=query)
+        sql = build_sql_query(prepared, transcript=query)
+
+        assert [
+            (item["nutrient"], item["operator"], item["value"])
+            for item in prepared["nutrition_filters"]
+        ] == [(nutrient, operator, value)]
+        assert sql_fragment in sql["query"]
+        assert sql["params"] == [value]
+
+
+def test_nutrition_value_with_gm_of_nutrient_is_numeric_not_presence():
+    query = (
+        "recipise that have calories less than 900 and more than 500 "
+        "and also have 20 gm of proteins"
+    )
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert [
+        (item["nutrient"], item["operator"], item["value"])
+        for item in prepared["nutrition_filters"]
+    ] == [
+        ("calories", "<", 900.0),
+        ("calories", ">", 500.0),
+        ("protein", "=", 20.0),
+    ]
+    assert "n3.`protein (g)` = ?" in sql["query"]
+    assert "n3.`protein (g)` > ?" not in sql["query"]
+    assert sql["params"] == [900.0, 500.0, 20.0]
+
+
+def test_nutrition_comparator_survives_punctuation_after_nutrient():
+    queries = [
+        "recipes have calories, more than 300 but less than 900",
+        "recipes have calories: more than 300 but less than 900",
+        "recipes have calories; more than 300 but less than 900",
+        "recipes have calories - more than 300 but less than 900",
+        "recipes have calories (more than 300) but less than 900",
+    ]
+
+    for query in queries:
+        tags = tag_entities(query)
+        prepared = prepare_intent(tags, transcript=query)
+        sql = build_sql_query(prepared, transcript=query)
+
+        assert [
+            (item["nutrient"], item["operator"], item["value"])
+            for item in prepared["nutrition_filters"]
+        ] == [
+            ("calories", ">", 300.0),
+            ("calories", "<", 900.0),
+        ]
+        assert "n1.`calories` > ?" in sql["query"]
+        assert "n2.`calories` < ?" in sql["query"]
+        assert sql["params"] == [300.0, 900.0]
+
+
+def test_complex_query_keeps_punctuated_calorie_range():
+    query = (
+        "Give me top 10 Indian recipes that do not contain onion, potato, garlic "
+        "and must contain olives and jackfruit and lychee and paneer and has more "
+        "than 30 grams of protein and have calories, more than 300 but less than "
+        "900 and also contain vitamin D, vitamin B 12 and have prep time under "
+        "50 minutes"
+    )
+
+    tags = tag_entities(query)
+    transcript = tags["_normalized_query"]
+    prepared = prepare_intent(tags, transcript=transcript)
+    sql = build_sql_query(prepared, transcript=transcript)
+
+    nutrition = [
+        (item["nutrient"], item["operator"], item["value"])
+        for item in prepared["nutrition_filters"]
+    ]
+    assert ("calories", ">", 300.0) in nutrition
+    assert ("calories", "<", 900.0) in nutrition
+    assert ("calories", ">", 0.0) not in nutrition
+    assert "n2.`calories` > ?" in sql["query"]
+    assert "n3.`calories` < ?" in sql["query"]
+    assert 300.0 in sql["params"]
+    assert 900.0 in sql["params"]
+
+
 def test_sql_builder_handles_not_less_than_minutes_as_base_time_lower_bound():
     query = "recipes with garlic that take not less than 30 minutes"
 
@@ -1575,6 +1900,173 @@ def test_sql_builder_handles_negated_below_minutes_as_base_time_lower_bound():
     assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) >= ?" in sql["query"]
     assert "CAST(NULLIF(r.`total_time`, '') AS DOUBLE) <= ?" not in sql["query"]
     assert sql["params"] == ["garlic", "%garlic%", 30.0]
+
+
+def test_negated_ingredient_list_excludes_all_items():
+    query = "Give me recipes containing chicken but not garlic, onion, mushrooms or peanuts."
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["chicken"]
+    assert prepared["ingredient_logic"]["exclude"] == ["garlic", "onion", "mushroom", "peanut"]
+    assert sql["validation"]["ok"] is True
+    assert "NOT EXISTS" in sql["query"]
+    assert sql["params"] == [
+        "chicken", "%chicken%",
+        "garlic", "%garlic%",
+        "onion", "%onion%",
+        "mushroom", "%mushroom%",
+        "peanut", "%peanut%",
+    ]
+
+
+def test_mixed_ingredient_or_groups_render_as_grouped_exists():
+    query = "Find recipes with rice or noodles and either chicken or shrimp."
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include_groups"] == [
+        {"ingredients": ["rice", "pasta"], "operator": "OR"},
+        {"ingredients": ["chicken", "shrimp"], "operator": "OR"},
+    ]
+    assert sql["validation"]["ok"] is True
+    assert sql["query"].count("EXISTS (SELECT 1 FROM `ingredient_phrase`") == 2
+    assert sql["params"] == [
+        "rice", "%rice%",
+        "pasta", "%pasta%",
+        "chicken", "%chicken%",
+        "shrimp", "%shrimp%",
+    ]
+
+
+def test_nutrition_continuation_does_not_cross_named_nutrients():
+    query = (
+        "Show recipes with more than 600 calories, at least 50 grams protein, "
+        "less than 20 grams fat and under 40 grams carbohydrates."
+    )
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    filters = [
+        (item["nutrient"], item["operator"], item["value"])
+        for item in prepared["nutrition_filters"]
+    ]
+    assert filters == [
+        ("calories", ">", 600.0),
+        ("protein", ">=", 50.0),
+        ("fat", "<", 20.0),
+        ("carbs", "<", 40.0),
+    ]
+    assert sql["validation"]["ok"] is True
+    assert sql["params"] == [600.0, 50.0, 20.0, 40.0]
+
+
+def test_multiple_time_constraints_use_local_time_fields():
+    query = "Show recipes that can be prepared in less than 20 minutes and cooked within 15 minutes."
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["time_filters"] == [
+        {"field": "prep_time", "min": 0, "max": 20.0, "source": "intent_enrichment"},
+        {"field": "cook_time", "min": 0, "max": 15.0, "source": "intent_enrichment"},
+    ]
+    assert "r.`prep_time`" in sql["query"]
+    assert "r.`cook_time`" in sql["query"]
+    assert sql["params"] == [20.0, 15.0]
+
+
+def test_ingredient_count_constraints_render_count_subquery():
+    tags = tag_entities("Find recipes having fewer than eight ingredients.")
+    transcript = tags["_normalized_query"]
+    prepared = prepare_intent(tags, transcript=transcript)
+    sql = build_sql_query(prepared, transcript=transcript)
+
+    assert sql["validation"]["ok"] is True
+    assert "COUNT(DISTINCT ip_count.`ingredient`)" in sql["query"]
+    assert sql["params"] == [8.0]
+
+
+def test_nutrition_between_generates_single_between_predicate():
+    query = (
+        "Give me recipes with protein above 40g, fat below 15g, "
+        "carbohydrates below 30g, sodium below 400mg and calories between 300 and 600."
+    )
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["nutrition_filters"][0] == {
+        "nutrient": "calories",
+        "operator": "BETWEEN",
+        "values": (300.0, 600.0),
+        "table_source": "nutrition",
+    }
+    assert "n1.`calories` BETWEEN ? AND ?" in sql["query"]
+    assert sql["params"] == [300.0, 600.0, 40.0, 15.0, 30.0, 400.0]
+
+
+def test_contradictory_include_and_exclude_mentions_are_preserved():
+    query = "Show recipes containing garlic but not containing garlic."
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["ingredient_logic"]["include"] == ["garlic"]
+    assert prepared["ingredient_logic"]["exclude"] == ["garlic"]
+    assert "EXISTS" in sql["query"]
+    assert "NOT EXISTS" in sql["query"]
+    assert sql["params"] == ["garlic", "%garlic%", "garlic", "%garlic%"]
+
+
+def test_typo_heavy_query_keeps_fuzzy_ingredients_and_sorts_by_protein():
+    query = (
+        "Can you please find me the top 5 recipies contaning chikcen, onnion, "
+        "tomatos, spinach, cheeze and olive oil but excluding garlick, mashrooms, "
+        "peenuts and butter, wich can be preparred within 30 minuts, having more "
+        "then 45 grams protien, less then 550 calries, less then 20 grams fat, "
+        "more then 10 grams fibre, and order them by highest protien first?"
+    )
+
+    tags = tag_entities(query)
+    transcript = tags["_normalized_query"]
+    prepared = prepare_intent(tags, transcript=transcript)
+    sql = build_sql_query(prepared, transcript=transcript)
+
+    assert "canning" not in prepared["ingredient_logic"]["include"]
+    assert prepared["ingredient_logic"]["include"] == [
+        "chicken", "onion", "tomato", "spinach", "cheese", "olive oil",
+    ]
+    assert prepared["ingredient_logic"]["exclude"] == ["garlic", "mushroom", "peanut", "butter"]
+    assert prepared["time_filters"] == [
+        {"field": "prep_time", "min": 0, "max": 30.0, "source": "intent_enrichment"}
+    ]
+    assert sql["validation"]["ok"] is True
+    assert sql["ir"]["order_by"] == [{"field": "protein", "direction": "DESC"}]
+    assert sql["ir"]["limit"] == 5
+    assert "n4.`fiber, total dietary (g)` > ?" in sql["query"]
+
+
+def test_quickest_recipes_sort_by_total_time():
+    query = "Find the quickest beef recipes."
+
+    tags = tag_entities(query)
+    prepared = prepare_intent(tags, transcript=query)
+    sql = build_sql_query(prepared, transcript=query)
+
+    assert prepared["time_filters"] == []
+    assert sql["validation"]["ok"] is True
+    assert sql["ir"]["order_by"] == [{"field": "total_time", "direction": "ASC"}]
+    assert "ORDER BY (SELECT n_order.`total_time`" in sql["query"]
 
 
 def test_api_verifier_confirms_matching_recipe_against_ir():
@@ -1699,6 +2191,8 @@ def test_dietary_or_intent_uses_or_condition_not_and():
     assert sql["validation"]["ok"] is True
     assert sql["ir"]["predicates"][0]["quantifier"] == "or_exists"
     assert "r.`vegan` IN" in sql["query"]
+    assert " OR r.`ovo_vegetarian` IN" in sql["query"]
+    assert " OR r.`lacto_vegetarian` IN" in sql["query"]
     assert " OR r.`ovo_lacto_vegetarian` IN" in sql["query"]
 
 

@@ -127,6 +127,21 @@ def test_schema_normalizer_does_not_rewrite_operator_noise_without_numeric_conte
     assert normalize_noisy_text("show recipes with ander sauce")["text"] == "show recipes with ander sauce"
 
 
+def test_schema_normalizer_does_not_rewrite_must_contain_as_at_most(monkeypatch, tmp_path):
+    monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
+    reset_adaptive_cache()
+
+    query = (
+        "Give me top 10 Indian recipes that do not contain onion and must contain "
+        "olives and have calories, more than 300 but less than 900"
+    )
+    result = normalize_noisy_text(query)
+
+    assert "must contain olives" in result["text"]
+    assert "at most contain" not in result["text"]
+    assert all(correction["source"] != "and must" for correction in result["corrections"])
+
+
 def test_schema_normalizer_converts_spoken_numbers_for_numeric_filters(monkeypatch, tmp_path):
     monkeypatch.setenv(TRANSCRIPT_FEEDBACK_FILE_ENV, str(tmp_path / "feedback.jsonl"))
     reset_adaptive_cache()
