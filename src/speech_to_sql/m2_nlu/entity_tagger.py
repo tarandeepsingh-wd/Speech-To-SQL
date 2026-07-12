@@ -221,6 +221,8 @@ _BASE_OP_MAP = {
     "less than": "<",
     "fewer than": "<",
     "at most": "<=",
+    "maximum": "<=",
+    "max": "<=",
     "fewer than or equal": "<=",
     "over": ">",
     "above": ">",
@@ -229,6 +231,8 @@ _BASE_OP_MAP = {
     "higher than": ">",
     "larger than": ">",
     "at least": ">=",
+    "minimum": ">=",
+    "min": ">=",
     "around": "~",
     "about": "~",
     "approximately": "~",
@@ -1033,6 +1037,42 @@ def _measurement_claimed_spans(text: str) -> list[tuple[int, int]]:
     ]
 
 
+def _filter_nutrition_modifier_sql_ops(sql_operators: list[dict], text: str) -> list[dict]:
+    filtered: list[dict] = []
+    for operator in sql_operators:
+        canonical = str(operator.get("canonical") or "").upper()
+        if canonical in {"MIN", "MAX"} and _min_max_targets_nutrition(text, operator):
+            continue
+        filtered.append(operator)
+    return filtered
+
+
+def _min_max_targets_nutrition(text: str, operator: dict) -> bool:
+    span = operator.get("span")
+    if not isinstance(span, (list, tuple)) or len(span) != 2:
+        return False
+    try:
+        end = int(span[1])
+    except (TypeError, ValueError):
+        return False
+
+    suffix = text[end + 1:end + 97].lower()
+    tokens = re.findall(r"[a-z0-9]+", suffix)[:6]
+    ignored = {
+        "of", "with", "in", "is", "are", "has", "have",
+        "g", "gm", "gms", "gram", "grams",
+        "mg", "milligram", "milligrams",
+        "kcal", "cal", "calorie", "calories",
+    }
+    for token in tokens:
+        if token.isdigit() or token in ignored:
+            continue
+        if _normalize_nutrient(token):
+            return True
+        break
+    return False
+
+
 def _filter_actions_claimed_by_sql_ops(actions: list[dict], sql_operators: list[dict]) -> list[dict]:
     sql_spans = [
         tuple(item.get("span") or ())
@@ -1497,7 +1537,51 @@ def _nutrition_qualifier_match_spans(text: str) -> list[tuple[int, int]]:
                 continue
             used |= positions
             spans.append(match.span())
+    for span in _fuzzy_nutrition_qualifier_match_spans(text, used):
+        positions = set(range(span[0], span[1]))
+        if positions & used:
+            continue
+        used |= positions
+        spans.append(span)
     return spans
+
+
+def _fuzzy_nutrition_qualifier_match_spans(text: str, used: set[int]) -> list[tuple[int, int]]:
+    text_tokens = [
+        (match.group(0), match.start(), match.end())
+        for match in re.finditer(r"[a-z0-9]+", text.lower())
+    ]
+    if not text_tokens:
+        return []
+
+    spans: list[tuple[int, int]] = []
+    for term in sorted(_nutrition_qualifier_terms(), key=len, reverse=True):
+        term_tokens = re.findall(r"[a-z0-9]+", term.lower())
+        if not term_tokens or len(term_tokens) == 1 or all(len(token) < 5 for token in term_tokens):
+            continue
+        if len(term_tokens) > len(text_tokens):
+            continue
+        for start in range(0, len(text_tokens) - len(term_tokens) + 1):
+            window = text_tokens[start:start + len(term_tokens)]
+            span = (window[0][1], window[-1][2])
+            positions = set(range(span[0], span[1]))
+            if positions & used:
+                continue
+            if all(
+                _nutrition_qualifier_token_match(actual, expected)
+                for (actual, _start, _end), expected in zip(window, term_tokens)
+            ):
+                spans.append(span)
+    return spans
+
+
+def _nutrition_qualifier_token_match(actual: str, expected: str) -> bool:
+    if actual == expected:
+        return True
+    if len(expected) < 5 or len(actual) < 4:
+        return False
+    threshold = 83 if max(len(actual), len(expected)) >= 6 else 86
+    return fuzz.ratio(actual, expected) >= threshold
 
 
 # ---------------------------------------------------------
@@ -1553,7 +1637,7 @@ def tag_entities(text: str) -> dict:
         m["style"] for m in dietary_matches if m.get("negated")
     ))
     nutrition_filters = detected["nutrition"]
-    sql_operators = detected["sql_ops"]
+    sql_operators = _filter_nutrition_modifier_sql_ops(detected["sql_ops"], text)
     strong_ingredient_spans = extract_strong_ingredient_spans(text)
     action_matches = _filter_actions_claimed_by_sql_ops(detected["actions"], sql_operators)
     action_matches = _filter_actions_claimed_by_measurements(action_matches, text)

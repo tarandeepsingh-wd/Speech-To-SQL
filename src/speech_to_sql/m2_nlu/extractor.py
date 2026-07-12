@@ -67,6 +67,7 @@ COMMON_WORDS_BLACKLIST = {
     "fiber", "fibre", "sodium",
     "gram", "grams", "milligram", "milligrams",
     "under", "below", "above", "least", "most",
+    "min", "minimum", "max", "maximum", "low", "high", "lowest", "highest",
     # -- general --------------------------------------------
     "food", "good", "cook", "heat", "bake", "boil", "fry",
     "dish", "meal", "prep", "step", "stir", "pour", "chop",

@@ -367,16 +367,16 @@ def _dietary_predicates(
 
 
 def _is_dietary_classification_group(styles: list[str], schema: dict[str, Any]) -> bool:
-    vegetarian_columns = {
+    dietary_flag_columns = {
         str(field)
         for field in (
             schema.get("relations", {})
             .get("dietary", {})
             .get("columns", {})
         )
-        if str(field).endswith("_vegetarian")
+        if str(field) in {"vegan", "pescetarian"} or str(field).endswith("_vegetarian")
     }
-    return bool(vegetarian_columns and set(styles).issubset(vegetarian_columns))
+    return bool(dietary_flag_columns and set(styles).issubset(dietary_flag_columns))
 
 
 def _resolved_dietary_styles(styles: list[Any], aliases: dict[str, str]) -> list[str]:

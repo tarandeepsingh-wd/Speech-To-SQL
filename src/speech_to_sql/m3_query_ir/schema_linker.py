@@ -53,6 +53,7 @@ def link_tag_result(
         schema,
         links,
         unresolved,
+        transcript=transcript,
     )
     linked["excluded_dietary_styles"] = _link_dietary_styles(
         linked.get("excluded_dietary_styles") or [],
@@ -60,6 +61,7 @@ def link_tag_result(
         schema,
         links,
         unresolved,
+        transcript=transcript,
     )
     linked["time_filters"] = _link_time_filters(
         linked.get("time_filters") or [],
@@ -151,6 +153,8 @@ def _link_dietary_styles(
     schema: dict[str, Any],
     links: list[SchemaLink],
     unresolved: list[dict[str, str]],
+    *,
+    transcript: str | None = None,
 ) -> list[str]:
     alias_index = _diet_alias_index(recipe_config)
     linked_styles = []
@@ -160,7 +164,13 @@ def _link_dietary_styles(
         if not resolved:
             _record_unresolved(unresolved, "dietary", style)
             continue
-        for candidate in _expanded_dietary_classification(style, resolved, schema):
+        for candidate in _expanded_dietary_classification(
+            style,
+            resolved,
+            schema,
+            recipe_config,
+            transcript,
+        ):
             key = candidate.lower()
             if key in seen:
                 continue
@@ -174,13 +184,95 @@ def _expanded_dietary_classification(
     original: Any,
     resolved: str,
     schema: dict[str, Any],
+    recipe_config: dict[str, Any],
+    transcript: str | None,
 ) -> list[str]:
     normalized_original = _normalize_key(str(original or ""))
+    normalized_resolved = _normalize_key(resolved)
+    expansions = recipe_config.get("dietary_style_expansions", {})
+    expansion = (
+        expansions.get(normalized_original)
+        or expansions.get(normalized_resolved)
+    )
+    if isinstance(expansion, dict):
+        expanded = _configured_dietary_expansion(expansion, schema, transcript)
+        if expanded:
+            return expanded
+
     if normalized_original != "vegetarian":
         return [resolved]
 
     vegetarian_columns = _vegetarian_classification_columns(schema)
     return vegetarian_columns or [resolved]
+
+
+def _configured_dietary_expansion(
+    expansion: dict[str, Any],
+    schema: dict[str, Any],
+    transcript: str | None,
+) -> list[str]:
+    styles = _known_dietary_styles(expansion.get("default") or [], schema)
+    text = _normalize_key(transcript or "")
+
+    for condition in expansion.get("conditions") or []:
+        if not isinstance(condition, dict) or not _dietary_condition_matches(condition, text):
+            continue
+        condition_styles = _known_dietary_styles(condition.get("styles") or [], schema)
+        if not condition_styles:
+            continue
+        mode = _normalize_key(str(condition.get("mode") or "add"))
+        if mode == "replace":
+            styles = condition_styles
+        else:
+            styles = _merge_unique_strings(styles, condition_styles)
+    return styles
+
+
+def _dietary_condition_matches(condition: dict[str, Any], normalized_text: str) -> bool:
+    groups = condition.get("all_term_groups")
+    if isinstance(groups, list) and groups:
+        return all(_has_any_term(normalized_text, group) for group in groups)
+    return _has_any_term(normalized_text, condition.get("terms") or [])
+
+
+def _has_any_term(normalized_text: str, terms: Any) -> bool:
+    if not normalized_text:
+        return False
+    for term in terms or []:
+        normalized_term = _normalize_key(str(term or ""))
+        if normalized_term and re.search(rf"\b{re.escape(normalized_term)}\b", normalized_text):
+            return True
+    return False
+
+
+def _known_dietary_styles(styles: Any, schema: dict[str, Any]) -> list[str]:
+    columns = (
+        schema.get("relations", {})
+        .get("dietary", {})
+        .get("columns", {})
+    )
+    if not isinstance(columns, dict):
+        return []
+    known = {str(field) for field in columns}
+    if isinstance(styles, str):
+        styles = [styles]
+    return [
+        style
+        for style in _unique_strings(list(styles))
+        if style in known
+    ]
+
+
+def _merge_unique_strings(left: list[str], right: list[str]) -> list[str]:
+    merged = []
+    seen = set()
+    for item in [*left, *right]:
+        key = item.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(item)
+    return merged
 
 
 def _vegetarian_classification_columns(schema: dict[str, Any]) -> list[str]:

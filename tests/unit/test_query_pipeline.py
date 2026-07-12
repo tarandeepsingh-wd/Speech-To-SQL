@@ -218,6 +218,139 @@ def test_sql_query_builder_adds_where_order_and_limit():
     assert sql["validation"]["ok"] is True
 
 
+def test_plain_veg_excludes_egg_based_vegetarian_flags():
+    tag_result = {
+        "dietary_styles": ["vegetarian"],
+        "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+        "nutrition_filters": [],
+        "sql_operators": [],
+    }
+    sql = build_sql_query(
+        tag_result,
+        transcript="show me veg food",
+    )
+
+    query = sql["query"]
+    assert sql["validation"]["ok"] is True
+    assert "r.`vegan` IN" in query
+    assert "r.`lacto_vegetarian` IN" in query
+    assert "r.`ovo_vegetarian` IN" not in query
+    assert "r.`ovo_lacto_vegetarian` IN" not in query
+
+
+def test_veg_with_egg_includes_ovo_vegetarian_flags():
+    tag_result = {
+        "ingredients": ["egg"],
+        "ingredient_logic": {"include": ["egg"], "exclude": [], "include_operator": "AND"},
+        "dietary_styles": ["vegetarian"],
+        "nutrition_filters": [],
+        "sql_operators": [],
+    }
+    sql = build_sql_query(
+        tag_result,
+        transcript="show vegetarian recipes with egg",
+    )
+
+    query = sql["query"]
+    assert sql["validation"]["ok"] is True
+    assert "r.`ovo_vegetarian` IN" in query
+    assert "r.`ovo_lacto_vegetarian` IN" in query
+    assert "r.`vegan` IN" not in query
+    assert "r.`lacto_vegetarian` IN" not in query
+
+
+def test_veg_with_dairy_prefers_lacto_vegetarian_flag():
+    tag_result = {
+        "ingredients": ["paneer"],
+        "ingredient_logic": {"include": ["paneer"], "exclude": [], "include_operator": "AND"},
+        "dietary_styles": ["vegetarian"],
+        "nutrition_filters": [],
+        "sql_operators": [],
+    }
+    sql = build_sql_query(
+        tag_result,
+        transcript="show vegetarian recipes with paneer",
+    )
+
+    query = sql["query"]
+    assert sql["validation"]["ok"] is True
+    assert "r.`lacto_vegetarian` IN" in query
+    assert "r.`ovo_vegetarian` IN" not in query
+    assert "r.`ovo_lacto_vegetarian` IN" not in query
+
+
+def test_general_low_and_high_nutrition_phrases_handle_typos():
+    base_tag = {
+        "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+        "nutrition_filters": [],
+        "dietary_styles": [],
+        "categories": [],
+        "sql_operators": [],
+    }
+    cases = [
+        ("food with low caorires", "calories", "<=", 500.0),
+        ("food with high protien", "protein", ">=", 20.0),
+        ("food with low cholestrol", "cholesterol", "<=", 20.0),
+        ("food with high carbs", "carbohydrate_by_difference", ">=", 50.0),
+        ("food with low fat", "total_lipid_fat", "<=", 3.0),
+        ("food with high sodium", "sodium", ">=", 400.0),
+        ("sugar free food", "sugar", "<=", 0.5),
+    ]
+
+    for transcript, field, operator, value in cases:
+        sql = build_sql_query(dict(base_tag), transcript=transcript)
+        predicates = sql["ir"]["predicates"]
+
+        assert sql["validation"]["ok"] is True
+        assert len(predicates) == 1
+        assert predicates[0]["field"] == field
+        assert predicates[0]["operator"] == operator
+        assert predicates[0]["values"] == [value]
+
+
+def test_relative_nutrition_phrases_sort_instead_of_thresholding():
+    base_tag = {
+        "ingredient_logic": {"include": [], "exclude": [], "include_operator": "AND"},
+        "nutrition_filters": [],
+        "dietary_styles": [],
+        "categories": [],
+        "sql_operators": [],
+    }
+    cases = [
+        ("food with least caorires", "calories", "ASC"),
+        ("food with highest protien", "protein", "DESC"),
+        ("food with lowest cholestrol", "cholesterol", "ASC"),
+        ("food with min sugar", "sugar", "ASC"),
+        ("food with max carbohydrates", "carbs", "DESC"),
+    ]
+
+    for transcript, field, direction in cases:
+        sql = build_sql_query(dict(base_tag), transcript=transcript)
+
+        assert sql["validation"]["ok"] is True
+        assert sql["ir"]["predicates"] == []
+        assert sql["ir"]["order_by"] == [{"field": field, "direction": direction}]
+
+
+def test_numeric_min_max_nutrition_phrases_are_thresholds_not_sorts():
+    cases = [
+        ("minimum 40 grams protein", "protein", ">=", 40.0),
+        ("maximum 60 grams carbs", "carbohydrate_by_difference", "<=", 60.0),
+    ]
+
+    for transcript, field, operator, value in cases:
+        tag_result = tag_entities(transcript)
+        sql = build_sql_query(tag_result, transcript=transcript)
+
+        assert tag_result["ingredients"] == []
+        assert tag_result["sql_operators"] == []
+        assert sql["validation"]["ok"] is True
+        assert sql["ir"]["order_by"] == []
+        assert sql["ir"]["predicates"][0]["field"] == field
+        assert sql["ir"]["predicates"][0]["operator"] == operator
+        assert sql["ir"]["predicates"][0]["values"] == [value]
+
+
 def test_sql_query_builder_warns_on_dietary_ingredient_conflict():
     tag_result = {
         "ingredients": ["chicken", "milk"],

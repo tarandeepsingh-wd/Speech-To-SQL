@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from rapidfuzz import fuzz
+
 
 def resolve_sort_intent(
     text: str,
@@ -154,9 +156,50 @@ def _last_config_term_position(text: str, terms: list[str]) -> int | None:
 
 def _config_term_positions(text: str, term: str) -> list[int]:
     positions = []
+    saw_exact = False
     for match in re.finditer(rf"\b{re.escape(term)}\b", text):
+        saw_exact = True
         prefix = text[max(0, match.start() - 3):match.start()]
         if term in {"least", "most"} and prefix == "at ":
             continue
+        if term in {"min", "minimum", "max", "maximum"} and _followed_by_numeric_value(text, match.end()):
+            continue
         positions.append(match.start())
+    if positions:
+        return positions
+    if saw_exact:
+        return []
+    return _fuzzy_config_term_positions(text, term)
+
+
+def _fuzzy_config_term_positions(text: str, term: str) -> list[int]:
+    term_tokens = re.findall(r"[a-z0-9]+", term.lower())
+    if not term_tokens or all(len(token) < 5 for token in term_tokens):
+        return []
+
+    text_tokens = [
+        (match.group(0), match.start())
+        for match in re.finditer(r"[a-z0-9]+", text.lower())
+    ]
+    if len(term_tokens) > len(text_tokens):
+        return []
+
+    positions: list[int] = []
+    for start in range(0, len(text_tokens) - len(term_tokens) + 1):
+        window = text_tokens[start:start + len(term_tokens)]
+        if all(_fuzzy_token_match(actual, expected) for (actual, _pos), expected in zip(window, term_tokens)):
+            positions.append(window[0][1])
     return positions
+
+
+def _fuzzy_token_match(actual: str, expected: str) -> bool:
+    if actual == expected:
+        return True
+    if len(expected) < 5 or len(actual) < 4:
+        return False
+    threshold = 83 if max(len(actual), len(expected)) >= 6 else 86
+    return fuzz.ratio(actual, expected) >= threshold
+
+
+def _followed_by_numeric_value(text: str, end: int) -> bool:
+    return bool(re.match(r"\s+\d+(?:\.\d+)?\b", text[end:]))

@@ -5,6 +5,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from rapidfuzz import fuzz
+
 from speech_to_sql.common.config import load_recipe_db_config, load_sql_schema_config
 from speech_to_sql.m3_query_ir.schema_linker import link_base_field, link_nutrition_field
 from speech_to_sql.m3_query_ir.sort_resolver import resolve_sort_intent
@@ -531,11 +533,46 @@ def _contains_any_term(text: str, terms: list[str]) -> bool:
 
 
 def _matched_terms(text: str, terms: list[str]) -> list[str]:
-    return [
-        _normalize_text(term)
-        for term in terms
-        if re.search(rf"\b{re.escape(_normalize_text(term))}\b", text)
-    ]
+    normalized_text = _normalize_text(text)
+    text_tokens = _tokenize(normalized_text)
+    matches: list[str] = []
+    for term in terms:
+        normalized_term = _normalize_text(term)
+        if not normalized_term:
+            continue
+        if re.search(rf"\b{re.escape(normalized_term)}\b", normalized_text):
+            matches.append(normalized_term)
+            continue
+        if _fuzzy_phrase_in_tokens(text_tokens, _tokenize(normalized_term)):
+            matches.append(normalized_term)
+    return matches
+
+
+def _tokenize(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def _fuzzy_phrase_in_tokens(text_tokens: list[str], term_tokens: list[str]) -> bool:
+    if not text_tokens or not term_tokens or len(term_tokens) > len(text_tokens):
+        return False
+    if len(term_tokens) == 1:
+        return False
+    if all(len(token) < 5 for token in term_tokens):
+        return False
+    for start in range(0, len(text_tokens) - len(term_tokens) + 1):
+        window = text_tokens[start:start + len(term_tokens)]
+        if all(_fuzzy_token_match(actual, expected) for actual, expected in zip(window, term_tokens)):
+            return True
+    return False
+
+
+def _fuzzy_token_match(actual: str, expected: str) -> bool:
+    if actual == expected:
+        return True
+    if len(expected) < 5 or len(actual) < 4:
+        return False
+    threshold = 83 if max(len(actual), len(expected)) >= 6 else 86
+    return fuzz.ratio(actual, expected) >= threshold
 
 
 def _unique_terms(terms: list[str]) -> list[str]:

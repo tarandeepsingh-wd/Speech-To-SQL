@@ -194,6 +194,31 @@
     "pescetarian": "pescetarian",
     "non-vegetarian": "non-vegetarian"
   },
+  "dietary_style_expansions": {
+    "vegetarian": {
+      "default": ["vegan", "lacto_vegetarian"],
+      "conditions": [
+        {
+          "terms": ["egg", "eggs", "ovo", "eggitarian"],
+          "mode": "replace",
+          "styles": ["ovo_vegetarian", "ovo_lacto_vegetarian"]
+        },
+        {
+          "terms": ["dairy", "milk", "cheese", "paneer", "butter", "cream", "yogurt", "yoghurt", "curd", "ghee"],
+          "mode": "replace",
+          "styles": ["lacto_vegetarian"]
+        },
+        {
+          "all_term_groups": [
+            ["egg", "eggs", "ovo", "eggitarian"],
+            ["dairy", "milk", "cheese", "paneer", "butter", "cream", "yogurt", "yoghurt", "curd", "ghee"]
+          ],
+          "mode": "replace",
+          "styles": ["ovo_lacto_vegetarian"]
+        }
+      ]
+    }
+  },
   "logic_terms": {
     "or": ["or", "either", "any of"],
     "and": ["and", "with", "plus", "all of"]
@@ -249,25 +274,36 @@
   "intent_enrichment": {
     "nutrition_qualifiers": [
       {"terms": ["calorie free", "calorie-free", "free of calories", "no calories", "zero calories", "without calories"], "nutrient": "calories", "operator": "<", "value": 5},
-      {"terms": ["low calorie", "low calories", "low kcal", "less calories", "fewer calories", "lower calories", "lower calorie", "light calorie"], "nutrient": "calories", "operator": "<=", "value": 500},
-      {"terms": ["low carb", "low carbs", "low carbohydrate", "low carbohydrates", "lower carb", "less carbs", "fewer carbs"], "nutrient": "carbs", "operator": "<=", "value": 50},
-      {"terms": ["carb free", "carb-free", "no carbs", "zero carbs", "without carbs"], "nutrient": "carbs", "operator": "<=", "value": 0.5},
-      {"terms": ["high protein", "protein rich"], "nutrient": "protein", "operator": ">=", "value": 20},
-      {"terms": ["good source of protein", "more protein", "higher protein"], "nutrient": "protein", "operator": ">=", "value": 10},
-      {"terms": ["high fiber", "high-fiber", "fiber rich", "fibre rich"], "nutrient": "fiber", "operator": ">=", "value": 5},
-      {"terms": ["good source of fiber", "good source of fibre", "more fiber", "more fibre"], "nutrient": "fiber", "operator": ">=", "value": 2.5},
+      {"terms": ["low calorie", "low calories", "low cal", "low cals", "low kcal", "less calorie", "less calories", "fewer calorie", "fewer calories", "lower calories", "lower calorie", "light calorie", "light calories", "low energy"], "nutrient": "calories", "operator": "<=", "value": 500},
+      {"terms": ["high calorie", "high calories", "high cal", "high cals", "high kcal", "more calorie", "more calories", "higher calorie", "higher calories", "calorie rich", "calorie dense", "energy dense"], "nutrient": "calories", "operator": ">=", "value": 500},
+      {"terms": ["low carb", "low carbs", "low carbohydrate", "low carbohydrates", "lower carb", "lower carbs", "lower carbohydrate", "lower carbohydrates", "less carb", "less carbs", "less carbohydrate", "less carbohydrates", "fewer carbs"], "nutrient": "carbs", "operator": "<=", "value": 50},
+      {"terms": ["high carb", "high carbs", "high carbohydrate", "high carbohydrates", "higher carb", "higher carbs", "more carb", "more carbs", "more carbohydrate", "more carbohydrates", "carb rich", "carbohydrate rich"], "nutrient": "carbs", "operator": ">=", "value": 50},
+      {"terms": ["carb free", "carb-free", "carbohydrate free", "carbohydrate-free", "no carbs", "no carbohydrates", "zero carbs", "zero carbohydrates", "without carbs", "without carbohydrates"], "nutrient": "carbs", "operator": "<=", "value": 0.5},
+      {"terms": ["high protein", "high-protein", "protein rich", "protein-rich", "more protein", "higher protein"], "nutrient": "protein", "operator": ">=", "value": 20},
+      {"terms": ["low protein", "lower protein", "less protein", "fewer protein"], "nutrient": "protein", "operator": "<=", "value": 10},
+      {"terms": ["good source of protein"], "nutrient": "protein", "operator": ">=", "value": 10},
+      {"terms": ["high fiber", "high-fiber", "high fibre", "high-fibre", "fiber rich", "fibre rich", "fiber-rich", "fibre-rich", "more fiber", "more fibre", "higher fiber", "higher fibre"], "nutrient": "fiber", "operator": ">=", "value": 5},
+      {"terms": ["low fiber", "low-fiber", "low fibre", "low-fibre", "less fiber", "less fibre", "lower fiber", "lower fibre"], "nutrient": "fiber", "operator": "<=", "value": 2.5},
+      {"terms": ["good source of fiber", "good source of fibre"], "nutrient": "fiber", "operator": ">=", "value": 2.5},
       {"terms": ["fat free", "fat-free", "free of fat", "no fat", "zero fat", "without fat"], "nutrient": "fat", "operator": "<=", "value": 0.5},
-      {"terms": ["low fat", "low-fat"], "nutrient": "fat", "operator": "<=", "value": 3},
+      {"terms": ["low fat", "low-fat", "less fat", "lower fat", "reduced fat"], "nutrient": "fat", "operator": "<=", "value": 3},
+      {"terms": ["high fat", "high-fat", "more fat", "higher fat", "fat rich", "fat-rich"], "nutrient": "fat", "operator": ">=", "value": 15},
       {"terms": ["saturated fat free", "saturated-fat-free", "free of saturated fat", "no saturated fat", "zero saturated fat"], "nutrient": "fatty_acids_total_saturated", "operator": "<=", "value": 0.5, "suppress_presence_nutrients": ["fat"]},
-      {"terms": ["low saturated fat", "low-saturated-fat"], "nutrient": "fatty_acids_total_saturated", "operator": "<=", "value": 1, "suppress_presence_nutrients": ["fat"]},
+      {"terms": ["low saturated fat", "low-saturated-fat", "less saturated fat", "lower saturated fat"], "nutrient": "fatty_acids_total_saturated", "operator": "<=", "value": 1, "suppress_presence_nutrients": ["fat"]},
+      {"terms": ["high saturated fat", "high-saturated-fat", "more saturated fat", "higher saturated fat"], "nutrient": "fatty_acids_total_saturated", "operator": ">=", "value": 5, "suppress_presence_nutrients": ["fat"]},
       {"terms": ["trans fat free", "trans-fat-free", "free of trans fat", "no trans fat", "zero trans fat"], "nutrient": "fatty_acids_total_trans", "operator": "<=", "value": 0.5, "suppress_presence_nutrients": ["fat"]},
+      {"terms": ["low trans fat", "low-trans-fat", "less trans fat", "lower trans fat"], "nutrient": "fatty_acids_total_trans", "operator": "<=", "value": 0.5, "suppress_presence_nutrients": ["fat"]},
+      {"terms": ["high trans fat", "high-trans-fat", "more trans fat", "higher trans fat"], "nutrient": "fatty_acids_total_trans", "operator": ">=", "value": 1, "suppress_presence_nutrients": ["fat"]},
       {"terms": ["sodium free", "sodium-free", "salt free", "salt-free", "no sodium", "zero sodium", "without sodium"], "nutrient": "sodium", "operator": "<", "value": 5},
       {"terms": ["very low sodium", "very-low-sodium", "very low salt"], "nutrient": "sodium", "operator": "<=", "value": 35},
-      {"terms": ["low sodium", "low-sodium", "low salt"], "nutrient": "sodium", "operator": "<=", "value": 140},
-      {"terms": ["cholesterol free", "cholesterol-free", "free of cholesterol", "no cholesterol", "zero cholesterol"], "nutrient": "cholesterol", "operator": "<", "value": 2},
-      {"terms": ["low cholesterol", "low-cholesterol"], "nutrient": "cholesterol", "operator": "<=", "value": 20},
+      {"terms": ["low sodium", "low-sodium", "low salt", "less sodium", "less salt", "lower sodium", "lower salt"], "nutrient": "sodium", "operator": "<=", "value": 140},
+      {"terms": ["high sodium", "high-sodium", "high salt", "more sodium", "more salt", "higher sodium", "higher salt"], "nutrient": "sodium", "operator": ">=", "value": 400},
+      {"terms": ["cholesterol free", "cholesterol-free", "free of cholesterol", "no cholesterol", "zero cholesterol", "without cholesterol"], "nutrient": "cholesterol", "operator": "<", "value": 2},
+      {"terms": ["low cholesterol", "low-cholesterol", "less cholesterol", "lower cholesterol"], "nutrient": "cholesterol", "operator": "<=", "value": 20},
+      {"terms": ["high cholesterol", "high-cholesterol", "more cholesterol", "higher cholesterol", "cholesterol rich"], "nutrient": "cholesterol", "operator": ">=", "value": 60},
       {"terms": ["sugar free", "sugar-free", "free of sugar", "no sugar", "zero sugar", "without sugar", "sugarless"], "nutrient": "sugar", "operator": "<=", "value": 0.5},
-      {"terms": ["low sugar", "low sugars", "less sugar", "less sugars", "lower sugar", "lower sugars", "reduced sugar"], "nutrient": "sugar", "operator": "<=", "value": 10}
+      {"terms": ["low sugar", "low sugars", "less sugar", "less sugars", "lower sugar", "lower sugars", "reduced sugar"], "nutrient": "sugar", "operator": "<=", "value": 10},
+      {"terms": ["high sugar", "high sugars", "more sugar", "more sugars", "higher sugar", "higher sugars", "sugar rich", "sugary"], "nutrient": "sugar", "operator": ">=", "value": 10}
     ],
     "dietary_classifications": [
       {"styles": ["non-vegetarian"], "exclude": ["vegan", "vegetarian"], "negated_include": ["vegetarian"]}
