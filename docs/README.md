@@ -10,6 +10,8 @@ Anything copied from the older unstructured workspace has been removed.
 - `running_and_verification.md` explains how to run the CLI, dummy DB checks,
   tests, and schema audit.
 - `ml_models.md` explains which local ML models exist and when they are used.
+- `next_semester_extension_architecture.md` proposes the 4-month architecture,
+  data, model, backend, UI, and evaluation plan for extending the project.
 
 ## Rule
 

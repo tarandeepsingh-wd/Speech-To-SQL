@@ -55,6 +55,7 @@ function App() {
   const [athenaLoading, setAthenaLoading] = useState(false);
   const [athenaResult, setAthenaResult] = useState(null);
   const [athenaError, setAthenaError] = useState('');
+  const [athenaSqlDraft, setAthenaSqlDraft] = useState('');
   const [feedbackStatus, setFeedbackStatus] = useState('');
   const [feedbackSummary, setFeedbackSummary] = useState(null);
   const [correctedQuery, setCorrectedQuery] = useState('');
@@ -65,6 +66,7 @@ function App() {
 
   const tagResult = useMemo(() => result?.tag_result || {}, [result]);
   const sql = useMemo(() => result?.sql || {}, [result]);
+  const generatedAthenaSql = sql.athena?.query || '';
   const validation = useMemo(() => sql.validation || {}, [sql]);
   const queryIr = useMemo(() => sql.ir || {}, [sql]);
   const sqlPlan = useMemo(() => sql.plan || {}, [sql]);
@@ -99,6 +101,10 @@ function App() {
     setActiveModule('m2');
   }, [result, query, tagResult]);
 
+  useEffect(() => {
+    setAthenaSqlDraft(generatedAthenaSql);
+  }, [generatedAthenaSql]);
+
   async function runQuery(event, overrideQuery) {
     event?.preventDefault();
     const text = (overrideQuery || query).trim();
@@ -110,6 +116,7 @@ function App() {
     setCopyState('');
     setAthenaResult(null);
     setAthenaError('');
+    setAthenaSqlDraft('');
     setResult(null);
     setActiveModule('m1');
 
@@ -270,12 +277,13 @@ function App() {
     setCopyState('');
     setAthenaResult(null);
     setAthenaError('');
+    setAthenaSqlDraft('');
     setActiveModule('m1');
     setInputMode('text');
   }
 
   async function copySql(kind = 'sql') {
-    const text = kind === 'athena' ? sql.athena?.query : sql.query;
+    const text = kind === 'athena' ? athenaSqlDraft : sql.query;
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -286,7 +294,7 @@ function App() {
   }
 
   async function runAthena() {
-    const queryText = sql.athena?.query;
+    const queryText = athenaSqlDraft.trim();
     if (!queryText) return;
     setAthenaLoading(true);
     setAthenaResult(null);
@@ -514,6 +522,9 @@ function App() {
                 athenaLoading={athenaLoading}
                 athenaResult={athenaResult}
                 athenaError={athenaError}
+                athenaSqlDraft={athenaSqlDraft}
+                setAthenaSqlDraft={setAthenaSqlDraft}
+                generatedAthenaSql={generatedAthenaSql}
               />
             )}
             {activeModule === 'm5' && (
@@ -683,11 +694,14 @@ function SqlPanel({
   athenaLoading,
   athenaResult,
   athenaError,
+  athenaSqlDraft,
+  setAthenaSqlDraft,
+  generatedAthenaSql,
 }) {
   const joins = sqlPlan.joins || [];
   const where = sqlPlan.where || [];
   const params = sql.params || [];
-  const athenaSql = sql.athena?.query || '';
+  const editableAthenaSql = athenaSqlDraft || '';
   const warnings = validation.warnings || [];
   const errors = validation.errors || [];
   const formatAthenaNumber = (value) => {
@@ -706,11 +720,20 @@ function SqlPanel({
             <Clipboard size={15} />
             <span>{copyState === 'SQL copied' ? copyState : 'Copy SQL'}</span>
           </button>
-          <button className="compact-button" type="button" onClick={() => copySql('athena')} disabled={!athenaSql}>
+          <button className="compact-button" type="button" onClick={() => copySql('athena')} disabled={!editableAthenaSql.trim()}>
             <Clipboard size={15} />
             <span>{copyState === 'Athena copied' ? copyState : 'Copy Athena'}</span>
           </button>
-          <button className="compact-button" type="button" onClick={runAthena} disabled={!athenaSql || athenaLoading}>
+          <button
+            className="compact-button"
+            type="button"
+            onClick={() => setAthenaSqlDraft(generatedAthenaSql)}
+            disabled={!generatedAthenaSql || generatedAthenaSql === editableAthenaSql}
+          >
+            <RefreshCcw size={15} />
+            <span>Reset Athena</span>
+          </button>
+          <button className="compact-button" type="button" onClick={runAthena} disabled={!editableAthenaSql.trim() || athenaLoading}>
             <Play size={15} />
             <span>{athenaLoading ? 'Running Athena' : 'Run Athena'}</span>
           </button>
@@ -728,7 +751,14 @@ function SqlPanel({
           <Database size={15} />
           <span>Athena SQL</span>
         </div>
-        <pre className="code-block athena-block">{athenaSql || 'No Athena SQL generated yet'}</pre>
+        <textarea
+          className="code-block athena-block athena-editor"
+          value={editableAthenaSql}
+          onChange={(event) => setAthenaSqlDraft(event.target.value)}
+          placeholder="Paste or edit Athena SQL here, then run it."
+          spellCheck="false"
+          wrap="soft"
+        />
       </section>
       {athenaError && (
         <div className="message-list error">

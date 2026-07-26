@@ -198,6 +198,23 @@ def test_ranker_sorts_and_limits():
     assert [recipe["Recipe_id"] for recipe in ranked] == ["2", "3"]
 
 
+def test_ranker_ignores_removed_dish_title_boosts():
+    recipes = [
+        {"Recipe_id": "1", "Recipe_title": "Quick Paneer Curry"},
+        {"Recipe_id": "2", "Recipe_title": "Paneer-Butter Masala"},
+        {"Recipe_id": "3", "Recipe_title": "Masala Butter Paneer Bowl"},
+        {"Recipe_id": "4", "Recipe_title": "Tomato Rice"},
+    ]
+    tag_result = {
+        "dish_titles": ["paneer butter masala"],
+        "ingredient_logic": {"include": ["paneer", "butter", "masala"], "exclude": [], "include_operator": "AND"},
+    }
+
+    ranked = rank_and_limit(recipes, tag_result, transcript="give me paneer butter masala")
+
+    assert [recipe["Recipe_id"] for recipe in ranked] == ["1", "2", "3", "4"]
+
+
 def test_sql_query_builder_adds_where_order_and_limit():
     tag_result = {
         "dietary_styles": ["vegan"],
@@ -2604,3 +2621,128 @@ def test_schema_discovery_does_not_overwrite_cache_on_token_exhaustion_without_e
     }
 
     assert _should_write_cache(result) is False
+
+
+def test_dish_phrase_uses_component_ingredients_for_broad_retrieval():
+    result = tag_entities("show butter chicken with low calories")
+
+    assert result["title"] is None
+    assert result["dish_titles"] == []
+    assert result["ingredient_logic"]["include"] == ["butter", "chicken"]
+
+
+def test_show_me_dish_recipes_uses_component_ingredients():
+    result = tag_entities("show me butter chicken recipes")
+
+    assert result["title"] is None
+    assert result["dish_titles"] == []
+    assert result["ingredient_logic"]["include"] == ["butter", "chicken"]
+
+
+def test_ingredient_context_does_not_become_dish_title():
+    result = tag_entities("recipes with butter and chicken")
+
+    assert result["title"] is None
+    assert result["ingredient_logic"]["include"] == ["butter", "chicken"]
+    assert result["ingredient_logic"]["include_operator"] == "AND"
+
+
+def test_dish_phrase_keeps_external_excluded_ingredient():
+    result = tag_entities("butter chicken without butter")
+
+    assert result["title"] is None
+    assert result["dish_titles"] == []
+    assert result["ingredient_logic"]["include"] == ["butter", "chicken"]
+    assert result["ingredient_logic"]["exclude"] == ["butter"]
+
+
+def test_repeated_unknown_dish_phrase_does_not_become_title():
+    result = tag_entities("give me Chin Chin")
+
+    assert result["title"] is None
+    assert result["dish_titles"] == []
+
+
+def test_ingredient_list_with_nutrition_does_not_become_title():
+    result = tag_entities("chicken onion tomato under 500 calories")
+
+    assert result["title"] is None
+    assert result["ingredient_logic"]["include"] == ["chicken", "onion", "tomato"]
+
+
+def test_partial_veg_recipe_phrase_stays_dietary_plus_ingredient():
+    result = tag_entities("show vegan spinach recipes")
+
+    assert result["title"] is None
+    assert result["dietary_styles"] == ["vegan"]
+    assert result["ingredient_logic"]["include"] == ["spinach"]
+
+
+def test_utensil_in_recipe_phrase_is_detected_after_classifier_removed():
+    result = tag_entities("find chicken tomato skillet recipes with no garlic")
+
+    assert result["title"] is None
+    assert result["ingredient_logic"]["include"] == ["chicken", "tomato"]
+    assert result["utensils"] == ["skillet"]
+    assert result["ingredient_logic"]["exclude"] == ["garlic"]
+
+
+def test_explicit_utensil_outside_title_is_preserved():
+    result = tag_entities("find chicken tomato skillet with skillet and no garlic")
+
+    assert result["title"] is None
+    assert result["ingredient_logic"]["include"] == ["chicken", "tomato"]
+    assert result["utensils"] == ["skillet"]
+    assert result["ingredient_logic"]["exclude"] == ["garlic"]
+
+
+def test_dish_phrase_sql_uses_ingredients_without_title_boost_order():
+    query = "show butter chicken with low calories"
+    sql = build_sql_query(tag_entities(query), transcript=query)
+
+    assert sql["validation"]["ok"] is True
+    assert sql["dish_title_boost"] == {
+        "phrase": "butter chicken",
+        "tokens": ["butter", "chicken"],
+        "source": "adjacent_ingredient_spans",
+    }
+    assert "ingredient_phrase" in sql["query"]
+    assert "recipe_title" not in sql["query"]
+    assert "ORDER BY CASE" not in sql["query"]
+    assert sql["params"][:5] == ["butter", "%butter%", "chicken", "%chicken%", 2]
+
+
+def test_dish_title_boost_requires_adjacent_ingredient_words():
+    blocked_queries = [
+        "show recipes with butter and chicken",
+        "show recipes with butter, chicken",
+        "show recipes with butter or chicken",
+        "show recipes with butter containing chicken",
+        "show recipes with butter with chicken",
+    ]
+
+    for query in blocked_queries:
+        sql = build_sql_query(tag_entities(query), transcript=query)
+        assert "dish_title_boost" not in sql
+
+
+def test_dish_title_boost_supports_longer_adjacent_phrases():
+    query = "show recipes for paneer butter masala under 500 calories"
+    sql = build_sql_query(tag_entities(query), transcript=query)
+
+    assert sql.get("dish_title_boost") == {
+        "phrase": "paneer butter masala",
+        "tokens": ["paneer", "butter", "masala"],
+        "source": "adjacent_ingredient_spans",
+    }
+
+
+def test_dish_title_boost_uses_canonical_ingredients_for_typos():
+    query = "show recipes using garlic spinach tomatou ginjer onion"
+    sql = build_sql_query(tag_entities(query), transcript=query)
+
+    assert sql.get("dish_title_boost") == {
+        "phrase": "garlic spinach tomato ginger onion",
+        "tokens": ["garlic", "spinach", "tomato", "ginger", "onion"],
+        "source": "adjacent_ingredient_spans",
+    }

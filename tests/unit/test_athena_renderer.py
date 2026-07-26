@@ -206,3 +206,41 @@ def test_athena_renderer_preserves_nutrition_relation_semantics():
         'TRY_CAST(NULLIF(TRIM(CAST(n2."protein (g)" AS VARCHAR)), \'\') AS DOUBLE) >= 20'
         in rendered
     )
+
+
+def test_athena_renderer_wraps_adjacent_ingredient_dish_boost_without_extra_columns():
+    query = "show recipes using butter chicken"
+    sql = build_sql_query(tag_entities(query), transcript=query)
+
+    rendered = render_athena_sql(sql)["query"]
+
+    assert rendered.startswith("WITH candidate_recipes AS (SELECT DISTINCT r.*")
+    assert "SELECT * FROM candidate_recipes AS r ORDER BY CASE" in rendered
+    assert 'r."recipe_title"' in rendered
+    assert "= 'butter chicken' THEN 0" in rendered
+    assert "LIKE '%butter chicken%' THEN 1" in rendered
+    assert "LIKE '%butter%' AND" in rendered
+    assert "LIKE '%chicken%'" in rendered
+    assert "__athena_order_" not in rendered
+    assert "?" not in rendered
+
+
+def test_athena_renderer_does_not_apply_dish_boost_over_explicit_sort():
+    sql_result = {
+        "query": (
+            "SELECT DISTINCT r.* FROM `recipes` AS r "
+            "WHERE (r.`continent` = ?) ORDER BY r.`recipe_title` ASC LIMIT ?"
+        ),
+        "params": ["Asian", 10],
+        "dish_title_boost": {
+            "phrase": "butter chicken",
+            "tokens": ["butter", "chicken"],
+            "source": "adjacent_ingredient_spans",
+        },
+    }
+
+    rendered = render_athena_sql(sql_result)["query"]
+
+    assert not rendered.startswith("WITH candidate_recipes")
+    assert '"__athena_order_1" ASC LIMIT 10' in rendered
+    assert "butter chicken" not in rendered

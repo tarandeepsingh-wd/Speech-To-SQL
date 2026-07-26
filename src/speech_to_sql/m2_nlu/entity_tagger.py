@@ -1616,7 +1616,7 @@ def tag_entities(text: str) -> dict:
     normalization = normalize_noisy_text(text)
     text = normalization["text"]
 
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {
             executor.submit(_detect_dietary_style_matches, text): "dietary",
             executor.submit(_detect_nutrition_filters, text): "nutrition",
@@ -1639,16 +1639,19 @@ def tag_entities(text: str) -> dict:
     nutrition_filters = detected["nutrition"]
     sql_operators = _filter_nutrition_modifier_sql_ops(detected["sql_ops"], text)
     strong_ingredient_spans = extract_strong_ingredient_spans(text)
-    action_matches = _filter_actions_claimed_by_sql_ops(detected["actions"], sql_operators)
+    categories = detected["categories"]
+    raw_actions = detected["actions"]
+    raw_utensils = detected["utensils"]
+
+    action_matches = _filter_actions_claimed_by_sql_ops(raw_actions, sql_operators)
     action_matches = _filter_actions_claimed_by_measurements(action_matches, text)
     action_matches = _without_ingredient_collisions(
         action_matches,
         strong_ingredient_spans,
         "action",
     )
-    categories = detected["categories"]
     utensil_matches = _without_ingredient_collisions(
-        detected["utensils"],
+        raw_utensils,
         strong_ingredient_spans,
         "utensil",
     )
@@ -1686,6 +1689,8 @@ def tag_entities(text: str) -> dict:
 
     return {
         "ingredients":       ingredients,
+        "dish_titles":       [],
+        "title":             None,
         "utensils":          [m["canonical"] for m in utensil_matches],
         "actions":           [_public_action_match(match) for match in action_matches],
         "dietary_styles":    dietary_styles,

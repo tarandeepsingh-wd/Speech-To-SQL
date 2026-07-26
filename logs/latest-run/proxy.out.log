@@ -1,2 +1,6 @@
+
+> speech-to-sql-proxy@1.0.0 start
+> node index.js
+
 ◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
 Node proxy running on http://localhost:5000

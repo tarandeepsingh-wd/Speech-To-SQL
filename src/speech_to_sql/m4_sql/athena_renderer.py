@@ -109,8 +109,19 @@ def render_athena_sql(sql_result: Mapping[str, Any]) -> dict[str, Any]:
             "params": list(sql_result.get("params") or []),
             "parameterized_query": query,
         }
+    schema = load_sql_schema_config()
+    rendered_query = render_athena_query(
+        str(query),
+        list(sql_result.get("params") or []),
+        schema=schema,
+    )
+    rendered_query = _apply_dish_title_boost(
+        rendered_query,
+        sql_result.get("dish_title_boost"),
+        schema,
+    )
     return {
-        "query": render_athena_query(str(query), list(sql_result.get("params") or [])),
+        "query": rendered_query,
         "dialect": "athena",
         "params": list(sql_result.get("params") or []),
         "parameterized_query": query,
@@ -406,6 +417,100 @@ def _project_distinct_order_by(sql: str) -> str:
         f"{select_prefix}, {', '.join(projection_items)} "
         f"{before_order} ORDER BY {', '.join(rewritten_order_items)}{suffix_sql}"
     )
+
+
+def _apply_dish_title_boost(
+    sql: str,
+    boost: Any,
+    schema: Mapping[str, Any],
+) -> str:
+    if not isinstance(boost, Mapping):
+        return sql
+    phrase = _normalize_boost_text(boost.get("phrase"))
+    tokens = _boost_tokens(boost, phrase)
+    if len(tokens) < 2 or not phrase:
+        return sql
+    if _find_top_level_keyword(sql, "ORDER BY") >= 0:
+        return sql
+    if sql.lstrip().upper().startswith("WITH "):
+        return sql
+
+    base_table = str((schema.get("base_table") or {}).get("name") or "recipes")
+    title_column = _base_title_column(schema)
+    if not title_column:
+        return sql
+    if not re.search(
+        rf'\bFROM\s+"{re.escape(base_table)}"\s+AS\s+r\b',
+        sql,
+        re.IGNORECASE,
+    ):
+        return sql
+
+    query_body, suffix = _split_top_level_suffix(sql, ("LIMIT", "OFFSET", "FETCH"))
+    title_expr = (
+        f'TRIM(REGEXP_REPLACE(LOWER(COALESCE(CAST(r."{title_column}" AS VARCHAR), \'\')), '
+        f"'[^a-z0-9]+', ' '))"
+    )
+    token_checks = " AND ".join(
+        f"{title_expr} LIKE {_literal('%' + token + '%')}"
+        for token in tokens
+    )
+    order_sql = (
+        "CASE "
+        f"WHEN {title_expr} = {_literal(phrase)} THEN 0 "
+        f"WHEN {title_expr} LIKE {_literal('%' + phrase + '%')} THEN 1 "
+        f"WHEN {token_checks} THEN 2 "
+        "ELSE 3 END ASC, "
+        f"{title_expr} ASC"
+    )
+    suffix_sql = f" {suffix.strip()}" if suffix else ""
+    return (
+        f"WITH candidate_recipes AS ({query_body.strip()}) "
+        f"SELECT * FROM candidate_recipes AS r "
+        f"ORDER BY {order_sql}{suffix_sql}"
+    )
+
+
+def _base_title_column(schema: Mapping[str, Any]) -> str | None:
+    base_table = str((schema.get("base_table") or {}).get("name") or "")
+    fields = (
+        schema.get("collections", {})
+        .get(base_table, {})
+        .get("fields", {})
+    )
+    if not isinstance(fields, Mapping):
+        return None
+    for candidate in ("recipe_title", "title"):
+        if candidate in fields:
+            return candidate
+    return None
+
+
+def _boost_tokens(boost: Mapping[str, Any], phrase: str) -> list[str]:
+    source = boost.get("tokens")
+    tokens = source if isinstance(source, (list, tuple)) else phrase.split()
+    result: list[str] = []
+    seen: set[str] = set()
+    for token in tokens:
+        normalized = _normalize_boost_text(token)
+        if not normalized:
+            continue
+        for part in normalized.split():
+            if part and part not in seen:
+                seen.add(part)
+                result.append(part)
+    return result
+
+
+def _normalize_boost_text(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
+
+
+def _split_top_level_suffix(sql: str, keywords: tuple[str, ...]) -> tuple[str, str]:
+    suffix_index = _find_first_top_level_keyword(sql, keywords)
+    if suffix_index < 0:
+        return sql, ""
+    return sql[:suffix_index].rstrip(), sql[suffix_index:].strip()
 
 
 def _aggregate_scalar_order_expression(expression: str, direction: str) -> str:

@@ -434,14 +434,8 @@ def _cuisine_alias(region: str, config: dict[str, Any]) -> dict[str, Any]:
 
 
 def _title_query(tag_result: dict, text: str) -> str | None:
-    for key in ("title", "recipe_title"):
-        value = tag_result.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-
-    quoted = re.search(r"['\"]([^'\"]{3,80})['\"]", text)
-    if quoted:
-        return quoted.group(1).strip()
+    # The dish/title classifier path is intentionally disabled. Dish-looking
+    # phrases should flow through ingredient/category extraction instead.
     return None
 
 

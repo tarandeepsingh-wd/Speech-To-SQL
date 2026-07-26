@@ -20,6 +20,8 @@ logs/*.log
 src/speech_to_sql/m2_nlu/models/*
 !src/speech_to_sql/m2_nlu/models/ingredient_reranker/
 !src/speech_to_sql/m2_nlu/models/ingredient_reranker/model.pkl
+!src/speech_to_sql/m2_nlu/models/dish_title_classifier/
+!src/speech_to_sql/m2_nlu/models/dish_title_classifier/model.pkl
 
 # Feedback logs can contain user queries/corrections.
 src/speech_to_sql/m2_nlu/data/feedback/*.jsonl

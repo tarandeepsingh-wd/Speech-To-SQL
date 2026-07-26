@@ -739,12 +739,24 @@ tr:last-child td {
   line-height: 1.65;
   margin: 0;
   overflow: auto;
+  overflow-wrap: anywhere;
   padding: 14px;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .athena-block {
   border-color: rgba(110, 200, 255, 0.24);
+}
+
+.athena-editor {
+  display: block;
+  min-height: 154px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  resize: vertical;
+  white-space: pre-wrap;
+  width: 100%;
 }
 
 .athena-results {
@@ -768,10 +780,10 @@ tr:last-child td {
 .athena-table td {
   max-width: 220px;
   min-width: 92px;
-  overflow: hidden;
-  overflow-wrap: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .athena-table th {
