@@ -44,10 +44,9 @@ correct before it ever touches a real database.
 16. [Testing](#16-testing)
 17. [API Reference](#17-api-reference)
 18. [Known Limitations & Notes](#18-known-limitations--notes)
-19. [Next-Semester Extension Roadmap](#19-next-semester-extension-roadmap)
-20. [Project Timeline & Contributors](#20-project-timeline--contributors)
-21. [Acknowledgments](#21-acknowledgments)
-22. [License](#22-license)
+19. [Project Timeline & Contributors](#19-project-timeline--contributors)
+20. [Acknowledgments](#20-acknowledgments)
+21. [License](#21-license)
 
 ---
 
@@ -293,7 +292,7 @@ IP_Project/
 │   ├── ml_models.md                           Which local ML models exist and when
 │   ├── professor_verification_plan.md         Exact grading/verification reproduction steps
 │   └── next_semester_extension_architecture.md  4-month roadmap for a generalized,
-│                                                 multi-backend, ranking-aware version (§19)
+│                                                 multi-backend, ranking-aware version
 ├── requirements.txt
 ├── pytest.ini
 └── README.md                    (this file)
@@ -741,11 +740,9 @@ Only the ingredient reranker's model file is committed to the repository.
 addition since the ranking work: it now also allow-lists a
 `models/dish_title_classifier/model.pkl` path. **No such file exists in the
 repository and no code anywhere imports, trains, or scores against a
-`dish_title_classifier`** — this is forward-looking scaffolding for the
-embedding-based title/semantic reranker proposed in
-[§19](#19-next-semester-extension-roadmap), not a currently active
-component. The dish-title *ranking* that ships today (§11) is pure string
-normalization and substring matching, with no model involved.
+`dish_title_classifier`** — this is forward-looking scaffolding, not a
+currently active component. The dish-title *ranking* that ships today (§11)
+is pure string normalization and substring matching, with no model involved.
 
 The two DistilBERT heads and the entity-confidence model are trained
 locally with the commands documented in `docs/ml_models.md` and
@@ -1008,9 +1005,7 @@ adjacency requirement, exactly as designed.
   learned relevance model — a dish spelled with a synonym the ingredient
   extractor doesn't resolve to the same canonical form, or a dish name that
   isn't literally two adjacent ingredient words (e.g. "chana masala" if
-  "chana" isn't in the ingredient lexicon), won't trigger it. This is a
-  deliberate first step; §19 outlines a more general embedding-based
-  reranker as future work.
+  "chana" isn't in the ingredient lexicon), won't trigger it.
 - **Test coverage.** `tests/unit/test_query_pipeline.py` and
   `tests/unit/test_athena_renderer.py` between them add 14 and 2 new test
   functions respectively covering: adjacency detection, punctuation/connector
@@ -1406,9 +1401,9 @@ prefix stripped), preserving method, body, and query string.
   RecipeDB REST API path (M5's `ranker.py` handles explicit sort/limit for
   the API path, but not implicit dish-name relevance).
 - **`dish_title_classifier` is scaffolding, not a shipped feature.** The
-  `.gitignore` allow-lists a model path for it and the next-semester roadmap
-  (§19) proposes one, but no such model, training script, or inference code
-  exists in the repository today — don't assume it's active.
+  `.gitignore` allow-lists a model path for it, but no such model, training
+  script, or inference code exists in the repository today — don't assume
+  it's active.
 - **Two ML models aren't shipped.** The SQL-operator NER and SQL-clause
   DistilBERT models must be trained locally (`docs/ml_models.md`) before
   `SPEECH_TO_SQL_ENABLE_SQL_ML=1` / `SPEECH_TO_SQL_ENABLE_SQL_CLAUSE_ML=1`
@@ -1443,70 +1438,7 @@ prefix stripped), preserving method, body, and query string.
 
 ---
 
-## 19. Next-Semester Extension Roadmap
-
-`docs/next_semester_extension_architecture.md` (added alongside the ranking
-work) lays out a detailed 4-month plan for generalizing this project beyond
-explicit, command-style queries. It's a planning document, not implemented
-code — nothing in this section describes current behavior — but it's worth
-summarizing here since it's the clearest statement of where the project is
-headed and why the ranking feature in §11 was built the way it was (as a
-narrow, safe first step rather than a full reranking model).
-
-**Stated motivation.** The current pipeline is strong on explicit queries
-("chicken recipes under 500 calories with more than 40g protein") but weaker
-on vague, preference-style requests ("I want something light and healthy for
-dinner", "find recipes like butter chicken but healthier").
-
-**Proposed new module — M2.5 Intent Resolver**, sitting between M2 and M3,
-responsible for splitting a request into **hard filters** (things that must
-be true, feeding today's QueryIR unchanged) versus **soft preferences**
-(things to rank by, not filter on) and deciding when a query is too vague to
-proceed without a clarification question — e.g. "healthy dinner" would
-resolve to no hard filters, a set of soft preferences (lower calories, higher
-protein, lower fat), and a clarification prompt, whereas "food with low
-calories" resolves directly to a hard `calories <= 500` filter.
-
-**Proposed QueryIR extension** to formally carry `filters` (today's hard
-predicates), `preferences` (weighted soft ranking signals), `ranking` (the
-generalized form of §11's boost), `warnings`, and a `backend` field — while
-keeping the core rule that **no model is ever allowed to write SQL directly**.
-
-**Proposed multi-backend generation** from one QueryIR: Athena SQL (today),
-a MongoDB aggregation-pipeline renderer (new), and the existing SQLite
-renderer for deterministic local tests — with a `config/backends/` schema
-catalog per backend, mirroring how `config/sql_schema.json` works today.
-
-**Proposed ranking engine**, generalizing §11's single heuristic into a
-weighted combination of signals (ingredient coverage, excluded-ingredient
-safety, title similarity, nutrition-preference score, dietary-match
-confidence, time score), with the same rule §11 already enforces: **an
-explicit user sort always overrides the ranking boost.**
-
-**Proposed evaluation work:** a labeled 500-1,000-query benchmark dataset
-across the ten-plus categories already used by `stress_verify_queries.py`
-plus new vague/conversational/contradiction categories, a "food phrase
-policy" table for terms like "quick" or "light meal" (kept as configurable
-data, not hardcoded branches — consistent with §8's design philosophy), and
-tracked metrics (intent accuracy, SQL/Athena/Mongo execution success rate,
-result relevance, latency).
-
-**Stated 4-month sequencing:** (1) dataset + intent taxonomy, (2) M2.5 +
-QueryIR upgrade, (3) multi-backend query generation, (4) ranking, UI
-explainability, and evaluation. The document also lists concrete asks
-(Athena/MongoDB access details, sample data, engineering scope) and explicit
-risks with mitigations (subjectivity of vague terms → configurable policy;
-risk of a model regressing current accuracy → keep deterministic rules first,
-ML only reranks).
-
-See the document itself for the full detail, including the proposed target
-QueryIR JSON shape, the food-phrase policy table, and the risk/mitigation
-table — this summary intentionally omits nothing load-bearing but trims the
-worked examples for length.
-
----
-
-## 20. Project Timeline & Contributors
+## 19. Project Timeline & Contributors
 
 Built incrementally from **May 5, 2026** (initial ASR module) through
 **July 26, 2026** (adjacent-ingredient dish-title ranking for Athena SQL,
@@ -1523,7 +1455,7 @@ QueryIR/schema-grounding layer → Athena dialect rendering and verification
 
 ---
 
-## 21. Acknowledgments
+## 20. Acknowledgments
 
 - **[RecipeDB](http://cosylab.iiitd.edu.in:6969) / FlavorDB**, developed by
   the CoSy Lab at IIIT-Delhi, for the underlying recipe, nutrition, and
@@ -1537,7 +1469,7 @@ QueryIR/schema-grounding layer → Athena dialect rendering and verification
 
 ---
 
-## 22. License
+## 21. License
 
 No license file is currently included in this repository. All rights are
 reserved by the authors unless a license is added.
